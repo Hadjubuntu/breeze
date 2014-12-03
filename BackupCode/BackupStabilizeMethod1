@@ -1,0 +1,36 @@
+/**
+ * Stabilize flight by using PID to transform the difference
+ * roll / pitch / yaw desired vs mesured into output
+ */
+void stabilize() {
+	// Evaluate error between position demanded and position mesured
+	errorRoll = UAVCore->currentAttitude->roll-UAVCore->attitudeCommanded->roll;
+	errorPitch = UAVCore->currentAttitude->pitch-UAVCore->attitudeCommanded->pitch;
+
+	// Store aileron, gouvern, rubber command
+	if (errorRoll > 1000.0 || errorRoll < -1000.0) {
+		// Means to high frequency eval
+		Serial.print("Error roll to high = ");
+		Serial.print(errorRoll);
+		Serial.print("  | current roll = ") ;
+		Serial.print(UAVCore->currentAttitude->roll) ;
+		Serial.print(" | roll cmd = ") ;
+		Serial.print(UAVCore->attitudeCommanded->roll);   
+		Serial.print(" | diff value = ");
+		Serial.println(UAVCore->currentAttitude->roll-UAVCore->attitudeCommanded->roll);
+
+		// To prevent from writing wrong command  
+		return;
+	}
+	else {
+		aileronCmd = PID2ServoAngle(getOutput(UAVCore->PID_roll, errorRoll, deltaTime)) ;
+		gouvernCmd = PID2ServoAngle(getOutput(UAVCore->PID_pitch, errorPitch, deltaTime)) ;
+
+		// Rubber command is directly prop to yaw command
+		rubberCmd = PID2ServoAngle(UAVCore->attitudeCommanded->yaw) ;
+
+		// Then store all previous error data
+		UAVCore->PID_roll->previousError = errorRoll ;
+		UAVCore->PID_pitch->previousError = errorPitch ;
+	}
+}

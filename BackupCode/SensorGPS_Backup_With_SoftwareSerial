@@ -1,0 +1,117 @@
+/*
+ * Sensor_GPS.h
+ *
+ *  Created on: 8 sept. 2014
+ *      Author: hadjmoody
+ */
+#include <SoftwareSerial.h>
+#include <TinyGPS.h>
+#include "Navig.h"
+
+#ifndef SENSOR_GPS_H_
+#define SENSOR_GPS_H_
+
+// Maximum error of dilution for horizontal GPS location
+#define HDOP_MAX_TOLERANCE 3.0
+#define NB_DATA_TO_THROWOUT 5
+
+// Last celerity in m/s
+double lastVms = 0.0;
+bool isGPSArmed = false ;
+double GPSAltitudeAtStart = 0.0;
+
+// Define which pins you will use on the Arduino to communicate with your
+// GPS (With arduino mega, not all pins can be serial pins cf. http://arduino.cc/en/pmwiki.php?n=Reference/SoftwareSerial)
+#define RXPIN 11
+#define TXPIN 10
+//Set this value equal to the baud rate of your GPS
+#define GPSBAUD 4800
+
+// Create an instance of the TinyGPS object
+TinyGPS gps;
+// Initialize the NewSoftSerial library to the pins you defined above
+SoftwareSerial uart_gps(RXPIN, TXPIN);
+
+// This is where you declare prototypes for the functions that will be
+// using the TinyGPS library.
+void updateSensorGPS(TinyGPS &gps);
+
+// In the setup function, you need to initialize two serial ports; the
+// standard hardware serial port (Serial()) to communicate with your
+// terminal program an another serial port (NewSoftSerial()) for your
+// GPS.
+void setupGPS() {
+
+  // Before starting throwing first data, wait for the GPS to have a fix using cold start duration
+  // from GPS Sirf III features
+  //delay(GPS_COLD_START_DURATION_S * 1000);
+
+  // Then start throwing out first data
+  int throwOutNumber = 0;
+  
+  //Sets baud rate of your GPS
+  uart_gps.begin(GPSBAUD);
+  
+  while (throwOutNumber < NB_DATA_TO_THROWOUT)     // While there is data on the RX pin...
+  {
+    if (uart_gps.available()) {
+      int c = uart_gps.read();    // load the data into a variable...
+      if(gps.encode(c))      // if there is a new valid sentence...
+      {
+        float latitude, longitude;
+        gps.f_get_position(&latitude, &longitude);
+        
+        throwOutNumber ++ ;
+      }
+    }
+
+  }
+  
+  isGPSArmed = true;
+}
+
+// This must be runned as fast as possible (more than 200 Hz)
+// All it does is check for data on
+// the RX pin of the ardiuno, makes sure the data is valid NMEA sentences,
+// then jumps to the getgps() function.
+void updateGPS()
+{
+  if (uart_gps.available())     // While there is data on the RX pin...
+  {
+      int c = uart_gps.read();    // load the data into a variable...
+      if(gps.encode(c))      // if there is a new valid sentence...
+      {
+    	  updateSensorGPS(gps);         // then grab the data.
+      }
+  }
+}
+
+// The getgps function will get and print the values we want.
+void updateSensorGPS(TinyGPS &gps) {
+	if (isGPSArmed == false) {
+		GPSAltitudeAtStart = gps.f_altitude();
+		isGPSArmed = true;
+	}
+
+  // To get all of the data into varialbes that you can use in your code,
+  // all you need to do is define variables and query the object for the
+  // data. To see the complete list of functions see keywords.txt file in
+  // the TinyGPS and NewSoftSerial libs.
+
+  // Define the variables that will be used
+  float latitude, longitude;
+  // Then call this function
+  gps.f_get_position(&latitude, &longitude);
+
+
+  // Update data in naviguation
+ // if (gps.hdop() < HDOP_MAX_TOLERANCE) {
+	  updateGPSData(latitude, longitude, gps.f_altitude()-GPSAltitudeAtStart);
+	  lastVms = gps.f_speed_mps();
+ // }
+}
+
+
+
+
+#endif /* SENSOR_GPS_H_ */
