@@ -13,6 +13,8 @@
  * 
  ***********************************************************
  * Using Timer 4 for ESC, timer 3 for servo with lib,  Serial2 (Hardware Rx Pin 17 mega) for GPS
+ * 
+ * First succesful flight : 03/12/2014
  */
 #include "Breeze.h"
 #include <Wire.h>
