@@ -143,6 +143,7 @@ Vector2 getNormalized(Vector2 A) {
 }
 
 
+// Return angle directed from B to A (+)
 double getAngle(Vector2 A, Vector2 B) {
     Vector2 An = vCopy(A);
     Vector2 Bn = vCopy(B);

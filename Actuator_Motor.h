@@ -1,7 +1,7 @@
 /*
  * Motor.h
  *
- *  Created on: 1 ao�t 2014
+ *  Created on: 1 august 2014
  *      Author: hadjmoody
  */
 

@@ -14,10 +14,10 @@
 // Method PID parameters (stabilize2 function)
 #define G_TAU 0.5f // seconds
 
-#define G_P_ROLL 1.0f // Coeff prop
+#define G_P_ROLL 1.2f // Coeff prop
 #define G_D_ROLL 0.05f // Coeff derivative
 
-#define G_P_PITCH 0.6f // Coeff prop
+#define G_P_PITCH 1.2f // Coeff prop
 #define G_D_PITCH 0.04f // Coeff derivative
 
 #define MAX_DURATION_BURST_S 3

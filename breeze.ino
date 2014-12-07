@@ -18,7 +18,6 @@
  */
 #include "Breeze.h"
 #include <Wire.h>
-#include <L3G.h>
 #include <BMP085.h>
 
 
@@ -318,9 +317,9 @@ void groundNavDemo() {
 	// Configuration autospeed controller
 	// with 1.2 m/s and almost 50% thrust max to achieve that goal
 	AUTOSPEED_CONTROLLER = 1;
-	UAVCore->v_ms_goal = 3.6;
-	UAVCore->thrustMax = 48;
-	UAVCore->thrustBurst = 52;
+	UAVCore->v_ms_goal = 3.6; // m/s
+ 	UAVCore->thrustMax = 50;
+	UAVCore->thrustBurst = 55;
 	
 	// Stop motor if wrong value of pitch (on the nose..)
 	if ( abs(UAVCore->currentAttitude->pitch) > 30) {
@@ -353,7 +352,7 @@ void groundNavDemo() {
 		// Simple move the rubber depending on gps roll demand
 		UAVCore->attitudeCommanded->roll = 0;		
 		UAVCore->attitudeCommanded->pitch = 10;
-		UAVCore->attitudeCommanded->yaw = yawDesired;
+		UAVCore->attitudeCommanded->yaw = angleDiff*0.3;
 	}
 }
 
@@ -365,6 +364,7 @@ void fullManual() {
   if ((currentTime-lastTimeLinkWithGS) > S_TO_US*3) {
     UAVCore->deciThrustPercent = 0;
   }
+  
 }
 
 /*******************************************************************
@@ -386,7 +386,17 @@ void process100HzTask() {
 	hundredHZpreviousTime = currentTime;
 
 
-	// Run this block on 100Hz only with battery supply ..
+	
+}
+
+
+/*******************************************************************
+ * 50Hz task (20 ms)
+ ******************************************************************/
+void process50HzTask() {
+
+  
+  // Run this block on 100Hz only with battery supply ..
 	// Update attitude from gyro
 	updateAttitude() ;
 
@@ -437,14 +447,8 @@ void process100HzTask() {
 		Serial.println("Unknow flight mode");
 		break;		
 	}
-}
-
-
-/*******************************************************************
- * 50Hz task (20 ms)
- ******************************************************************/
-void process50HzTask() {
-
+  
+  
 	// Study performance
 	// long cDt = micros();
 

@@ -19,7 +19,7 @@ enum FlightMode {
 // Flight mode at start
 FlightMode flightMode = FULL_MANUAL;
 // Flight mode in autopilot mode
-FlightMode flightModeAutopilot = GROUND_NAV;
+FlightMode flightModeAutopilot = STABILIZE_ONLY;
 
 enum FlightState {
 	SETUP,

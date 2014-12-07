@@ -33,24 +33,14 @@ String inputString = "";
 String RFStack[RF_STACK_SIZE];
 int stackComputedPosition = 0;
 int stackReceivedPosition = 0;
-int stackLoopDiff = 0;
+bool rfNextRoundOnStack = false;
 
 void incrStackReceivedPosition() {
-	if (stackReceivedPosition+1 >= RF_STACK_SIZE) {
-		stackReceivedPosition = 1;
-		stackLoopDiff ++;
-	}
-	else {
-		stackReceivedPosition ++;
-	}
-}
+	stackReceivedPosition ++;
 
-void incrStackComputedPosition() {
-	if (stackComputedPosition+1 >= RF_STACK_SIZE) {
-		stackComputedPosition = 0;
-	}
-	else {
-		stackComputedPosition ++;
+	if (stackReceivedPosition >= RF_STACK_SIZE) {
+		stackReceivedPosition = 0;
+		rfNextRoundOnStack = true;
 	}
 }
 
@@ -82,7 +72,6 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 
 
 void makeActionInStack(int i) {
-
 	if (RFStack[i].startsWith("auto")) {
 		String mode = RFStack[i].substring(5, 7);
 		if (mode.equals("on")) {
@@ -98,7 +87,7 @@ void makeActionInStack(int i) {
 	else if (RFStack[i].startsWith("flaps")) {
 		(*rf_flapsCmd) = RFStack[i].substring(6).toInt();
 	}
-	else if (RFStack[i].startsWith("att_cmd")) {
+	else if (RFStack[i].startsWith("ac")) {
 		// Force UAV to stabilize to the desired attitude
 		rf_manual_StabilizedFlight = 1;
 
@@ -125,6 +114,9 @@ void makeActionInStack(int i) {
 			case 3:
 				rf_attitudeCommanded->yaw = atoi(pch)/100.0;
 				break;
+			case 4:
+				(*rf_deciThrustPercent) = atoi(pch);
+				break;
 			default:
 				printf("Attitude command with too many parameters.");
 				break;
@@ -134,7 +126,7 @@ void makeActionInStack(int i) {
 			iPos ++;
 		}
 	}
-	else if (RFStack[i].startsWith("srv_cmd")) {
+	else if (RFStack[i].startsWith("sc")) {
 
 		// Force UAV to stabilize to the desired attitude
 		rf_manual_StabilizedFlight = 0;
@@ -162,6 +154,9 @@ void makeActionInStack(int i) {
 			case 3:
 				(*rf_rubberCmd) = atoi(pch);
 				break;
+			case 4:
+				(*rf_deciThrustPercent) = atoi(pch);
+				break;
 			default:
 				printf("Attitude command with too many parameters.");
 				break;
@@ -184,27 +179,29 @@ void makeActionInStack(int i) {
 }
 
 // Update RF link each 20 ms (50 Hz)
+// Could be improve : throw old attitude command and make action with the last one
 void updateRFLink50Hz() {
-	if (stackComputedPosition < stackReceivedPosition) {
-		for (int i = stackComputedPosition; i < stackReceivedPosition; i ++) {
-			makeActionInStack(i);
-		}
 
-		stackComputedPosition = stackReceivedPosition;
+	int endPosition = 0;
+	if (rfNextRoundOnStack) {
+		endPosition = RF_STACK_SIZE;
 	}
-	// Loop in stack
-	else if (stackReceivedPosition < stackComputedPosition && stackLoopDiff > 0) {
-		for (int i = stackComputedPosition; i < RF_STACK_SIZE; i ++) {
-			makeActionInStack(i);
-		}
+	else {
+		endPosition = stackReceivedPosition;
+	}
 
-		for (int i = 0; i < stackReceivedPosition; i ++) {
-			makeActionInStack(i);
-		}
+	for (int k = stackComputedPosition ; k < endPosition; k ++) {
+		makeActionInStack(k);
+	}
+	stackComputedPosition = endPosition;
 
+
+	if (rfNextRoundOnStack) {
+		for (int l = 0; l < stackReceivedPosition; l ++) {
+			makeActionInStack(l);
+		}
+		rfNextRoundOnStack = false;
 		stackComputedPosition = stackReceivedPosition;
-
-		stackLoopDiff --;
 	}
 }
 

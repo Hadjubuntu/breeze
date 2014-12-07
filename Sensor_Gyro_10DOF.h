@@ -13,7 +13,7 @@
 #include "I2C.h"
 
 #define MEASURE_VIBRATION 1
-#define ENABLE_CALIBRATION 0
+#define ENABLE_IMU_CALIBRATION 0
 
 #if MEASURE_VIBRATION
 #include <math.h>
@@ -46,8 +46,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.06; // bruit de processus de covariance (default : 0.1)
-float kalmanR = 15.0; //bruit de mesure (default: 5)
+float kalmanQ = 0.06; // 0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 15; // 15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -154,15 +154,19 @@ void setupGyro() {
 #else
 	Serial.println("IMU's calibration already done");
 	/*
+IMU only calibration
 	Gyro cal x; y; z : 27.00; 11.00; 10.00
 	Acc cal x; y; z : 0.00; 0.00; -33.00
+Yak 54 calibration
+    Gyro cal x; y; z : 34.00; 21.00; -16.00  
+    Acc cal x; y; z : 22.00; -3.00; -35.00
 	 */
-	Gyro_cal_x = 27.0;
-	Gyro_cal_y = 11.0;
-	Gyro_cal_z = 10.0;
-	Accel_cal_x = 0.0;
-	Accel_cal_y = 0.0;
-	Accel_cal_z = -33.0;
+	Gyro_cal_x = 34.0;
+	Gyro_cal_y = 21.0;
+	Gyro_cal_z = -16.0;
+	Accel_cal_x = 22.0;
+	Accel_cal_y = -3.0;
+	Accel_cal_z = -35.0;
 #endif
 }
 
