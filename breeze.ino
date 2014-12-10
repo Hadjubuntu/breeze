@@ -71,7 +71,8 @@ void setup() {
 
 	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
 			&aileronCmd, &gouvernCmd, &rubberCmd, &flapsCmd,
-			UAVCore->attitudeCommanded) ;
+			UAVCore->attitudeCommanded,
+			&NAVIG_METHOD_ANGLE_DIFF) ;
 	Serial.println("RF link armed");
 
 
@@ -317,10 +318,10 @@ void groundNavDemo() {
 	// Configuration autospeed controller
 	// with 1.2 m/s and almost 50% thrust max to achieve that goal
 	AUTOSPEED_CONTROLLER = 1;
-	UAVCore->v_ms_goal = 3.6; // m/s
- 	UAVCore->thrustMax = 50;
+	UAVCore->v_ms_goal = 3.4; // m/s
+	UAVCore->thrustMax = 50;
 	UAVCore->thrustBurst = 55;
-	
+
 	// Stop motor if wrong value of pitch (on the nose..)
 	if ( abs(UAVCore->currentAttitude->pitch) > 30) {
 		UAVCore->deciThrustPercent = 0;
@@ -349,10 +350,10 @@ void groundNavDemo() {
 			UAVCore->deciThrustPercent = 150; 
 		}
 
-		// Simple move the rubber depending on gps roll demand
+		// Simple move the rubber depending on gps roll demand	
 		UAVCore->attitudeCommanded->roll = 0;		
 		UAVCore->attitudeCommanded->pitch = 10;
-		UAVCore->attitudeCommanded->yaw = angleDiff*0.3;
+		UAVCore->attitudeCommanded->yaw = 0.2 * angleDiff;
 	}
 }
 
@@ -361,10 +362,14 @@ void fullManual() {
 	// Stabilize function skipped only on no stabilized mode
 	// Otherwise, user defined roll pitch to adopt and stabilized function do the job
 	// Control by RF link
-  if ((currentTime-lastTimeLinkWithGS) > S_TO_US*3) {
-    UAVCore->deciThrustPercent = 0;
-  }
-  
+	if ((currentTime-lastTimeLinkWithGS) > S_TO_US*3) {
+		// TODO return home procedure : switch to auto, UAV must return home and land
+		UAVCore->deciThrustPercent = 0;	
+		UAVCore->attitudeCommanded->roll = 0;		
+		UAVCore->attitudeCommanded->pitch = 0;
+		UAVCore->attitudeCommanded->yaw = 15;
+	}
+
 }
 
 /*******************************************************************
@@ -384,9 +389,6 @@ void process100HzTask() {
 	}
 
 	hundredHZpreviousTime = currentTime;
-
-
-	
 }
 
 
@@ -395,8 +397,6 @@ void process100HzTask() {
  ******************************************************************/
 void process50HzTask() {
 
-  
-  // Run this block on 100Hz only with battery supply ..
 	// Update attitude from gyro
 	updateAttitude() ;
 
@@ -447,8 +447,8 @@ void process50HzTask() {
 		Serial.println("Unknow flight mode");
 		break;		
 	}
-  
-  
+
+
 	// Study performance
 	// long cDt = micros();
 

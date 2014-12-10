@@ -35,6 +35,12 @@ GeoPosition landingPosition = {489183946, 21388276, 0.5, 0};
 #define ALTITUDE_TOLERANCE 4 // At altitude tolerance, altitude acceptable tolerance
 #define HOLD_HEADING_IN_TAKEOFF_AND_LANDING 0
 
+// Parameters
+//--------------------------------------------
+
+// Method navigation (0 means L1 navigation, 1 means using heading cap GPS)
+int NAVIG_METHOD_ANGLE_DIFF = 1;
+
 
 int currentWP = 0 ;
 bool WP_on_target = false;
@@ -312,6 +318,28 @@ void updateDistance() {
 	distance = geoDistance(currentPosition, wps[currentWP]);
 }
 
+double angleCapVect(double dy, double dx) {
+	double angle = -atan2(dy, dx)*180.0/M_PI + 90.0;
+	if (dx < 0.0 && dy > 0.0) {
+		angle = 360.0 + angle;
+	}
+	return angle;
+}
+
+// Returns angle in degree to have to head to the new targeted cap heading
+// Right is positive, left negative
+double diffAngleUsingCapDegrees(double currentCapHeadingDeg, double targetedCapDeg) {
+	double diff = targetedCapDeg - currentCapHeadingDeg;
+	if (diff > 180.0) {
+		diff =   diff - 360.0 ;
+	}
+	else if (diff < -180.0) {
+		diff = 360.0 + diff;
+	}
+
+	return diff;
+}
+
 
 // This function computes all navigation parameter
 // Takes 5ms on Atmega 2560
@@ -372,7 +400,14 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 	GeoPosition posFuture = getGeoPositionEstimation(estimatedPosition.time+((long)S_TO_US)*10, &hasUpdate); // Where the uav gonna be in ten second
 	Vector2 posFuture2D = geoPositionToVector2(posFuture);
 
-	angleDiff = getAngle(vect2Diff(currentPos2D, targetPos2D), vect2Diff(currentPos2D, posFuture2D));
+	if (NAVIG_METHOD_ANGLE_DIFF == 0) {
+		angleDiff = getAngle(vect2Diff(currentPos2D, targetPos2D), vect2Diff(currentPos2D, posFuture2D));
+	}
+	else if (NAVIG_METHOD_ANGLE_DIFF == 1) {
+		double capTargetDeg = angleCapVect(targetPos2D.y-currentPos2D.y, targetPos2D.x-currentPos2D.x);
+		angleDiff = diffAngleUsingCapDegrees(currentHeading, capTargetDeg);
+	}
+
 	angleDiff = constrain(angleDiff, -180.0, 180.0);
 
 	// Method 1 roll depends on angle diff directly as P controller

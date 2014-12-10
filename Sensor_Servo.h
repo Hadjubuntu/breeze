@@ -156,7 +156,6 @@ void writeRubber() {
         int sign = -1;
 	int dCmdUs = (int) (factorCmd2Us(DEFAULT_RUBBER_POS, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX) * rubberCmd);
 	int cmdUs = constrain(DEFAULT_RUBBER_POS + sign*dCmdUs, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX);
-
 	servoAPM_write(PIN_SERVO_RUBBER, cmdUs);
 }
 

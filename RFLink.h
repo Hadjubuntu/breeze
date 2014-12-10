@@ -22,6 +22,7 @@ bool *rf_uavAutomode;
 int *rf_deciThrustPercent;
 int *rf_aileronCmd, *rf_gouvernCmd, *rf_rubberCmd, *rf_flapsCmd;
 Attitude *rf_attitudeCommanded;
+int *rf_navigationMethodAngleDiff;
 
 // In manual flight mode, we can flight with defined roll pitch yaw or servo command
 // Therefore the stabilize function is called or not
@@ -47,7 +48,8 @@ void incrStackReceivedPosition() {
 
 void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 		int *pAileronCmd, int *pGouvernCmd, int *pRubberCmd, int *pFlapsCmd,
-		Attitude *pAttitudeCommanded) {
+		Attitude *pAttitudeCommanded,
+		int *pNavigMethod) {
 
 	// Start serial communication @BAUD_RATE per second with ground station
 	Serial1.begin(BPS_RF_LINK);
@@ -62,6 +64,8 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 	rf_attitudeCommanded = pAttitudeCommanded;
 
 	rf_manual_StabilizedFlight = 0;
+
+	rf_navigationMethodAngleDiff = pNavigMethod;
 
 	Serial.println("Starting com RF");
 	for (int i = 0; i < RF_STACK_SIZE; i ++) {
@@ -173,7 +177,9 @@ void makeActionInStack(int i) {
 		(*rf_rubberCmd) = 0;
 		(*rf_deciThrustPercent) = 0;
 		(*rf_flapsCmd) = 0;
-
+	}
+	else if (RFStack[i].startsWith("nav_method")) {
+		(*rf_navigationMethodAngleDiff) = RFStack[i].substring(11).toInt();
 	}
 	// Process others commands ..
 }

@@ -144,7 +144,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	double outputRollCmd = ((rateRollError * G_D_ROLL) + (desiredRollRate * kp_ff_roll)) * scaler;
 	double outputPitchCmd = ((ratePitchError * G_D_PITCH) + (desiredPitchRate * kp_ff_pitch)) * scaler;
 
-	double yawCmd = yawDesired * scaler * scaler;
+	double yawCmd = yawDesired;
 
 	// Update surfaces command
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
