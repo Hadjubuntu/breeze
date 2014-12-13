@@ -87,7 +87,6 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 
 
 // Common structures
-
 typedef struct T_ATTITUDE {
 	double roll, pitch, yaw ;
 	long time ;
@@ -104,6 +103,33 @@ int sign(double v) {
 	}
 }
 
+
+#define NB_PARAMETERS 7
+
+#define ID_KP_GROUNDNAV 0
+#define ID_G_TAU 1
+#define ID_G_P_ROLL 2
+#define ID_G_D_ROLL 3
+#define ID_K_THRUST 4
+#define ID_G_P_THRUST 5
+#define ID_G_D_THRUST 6
+
+double param[NB_PARAMETERS] ;
+
+void initializeUAVConfiguration() {
+	// Ground navigation parameters
+	param[ID_KP_GROUNDNAV] = 0.15f;
+
+	// Flight control stabilization parameters
+	param[ID_G_TAU] = 0.5f;
+	param[ID_G_P_ROLL] = 1.2f;
+	param[ID_G_D_ROLL] = 0.05f;
+
+	// Thrust autospeed parameters
+	param[ID_K_THRUST] = 3;
+	param[ID_G_P_THRUST] = 0.5f;
+	param[ID_G_D_THRUST] = 0.15f;
+}
 
 
 #endif /* COMMON_H_ */

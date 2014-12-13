@@ -73,9 +73,6 @@ typedef struct T_UAV {
 
 	// Thrust in deci-% (from 0 to 1000)
 	int deciThrustPercent ;
-	int thrustMin;
-	int thrustMax;
-	int thrustBurst;
 
 	// Altitude sonar (filtered)
 	// Not used anymore because of lake of precision
@@ -102,14 +99,11 @@ typedef struct T_UAV {
 
 Uav *UAVCore = new Uav() ;
 
-void initializeUAVParameters(Uav *uav) {
+void initializeUAVStructure(Uav *uav) {
 
 	// UAVCore->altitudeSonar = new  FilterAverage(15, 0, 300, true);
 	UAVCore->autopilot = START_IN_AUTOPILOT ? true : false;
 	UAVCore->deciThrustPercent = 0 ;
-	UAVCore->thrustMin = 0;
-	UAVCore->thrustMax = 100;
-        UAVCore->thrustBurst = 100;
 
 	UAVCore->currentAttitude = new Attitude() ;
 	initializeAttitude(UAVCore->currentAttitude) ;

@@ -12,18 +12,13 @@
 //#include "PID.h"
 
 // Method PID parameters (stabilize2 function)
-#define G_TAU 0.5f // seconds
-
-#define G_P_ROLL 1.2f // Coeff prop
-#define G_D_ROLL 0.05f // Coeff derivative
-
 #define G_P_PITCH 1.2f // Coeff prop
 #define G_D_PITCH 0.04f // Coeff derivative
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
-#define K_THRUST   5// Converts error of airpseed to thrust percent
-#define G_P_THRUST 0.8f // Gain prop for thrust
+#define K_THRUST   3 // Converts error of airpseed to thrust percent (10Hz)
+#define G_P_THRUST 0.5f // Gain prop for thrust
 #define G_D_THRUST 0.15f // High gain derivative to have dampening effect
 long thrustBurstTimeStartUs = 0;
 long thrustBurstTimeEndUs = 0;
@@ -113,8 +108,8 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	// Get the scaler to minimize surface command in high speed ..
 	double scaler = getSpeedScaler(deciThrustPercent);
 
-	double desiredRollRate = errorRoll / G_TAU;
-	double desiredPitchRate = errorPitch / G_TAU;
+	double desiredRollRate = errorRoll / param[ID_G_TAU];
+	double desiredPitchRate = errorPitch / param[ID_G_TAU];
 
 	if (desiredRollRate > DROLL_MAX) {
 		desiredRollRate = DROLL_MAX;
@@ -132,8 +127,8 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	double rateRollError = (desiredRollRate - gyroXrate) * scaler;
 	double ratePitchError = (desiredPitchRate - gyroYrate) * scaler;
 
-	double kp_ff_roll = max(G_P_ROLL * G_TAU  - G_D_ROLL, 0) / v_ms;
-	double kp_ff_pitch = max(G_P_PITCH * G_TAU  - G_D_PITCH, 0) / v_ms;
+	double kp_ff_roll = max(param[ID_G_P_ROLL] * param[ID_G_TAU]  - param[ID_G_D_ROLL], 0) / v_ms;
+	double kp_ff_pitch = max(G_P_PITCH * param[ID_G_TAU]  - G_D_PITCH, 0) / v_ms;
 	if (kp_ff_roll < 0) {
 		kp_ff_roll = 0.0;
 	}
@@ -141,7 +136,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 		kp_ff_pitch = 0.0;
 	}
 
-	double outputRollCmd = ((rateRollError * G_D_ROLL) + (desiredRollRate * kp_ff_roll)) * scaler;
+	double outputRollCmd = ((rateRollError * param[ID_G_D_ROLL]) + (desiredRollRate * kp_ff_roll)) * scaler;
 	double outputPitchCmd = ((ratePitchError * G_D_PITCH) + (desiredPitchRate * kp_ff_pitch)) * scaler;
 
 	double yawCmd = yawDesired;
@@ -153,7 +148,8 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 }
 
 
-//-------------------------------------------------------
+//---------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------
 /**
  * Adapt attitude commanded depending on the current attitude :
  * pitch more if roll, yaw compensation in roll mvt
@@ -202,14 +198,29 @@ void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
 }
 
 
+//---------------------------------------------------------------------------------
 //-------------------------------------------------------
 // Calls this function at 10Hz (100 ms)
-int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal, Attitude *currentAttitude, int thrustMin, int thrustMax, int thrustBurst) {
+int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal, Attitude *currentAttitude) {
 	// Thrust in percent to adopt to control speed
 	int deciThrustOutput = currentDeciThrust;
-	int deciThrustMin = thrustMin * 10;
-	int deciThrustMax = thrustMax * 10;
-	int deciThrustBurst = thrustBurst * 10;
+	int deciThrustMin = 0;
+	int deciThrustMax = 900;
+	int deciThrustBurst = 1000;
+
+	// Map v_ms_goal with thrust max
+	if (v_ms_goal < 2) {
+		deciThrustMax = 40;
+		deciThrustBurst = 45;
+	}
+	else if (v_ms_goal < 5) {
+		deciThrustMax = 500;
+		deciThrustBurst = 550;
+	}
+	else if (v_ms_goal < 10) {
+		deciThrustMax = 700;
+		deciThrustBurst = 800;
+	}
 
 	// Only adapt thrust when in cruise flight-state
 	int tolerancePercent = 0.02; // Accept v_ms with +/- 2% tolerance
@@ -226,7 +237,7 @@ int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal
 	}
 	else {
 
-		double deltaThrust = K_THRUST * (G_P_THRUST * error + G_D_THRUST*(error-previousVmsError));
+		double deltaThrust = param[ID_K_THRUST] * (param[ID_G_P_THRUST] * error + param[ID_G_D_THRUST]*(error-previousVmsError));
 		deltaThrust = constrain(deltaThrust, -AUTOTHROTTLE_THRUST_SLEW_RATE, AUTOTHROTTLE_THRUST_SLEW_RATE);
 		int deltaDeciThrustInteger = (int) (deltaThrust*10);
 

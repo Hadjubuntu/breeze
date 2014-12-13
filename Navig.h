@@ -13,11 +13,12 @@ long lastGoodUpdate = 0;
 
 #define DIST_TO_WAYPOINT_FOR_VALIDATION 6 // 2 meters for ground plan, 10 meters for real flight
 
-int NB_WAYPOINTS = 1;
-GeoPosition wps[] = {{489183946, 21388276, 0.5, 0},
+int NB_WAYPOINTS = 2;
+GeoPosition wps[] = {{489183720, 21389020, 0.5, 0},
+		{489185210, 21385350, 0.5, 0 },
 };
 
-GeoPosition landingPosition = {489183946, 21388276, 0.5, 0};
+GeoPosition landingPosition = {489185210, 21385350, 0.5, 0};
 
 
 
@@ -247,30 +248,6 @@ void updateGPSData(double pLat, double pLon, double pAlt, double pVms, int pCour
 
 			GPSState = GPS_STATE_ON_TRACK;
 
-			/** MOCK
-			pVms = 10;
-			currentPosition.time = micros()+5;
-			currentPosition.alt = 0.5;
-			currentPosition.lat =  489240260;
-			currentPosition.lon = 21603880;
-			previousPosition = currentPosition;
-			previousPosition.lat =  489240340;
-			previousPosition.lon = 21628080;
-			previousPosition.time = micros()-150000;*/
-
-			// @DEPRECATED because doesn't work if few gps precision
-			// To have more precision, we work on 1e7 lat lon data
-			// And we update only when UAV has speed
-			/*if (pVms > 1.0) {
-				currentHeading = angleBearingToNorthDeg((double)(currentPosition.lat-previousPosition.lat), (double)(currentPosition.lon-previousPosition.lon));
-				Serial.print("heading=");
-				Serial.print(currentHeading);
-				Serial.println("\t");
-				Serial.print(currentPosition.lat-previousPosition.lat);
-				Serial.print("\t");
-				Serial.println(pVms);
-			}*/
-
 			if (takeoffPositionSet == false) {
 				takeoffPosition = currentPosition;
 				takeoffPositionSet = true;
@@ -378,7 +355,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 		if (currentWP >= NB_WAYPOINTS) {
 			MissionDone = true;
 
-			// Return home : try to land where we tookoff
+			// Return home : try to land where we took-off
 			returnHome();
 		}
 	}
@@ -478,7 +455,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 		gpsRollDesired2 = 0.0;
 	}
 
-	//---------------------------------------------
+	//-----------------------------------------------------------------------------------
 	// PITCH GPS HEADING
 	// Define pitch which depends on diff altitude and distance
 	double currentAltitude = currentPosition.alt;

@@ -36,7 +36,8 @@ void setup() {
 	Serial.println("Motors armed");
 
 	// Create UAV structure and set variables to default values
-	initializeUAVParameters(UAVCore) ;
+	initializeUAVStructure(UAVCore) ;
+	initializeUAVConfiguration();
 	initFlightControl();
 	Serial.println("UAV software initialized and flight control also");
 
@@ -72,7 +73,10 @@ void setup() {
 	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
 			&aileronCmd, &gouvernCmd, &rubberCmd, &flapsCmd,
 			UAVCore->attitudeCommanded,
-			&NAVIG_METHOD_ANGLE_DIFF) ;
+			&NAVIG_METHOD_ANGLE_DIFF,
+			param,
+			&AUTOSPEED_CONTROLLER,
+			&(UAVCore->v_ms_goal)) ;
 	Serial.println("RF link armed");
 
 
@@ -132,6 +136,11 @@ void processCommand() {
 }*/
 
 void flightByGPS() {
+	// If UAV high than 5 meters, then go to flying mode directly
+	if (altitudeBarometer->getAverage() > 500) {
+		UAVCore->flightState == CRUISE;
+	}
+	
 	if (UAVCore->flightState == TAKEOFF) {
 		if (time_TakeOffStart == 0) {
 			time_TakeOffStart = currentTime;
@@ -205,7 +214,7 @@ void flightByGPS() {
 		else {
 			// In auto speed control, we just define a speed to achieve, thrust is controlled by a PD controller
 			// We choose 38 km/h to have enough lift to compensate the weight without trying to pitch-up
-			UAVCore->v_ms_goal = 12; // ~40 km/h
+			UAVCore->v_ms_goal = 13; // ~40 km/h
 		}
 
 		// Update GPS heading
@@ -219,7 +228,7 @@ void flightByGPS() {
 			UAVCore->deciThrustPercent = 400 ;
 
 			// Circle zero pitch and flaps down
-			controlAttitudeCommand(UAVCore->currentAttitude, UAVCore->attitudeCommanded, G_Dt, currentTime,  30, 0, 0);
+			controlAttitudeCommand(UAVCore->currentAttitude, UAVCore->attitudeCommanded, G_Dt, currentTime,  0, 0, 20);
 			flapsCmd = 30;
 		}
 		else {
@@ -318,12 +327,10 @@ void groundNavDemo() {
 	// Configuration autospeed controller
 	// with 1.2 m/s and almost 50% thrust max to achieve that goal
 	AUTOSPEED_CONTROLLER = 1;
-	UAVCore->v_ms_goal = 3.4; // m/s
-	UAVCore->thrustMax = 50;
-	UAVCore->thrustBurst = 55;
+	UAVCore->v_ms_goal = 3.0; // m/s
 
 	// Stop motor if wrong value of pitch (on the nose..)
-	if ( abs(UAVCore->currentAttitude->pitch) > 30) {
+	if (UAVCore->currentAttitude->pitch < - 30) {
 		UAVCore->deciThrustPercent = 0;
 	}
 
@@ -353,7 +360,7 @@ void groundNavDemo() {
 		// Simple move the rubber depending on gps roll demand	
 		UAVCore->attitudeCommanded->roll = 0;		
 		UAVCore->attitudeCommanded->pitch = 10;
-		UAVCore->attitudeCommanded->yaw = 0.2 * angleDiff;
+		UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * angleDiff;
 	}
 }
 
@@ -480,6 +487,9 @@ void process50HzTask() {
  * 10Hz task (100ms)
  ******************************************************************/
 void process10HzTask() {
+	// Update low priority rf com
+	updateLowPriorityRFLink();
+	
 	// Update altimeter
 	updateAltimeter();
 
@@ -491,9 +501,9 @@ void process10HzTask() {
 
 	// Only if autospeed controller is activated and flight is in cruise state,
 	// then adjust thrust regarding the current speed vms
-	if (USE_AIRSPEED_SENSOR && AUTOSPEED_CONTROLLER == 1 && UAVCore->v_ms_goal > 0.0) {
+	if (USE_AIRSPEED_SENSOR && AUTOSPEED_CONTROLLER == 1) {
 		// Auto-speed control with PID
-		UAVCore->deciThrustPercent = controlSpeedWithThrust(currentTime, UAVCore->deciThrustPercent, UAVCore->v_ms_goal, UAVCore->currentAttitude, UAVCore->thrustMin, UAVCore->thrustMax, UAVCore->thrustBurst);
+		UAVCore->deciThrustPercent = controlSpeedWithThrust(currentTime, UAVCore->deciThrustPercent, UAVCore->v_ms_goal, UAVCore->currentAttitude);
 	}
 }
 
@@ -547,6 +557,10 @@ void process1HzTask() {
 
 	//---------------------------------------------------------
 	// Print some data to the user
+	Serial.print("V ms goal = ");
+	Serial.print(UAVCore->v_ms_goal);
+	Serial.print("\t | \t Thrust % = ") ;
+	Serial.println(UAVCore->deciThrustPercent/10.0);
 	/*Serial.print("Autopilot : ");
 	Serial.println(UAVCore->autopilot ? "On" : "Off");
 
