@@ -33,8 +33,9 @@ void setupAirspeed() {
 	air_pressure = ref_pressure; // At start, initialize with ref pressure
 }
 
-// Call it 5Hz
-// en.wikipedia.org/wiki/Pitot_tube
+// Function called at 20Hz
+// Analogread function takes 0.1 ms (100 us) to be executed
+// Further read : en.wikipedia.org/wiki/Pitot_tube
 // TODO improve EAS to TAS with altitude and pressure for further flight plan with high alt
 double updateAirspeed() {
 

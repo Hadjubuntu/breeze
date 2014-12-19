@@ -11,15 +11,9 @@
 #include "Common.h"
 //#include "PID.h"
 
-// Method PID parameters (stabilize2 function)
-#define G_P_PITCH 1.2f // Coeff prop
-#define G_D_PITCH 0.04f // Coeff derivative
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
-#define K_THRUST   3 // Converts error of airpseed to thrust percent (10Hz)
-#define G_P_THRUST 0.5f // Gain prop for thrust
-#define G_D_THRUST 0.15f // High gain derivative to have dampening effect
 long thrustBurstTimeStartUs = 0;
 long thrustBurstTimeEndUs = 0;
 bool thrustBurstMode = false;
@@ -128,7 +122,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	double ratePitchError = (desiredPitchRate - gyroYrate) * scaler;
 
 	double kp_ff_roll = max(param[ID_G_P_ROLL] * param[ID_G_TAU]  - param[ID_G_D_ROLL], 0) / v_ms;
-	double kp_ff_pitch = max(G_P_PITCH * param[ID_G_TAU]  - G_D_PITCH, 0) / v_ms;
+	double kp_ff_pitch = max(param[ID_G_P_PITCH] * param[ID_G_TAU]  - param[ID_G_D_PITCH], 0) / v_ms;
 	if (kp_ff_roll < 0) {
 		kp_ff_roll = 0.0;
 	}
@@ -137,7 +131,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	}
 
 	double outputRollCmd = ((rateRollError * param[ID_G_D_ROLL]) + (desiredRollRate * kp_ff_roll)) * scaler;
-	double outputPitchCmd = ((ratePitchError * G_D_PITCH) + (desiredPitchRate * kp_ff_pitch)) * scaler;
+	double outputPitchCmd = ((ratePitchError * param[ID_G_D_PITCH]) + (desiredPitchRate * kp_ff_pitch)) * scaler;
 
 	double yawCmd = yawDesired;
 
@@ -172,12 +166,12 @@ void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
 		double pitch_offset = 0.0;
 		if (PITCH_ROLL_COMPENSATION == 1 && fabs(desiredRoll) > 5.0) {
 			double bankAngle = fabs(currentAttitude->roll);
-			bankAngle = constrain(bankAngle, 0, 90);
+			Bound(bankAngle, 0, 90);
 
 			// Compensate only with acceptable roll angle from 0 to 70 deg
 			if (bankAngle < 70) {
 				pitch_offset = PITCH2SRV_ROLL * bankAngle * (PITCH_MAX_COMPENSATION / 45.0);
-				pitch_offset = constrain(pitch_offset, 0, PITCH_MAX_COMPENSATION);
+				Bound(pitch_offset, 0, PITCH_MAX_COMPENSATION);
 			}
 		}
 
@@ -190,7 +184,7 @@ void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
 	double yaw_offset = 0.0;
 	if (YAW_ROLL_COMPENSATION == 1) {
 		yaw_offset = - YAW2SRV_ROLL * currentAttitude->roll * (YAW_MAX_COMPENSATION / 45.0) ;
-		yaw_offset = constrain(yaw_offset, -YAW_MAX_COMPENSATION, YAW_MAX_COMPENSATION);
+		Bound(yaw_offset, -YAW_MAX_COMPENSATION, YAW_MAX_COMPENSATION);
 	}
 
 	previousCmd->yaw = desiredYaw + yaw_offset;
@@ -199,7 +193,41 @@ void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
 
 
 //---------------------------------------------------------------------------------
-//-------------------------------------------------------
+//---------------------------------------------------------------------------------
+// Auto speed using airspeed and PID on throttle
+// Function called at 20 Hz (each 50 ms)
+
+double v_ctl_auto_airspeed_sum_err = 0.0;
+double previous_err_airspeed = 0.0;
+
+int controlSpeedWithThrustV2(long cTimeUs, int currentDeciThrust, double v_ms_goal, Attitude *currentAttitude) {
+	// Variables
+	int deciThrustOutput = 0;
+	float thrustOutput = 0;
+
+	// PID error
+	float err_airspeed = (v_ms_goal - airspeed_ms_mean->getAverage());
+	v_ctl_auto_airspeed_sum_err += err_airspeed;
+	BoundAbs(v_ctl_auto_airspeed_sum_err, param[ID_AUTOAIRSPEED_MAX_SUM_ERR]);
+
+	// Output
+	thrustOutput = param[ID_G_P_THRUST] * err_airspeed
+			+ param[ID_G_I_THRUST] * v_ctl_auto_airspeed_sum_err
+			+ param[ID_G_D_THRUST] * (err_airspeed - previous_err_airspeed);
+
+
+	// Constrain output
+	deciThrustOutput = (int)(10*thrustOutput);
+	Bound(deciThrustOutput, 0, 1000);
+
+	// Store previous variables
+	previous_err_airspeed = err_airspeed;
+
+	return deciThrustOutput;
+}
+
+//---------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------
 // Calls this function at 10Hz (100 ms)
 int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal, Attitude *currentAttitude) {
 	// Thrust in percent to adopt to control speed
@@ -238,7 +266,7 @@ int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal
 	else {
 
 		double deltaThrust = param[ID_K_THRUST] * (param[ID_G_P_THRUST] * error + param[ID_G_D_THRUST]*(error-previousVmsError));
-		deltaThrust = constrain(deltaThrust, -AUTOTHROTTLE_THRUST_SLEW_RATE, AUTOTHROTTLE_THRUST_SLEW_RATE);
+		Bound(deltaThrust, -AUTOTHROTTLE_THRUST_SLEW_RATE, AUTOTHROTTLE_THRUST_SLEW_RATE);
 		int deltaDeciThrustInteger = (int) (deltaThrust*10);
 
 		// Force to change of thrust if needed
@@ -279,7 +307,7 @@ int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal
 			}
 		}
 
-		deciThrustOutput = constrain(deciThrustOutput, deciThrustMin, deciThrustMax);
+		Bound(deciThrustOutput, deciThrustMin, deciThrustMax);
 
 		// Store previous error
 		previousVmsError = error;

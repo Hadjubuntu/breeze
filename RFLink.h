@@ -19,6 +19,7 @@
 
 
 bool *rf_uavAutomode;
+bool rf_automodeSwitchToken; // True means automode switched
 int *rf_deciThrustPercent;
 int *rf_aileronCmd, *rf_gouvernCmd, *rf_rubberCmd, *rf_flapsCmd;
 Attitude *rf_attitudeCommanded;
@@ -53,15 +54,6 @@ void incrStackReceivedPosition() {
 
 
 void sendConfiguration() {
-	// Old code send conf in one time
-	//	char buf[60];
-	//
-	//	for (int i = 0; i < NB_PARAMETERS; i ++) {
-	//		sprintf(buf, "config|%d|%lu|\n", i, (long)(param[i]*10000));
-	//		Serial1.write(buf);
-	//		delay(30);
-	//	}
-
 	sendingConfiguration = true;
 }
 
@@ -95,6 +87,7 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 
 	// Set pointer to variables
 	rf_uavAutomode = pUavAutomode;
+	rf_automodeSwitchToken = false;
 	rf_deciThrustPercent = pDeciThrustPercent;
 	rf_aileronCmd = pAileronCmd;
 	rf_gouvernCmd = pGouvernCmd;
@@ -128,6 +121,9 @@ void makeActionInStack(int i) {
 		else {
 			(*rf_uavAutomode) = false;
 		}
+
+		// Tells the automode switched, some re-init of parameters must be made
+		rf_automodeSwitchToken = true;
 	}
 	else if (RFStack[i].startsWith("speedauto")) {
 		(*rf_autospeed_controller) = RFStack[i].substring(10).toInt();

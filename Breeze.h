@@ -46,6 +46,7 @@ unsigned long deltaTime = 0;
 
 #define TASK_100HZ 1
 #define TASK_50HZ 2
+#define TASK_20HZ 5
 #define TASK_10HZ 10
 #define TASK_5HZ 20
 #define TASK_2HZ 50

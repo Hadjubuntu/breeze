@@ -385,7 +385,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 		angleDiff = diffAngleUsingCapDegrees(currentHeading, capTargetDeg);
 	}
 
-	angleDiff = constrain(angleDiff, -180.0, 180.0);
+	Bound(angleDiff, -180.0, 180.0);
 
 	// Method 1 roll depends on angle diff directly as P controller
 	gpsRollDesired = simplePID(angleDiff);

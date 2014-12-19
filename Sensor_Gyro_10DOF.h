@@ -16,8 +16,8 @@
 #define ENABLE_IMU_CALIBRATION 0
 
 #if MEASURE_VIBRATION
-#include <math.h>
-double accNoise = 0.0;
+#include "math.h"
+double accNoise = 0.0; // Noise accelerometer measure in G (means output steady equals 1 due to gravity)
 #endif
 
 long lastUpdateAHRS_Us = 0;
@@ -28,9 +28,10 @@ double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalA
 
 int Gyro_output[3],Accel_output[3];
 
-float dt = 0.02;
+float dt = 0.01;
 
 float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
+float raw_accel_roll, raw_accel_pitch;
 
 //valeur initiales axe X (pitch)
 //------------------------------
@@ -46,8 +47,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.06; // 0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 15; // 15 bruit de mesure (default: 5)
+float kalmanQ = 0.1; // 0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 5; // 15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -187,7 +188,8 @@ void updateGyroData() {
 	getGyroscopeReadings(Gyro_output);
 	getAccelerometerReadings(Accel_output);
 
-	Accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
 
 	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ 14.375) * dt;
 
@@ -200,7 +202,9 @@ void updateGyroData() {
 	//---------------------------------------------
 	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
 
-	Accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	Accel_roll = 0.3 * Accel_roll + 0.7 * raw_accel_roll;
+
 	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ 14.375) * dt;
 
 	//conserver l'echelle +/-180° pour l'axe Y du gyroscope
@@ -244,6 +248,13 @@ void updateGyroData() {
 
 	//servo_x.write(Predicted_pitch); DECOMMENTER POUR ACTIVER LES SERVOS
 	//servo_y.write(Predicted_roll); DECOMMENTER POUR ACTIVER LES SERVOS
+
+
+#if MEASURE_VIBRATION
+	//-----------------------------------------------
+	// If needed, measure vibration
+	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / 256;
+#endif
 }
 
 

@@ -8,18 +8,22 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#define Bound(_x, _min, _max) { if (_x > (_max)) _x = (_max); else if (_x < (_min)) _x = (_min); }
+#define BoundAbs(_x, _max) Bound(_x, -(_max), (_max))
+
 enum FlightMode {
 	FULL_MANUAL,
 	FULL_FLIGHT_GPS,
 	TAKE_OFF_AND_LAND,
 	STABILIZE_ONLY,
 	GROUND_NAV,
+	RTL
 };
 
 // Flight mode at start
 FlightMode flightMode = FULL_MANUAL;
 // Flight mode in autopilot mode
-FlightMode flightModeAutopilot = GROUND_NAV;
+FlightMode flightModeAutopilot = RTL;
 
 enum FlightState {
 	SETUP,
@@ -34,7 +38,7 @@ enum FlightState {
 // Configuration
 #define START_IN_AUTOPILOT 0
 #define V_MIN_TAKEOFF_MS 5 // Speed m/s through GPS or Pitot sensor
-#define USE_GPS_NAVIGUATION 1
+#define USE_GPS_NAVIGUATION 0
 #define GPS_COLD_START_DURATION_S 20 // Actually its 42s but we'll wait for the first data to throw..
 // @deprecated #define USE_RANGE_FINDER 0
 #define USE_AIRSPEED_SENSOR 1
@@ -58,8 +62,8 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 
 // Define min max authorized pitch command while flying with a gps
 #define FLIGHT_BY_GPS_MIN_PITCH -30
-#define FLIGHT_BY_GPS_MAX_PITCH 35
-#define FLIGHT_BY_GPS_MAX_ROLL 40
+#define FLIGHT_BY_GPS_MAX_PITCH 40
+#define FLIGHT_BY_GPS_MAX_ROLL 50
 
 
 // For a smooth flight use droll max and dpitch max
@@ -104,31 +108,43 @@ int sign(double v) {
 }
 
 
-#define NB_PARAMETERS 7
+#define NB_PARAMETERS 11
 
 #define ID_KP_GROUNDNAV 0
+// Flight control PID global
 #define ID_G_TAU 1
+// roll
 #define ID_G_P_ROLL 2
 #define ID_G_D_ROLL 3
-#define ID_K_THRUST 4
-#define ID_G_P_THRUST 5
-#define ID_G_D_THRUST 6
+// pitch
+#define ID_G_P_PITCH 4
+#define ID_G_D_PITCH 5
+// thrust
+#define ID_K_THRUST 6
+#define ID_G_P_THRUST 7
+#define ID_G_D_THRUST 8
+#define ID_G_I_THRUST 9
+#define ID_AUTOAIRSPEED_MAX_SUM_ERR 10
 
 double param[NB_PARAMETERS] ;
 
 void initializeUAVConfiguration() {
 	// Ground navigation parameters
-	param[ID_KP_GROUNDNAV] = 0.15f;
+	param[ID_KP_GROUNDNAV] = 0.5f;
 
 	// Flight control stabilization parameters
 	param[ID_G_TAU] = 0.5f;
 	param[ID_G_P_ROLL] = 1.2f;
 	param[ID_G_D_ROLL] = 0.05f;
+	param[ID_G_P_PITCH] = 1.0f;
+	param[ID_G_D_PITCH] = 0.04f;
 
 	// Thrust autospeed parameters
-	param[ID_K_THRUST] = 3;
-	param[ID_G_P_THRUST] = 0.5f;
-	param[ID_G_D_THRUST] = 0.15f;
+	param[ID_K_THRUST] = 1;
+	param[ID_G_P_THRUST] = 0.8f;
+	param[ID_G_D_THRUST] = 0.1f;
+	param[ID_G_I_THRUST] = 0.45f;
+	param[ID_AUTOAIRSPEED_MAX_SUM_ERR] = 200;
 }
 
 

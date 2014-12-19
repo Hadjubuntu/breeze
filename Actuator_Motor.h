@@ -16,12 +16,12 @@
 int currentDeciThrustPercent;
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
-#define ESC_MAX_PROTECTION 2100
+#define ESC_MAX_PROTECTION 2000
 
 
-#define ESC_MIN 900
+#define ESC_MIN 1000
 // For XC5020/14 #define ESC_MIN 900 + 150 = 1050 (engine starts at 17%)
-#define ESC_MAX 2100
+#define ESC_MAX 2000
 
 #define PWM_FREQUENCY 490 // in Hz
 #define PWM_PRESCALER 8
