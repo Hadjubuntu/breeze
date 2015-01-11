@@ -19,7 +19,7 @@ int currentDeciThrustPercent;
 #define ESC_MAX_PROTECTION 2000
 
 
-#define ESC_MIN 1000
+#define ESC_MIN 900
 // For XC5020/14 #define ESC_MIN 900 + 150 = 1050 (engine starts at 17%)
 #define ESC_MAX 2000
 

@@ -25,7 +25,6 @@ long lastUpdateAHRS_Us = 0;
 // Output variables
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
 
-
 int Gyro_output[3],Accel_output[3];
 
 float dt = 0.01;
@@ -161,13 +160,16 @@ IMU only calibration
 Yak 54 calibration
     Gyro cal x; y; z : 34.00; 21.00; -16.00  
     Acc cal x; y; z : 22.00; -3.00; -35.00
+Pilatus calib :
+  Gyro cal x; y; z : 29.00; 21.00; -9.00 
+  Acc cal x; y; z : -4.00; 10.00; -34.00
 	 */
-	Gyro_cal_x = 34.0;
+	Gyro_cal_x = 29.0;
 	Gyro_cal_y = 21.0;
-	Gyro_cal_z = -16.0;
-	Accel_cal_x = 22.0;
-	Accel_cal_y = -3.0;
-	Accel_cal_z = -35.0;
+	Gyro_cal_z = -9.0;
+	Accel_cal_x = -4.0;
+	Accel_cal_y = 10.0;
+	Accel_cal_z = -34.0;
 #endif
 }
 
@@ -242,6 +244,7 @@ void updateGyroData() {
 	// Output update
 	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
 	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
 	gyroZangle += Gyro_output[2] / 14.375 * dt;

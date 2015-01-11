@@ -10,6 +10,10 @@
 
 #define Bound(_x, _min, _max) { if (_x > (_max)) _x = (_max); else if (_x < (_min)) _x = (_min); }
 #define BoundAbs(_x, _max) Bound(_x, -(_max), (_max))
+#define NormRadAngle(x) { \
+    while (x > M_PI) x -= 2 * M_PI; \
+    while (x < -M_PI) x += 2 * M_PI; \
+  }
 
 enum FlightMode {
 	FULL_MANUAL,

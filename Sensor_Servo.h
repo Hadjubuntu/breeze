@@ -12,55 +12,42 @@
 #include "ServoAPM.h"
 #include "Math.h"
 
-#define USE_FLAPS 0
+#define USE_FLAPS 1
 
 //--------------------------------------
 // Configuration (Same order as Pilatus pin number)
-#define PIN_SERVO_AILERON_LEFT 11 // Pilatus 1
-#define PIN_SERVO_GOUVERN 12 // Pilatus 2
-#define PIN_SERVO_RUBBER 2 // Pilatus 3 ..
+#define PIN_SERVO_AILERON_LEFT 44 // Pilatus 1
+#define PIN_SERVO_GOUVERN 2 // Pilatus 2
+#define PIN_SERVO_RUBBER 3 // Pilatus 3 ..
 
 #define PIN_SERVO_AILERON_RIGHT 5 // Pilatus 5
 
 #if (USE_FLAPS == 1)
-#define PIN_SERVO_FLAPS_LEFT 13 // Pilatus 6
-#define PIN_SERVO_FLAPS_RIGHT 3 // Pilatus 7
+#define PIN_SERVO_FLAPS_LEFT 45 // Pilatus 6
+#define PIN_SERVO_FLAPS_RIGHT 46 // Pilatus 7
 #endif
-
-/** New Breeze Model
- *
-#define PIN_SERVO_AILERON_LEFT 11
-#define PIN_SERVO_FLAPS_LEFT 12
-
-#define PIN_SERVO_STEERING 13
-
-#define PIN_SERVO_AILERON_RIGHT 5
-#define PIN_SERVO_FLAPS_RIGHT 2
-
-#define PIN_SERVO_ATAIL_LEFT 46
-#define PIN_SERVO_ATAIL_RIGHT 45
- */
 
 
 // Default ROLL position in microseconds
-#define DEFAULT_ROLL_LEFT_POS 1620
-#define DEFAULT_ROLL_LEFT_MIN 1400
-#define DEFAULT_ROLL_LEFT_MAX 1900
+#define DEFAULT_ROLL_LEFT_POS 1560 // 1530
+#define DEFAULT_ROLL_LEFT_MIN 1170
+#define DEFAULT_ROLL_LEFT_MAX 1970
 
-#define DEFAULT_ROLL_RIGHT_POS 1490
-#define DEFAULT_ROLL_RIGHT_MIN 1160
-#define DEFAULT_ROLL_RIGHT_MAX 1660
+#define DEFAULT_ROLL_RIGHT_POS 1410
+#define DEFAULT_ROLL_RIGHT_MIN 1050
+#define DEFAULT_ROLL_RIGHT_MAX 1850
+
 
 // Default GOUVERN position in microseconds
-#define DEFAULT_GOUVERN_POS 1650
-#define DEFAULT_GOUVERN_MIN 1330
-#define DEFAULT_GOUVERN_MAX 1970
+#define DEFAULT_GOUVERN_POS 1520 // 1480
+#define DEFAULT_GOUVERN_MIN 1140
+#define DEFAULT_GOUVERN_MAX 1820
 
 
 // Default Rubber position in microseconds
-#define DEFAULT_RUBBER_POS 1510
-#define DEFAULT_RUBBER_MIN 950
-#define DEFAULT_RUBBER_MAX 1930
+#define DEFAULT_RUBBER_POS 1480
+#define DEFAULT_RUBBER_MIN 1140
+#define DEFAULT_RUBBER_MAX 1820
 
 #define FLAPS_LEFT_DOWN 1850
 #define FLAPS_LEFT_FULL 1230
@@ -135,8 +122,8 @@ void writeRoll() {
 	int dCmdRightUs = (int) (factorCmd2Us(DEFAULT_ROLL_RIGHT_POS, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX) * aileronCmd);
 	int leftCmdUs, rightCmdUs;
 
-	leftCmdUs = constrain(DEFAULT_ROLL_LEFT_POS + dCmdLeftUs, DEFAULT_ROLL_LEFT_MIN, DEFAULT_ROLL_LEFT_MAX);
-	rightCmdUs = constrain(DEFAULT_ROLL_RIGHT_POS + dCmdRightUs, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX);
+	leftCmdUs = constrain(DEFAULT_ROLL_LEFT_POS - dCmdLeftUs, DEFAULT_ROLL_LEFT_MIN, DEFAULT_ROLL_LEFT_MAX);
+	rightCmdUs = constrain(DEFAULT_ROLL_RIGHT_POS - dCmdRightUs, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX);
 
 
 	servoAPM_write(PIN_SERVO_AILERON_LEFT, leftCmdUs);
@@ -144,7 +131,7 @@ void writeRoll() {
 }
 
 void writeGouvern() {
-	int sign = 1;
+	int sign = -1;
 
 	int dCmdUs = (int) (factorCmd2Us(DEFAULT_GOUVERN_POS, DEFAULT_GOUVERN_MIN, DEFAULT_GOUVERN_MAX) * gouvernCmd);
 	int cmdUs = constrain(DEFAULT_GOUVERN_POS + sign * dCmdUs, DEFAULT_GOUVERN_MIN, DEFAULT_GOUVERN_MAX);
@@ -153,9 +140,11 @@ void writeGouvern() {
 }
 
 void writeRubber() {
-        int sign = -1;
+    int sign = 1;
+
 	int dCmdUs = (int) (factorCmd2Us(DEFAULT_RUBBER_POS, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX) * rubberCmd);
 	int cmdUs = constrain(DEFAULT_RUBBER_POS + sign*dCmdUs, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX);
+
 	servoAPM_write(PIN_SERVO_RUBBER, cmdUs);
 }
 
@@ -165,9 +154,9 @@ void writeFlaps() {
 	// 90 means full flaps
 
 	// Eval new flaps command depending on the current flaps using a flaps slew rate
-	int dflaps = flapsCurrentCmd - flapsCmd;
+	int dflaps = flapsCmd - flapsCurrentCmd;
 
-	if (abs(dflaps) < FLAPS_SLEW_RATE) {
+	if (abs(dflaps) <= FLAPS_SLEW_RATE) {
 		flapsCurrentCmd = flapsCmd;
 	}
 	else {

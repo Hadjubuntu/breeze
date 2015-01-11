@@ -16,6 +16,7 @@
  * 
  * First succesful flight : 03/12/2014
  */
+ 
 #include "Breeze.h"
 #include "Scenario.h"
 #include <Wire.h>
@@ -315,9 +316,10 @@ void process10HzTask() {
 	Serial.print(UAVCore->currentAttitude->pitch);
 	Serial.print(" | Acc X = ");
 	Serial.print((Accel_output[0] - Accel_cal_x)/256);
-	Serial.print(" | thrust = ");
-	Serial.println(UAVCore->deciThrustPercent/10.0);
+	Serial.print(" | Acc X only = ");
+	Serial.println((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
 #endif
+
 }
 
 /*******************************************************************
@@ -337,7 +339,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-
+	
 	/*Serial.print("Airspeed : ");
 	Serial.print(airspeed_ms_mean->getAverage());
 	Serial.println(" m/s");
@@ -346,7 +348,6 @@ void process2HzTask() {
 	Serial.print(dt100HzSum/iter100Hz);
 	Serial.println(" us");
 	 */
-
 }
 
 

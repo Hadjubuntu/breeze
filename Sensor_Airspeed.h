@@ -10,7 +10,7 @@
 
 #include "Arduino.h"
 
-#define ANALOG_PIN_AIRSPEED 1
+#define ANALOG_PIN_AIRSPEED 6
 double K_airspeed_factor = 3.91; // 5.0/1023*(2/2.5)*1000.0 analog output to volt to Pascal
 double _airspeed_ratio = 1.6327; // airspeed_ratio = 1.5191; Which is 2/Rho(air) altitude 0
 double _vOffset = 2.5;

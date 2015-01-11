@@ -12,6 +12,10 @@
 #ifndef MATH_H_
 #define MATH_H_
 
+#ifndef abs
+#define abs(val) ((val) < 0 ? -(val) : (val))
+#endif
+
 // Earth radius in meters near 45° nord
 #define R 6378100.0f
 #define GPS_AROUND_LATITUDE 2.1 // Latitude around we are flying in degrees

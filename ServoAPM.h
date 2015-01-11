@@ -3,6 +3,11 @@
  *
  *  Created on: 29 oct. 2014
  *      Author: hadjmoody
+ *
+ *      TODO read S-BUS futaba radio :
+ *      https://github.com/mikeshub/FUTABA_SBUS
+ *      or https://github.com/zendes/SBUS/blob/master/SBUS.cpp
+ *      or paparazzi sbus code
  */
 
 #ifndef SERVOAPM_H_
@@ -34,6 +39,9 @@ void setupServoAPM() {
 	pinMode(45, OUTPUT); // OC5B
 	pinMode(44, OUTPUT); // OC5C
 
+	// PPM on timer 5 reader (ICP5 PL1 pin 48)
+	// pinMode(48, INPUT);
+
 	// Timer 1
 	TCCR1A =((1<<WGM11));
 	TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
@@ -52,7 +60,7 @@ void setupServoAPM() {
 
 	// Timer 5
 	TCCR5A =((1<<WGM51));
-	TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51);
+	TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
 	OCR5A = 0xFFFF; // Init OCR registers to nil output signal
 	OCR5B = 0xFFFF;
 	OCR5C = 0xFFFF;
@@ -68,7 +76,48 @@ void setupServoAPM() {
 	TCCR5A |= (1<<COM5A1);
 	TCCR5A |= (1<<COM5B1);
 	TCCR5A |= (1<<COM5C1);
+
+	// Capture mask
+	//TIMSK5 |= (1<<ICIE5);
 }
+
+
+// Variable definition for Input Capture interrupt
+/*int NUM_CHANNELS = 8;
+volatile unsigned int ICR5_old;
+volatile unsigned char PPM_Counter=0;
+volatile uint16_t PWM_RAW[8] = {2400,2400,2400,2400,2400,2400,2400,2400};
+volatile unsigned char radio_status=0;*/
+
+/****************************************************
+   Input Capture Interrupt ICP5 => PPM signal read
+ ***************************************************
+ISR(TIMER5_CAPT_vect)
+{
+  unsigned int Pulse;
+  unsigned int Pulse_Width;
+
+  Pulse=ICR5;
+  if (Pulse<ICR5_old)     // Take care of the overflow of Timer5 (TOP=40000)
+    Pulse_Width=(Pulse + 40000)-ICR5_old;  //Calculating pulse
+  else
+    Pulse_Width=Pulse-ICR5_old;            //Calculating pulse
+  if (Pulse_Width>8000)   // SYNC pulse?
+    PPM_Counter=0;
+  else
+    {
+    PPM_Counter &= 0x07;  // For safety only (limit PPM_Counter to 7)
+    PWM_RAW[PPM_Counter++]=Pulse_Width;  //Saving pulse.
+    Serial.print("pulse width  ");
+    Serial.print(PPM_Counter);
+    Serial.print(" => ");
+    Serial.println(Pulse_Width);
+    if (PPM_Counter >= NUM_CHANNELS)
+      radio_status = 1;
+    }
+  ICR5_old = Pulse;
+}*/
+
 
 void servoAPM_write(int pin, int period_us) {
 	if (period_us < MIN_SERVO_US) {
