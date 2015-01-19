@@ -29,6 +29,10 @@
 #include "RFLink.h"
 #include "Sensor_Altimeter.h"
 
+#include "RadioSBUSFutaba.h"
+
+long dt100HzSum = 0;
+long iter100Hz = 0;
 
 // main loop time variable
 unsigned long frameCounter = 0; // main loop executive frame counter
@@ -62,12 +66,17 @@ double G_Dt = 0.0; // Dt in task
 
 
 
+// Initialize attitude structure
+//----------------------------------------------------
 void initializeAttitude(Attitude *att) {
 	att->roll = 0.0 ;
 	att->pitch = 0.0 ;
 	att->yaw = 0.0 ;
 }
 
+
+// UAV structure
+//----------------------------------------------------
 typedef struct T_UAV {
 	bool autopilot;
 	FlightState flightState ;
@@ -127,6 +136,11 @@ void initializeUAVStructure(Uav *uav) {
 
 }
 
+
+
+
+// Delete all pointers
+//----------------------------------------------------
 void shutdown() {
 	free(UAVCore) ;
 }

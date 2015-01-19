@@ -2,7 +2,7 @@
  * RFLink.h
  *
  *  Created on: 11 oct. 2014
- *      Author: hadjmoody
+ *      Author: Adrien Hadj-Salah
 
  Serial1 mega : RX Pin 19 (green), Tx Pin 18 (black). Note that Rx RF link on Tx Arduino Pin
  TODO to improve this part of the code, String is not good for memory and speed
@@ -13,6 +13,8 @@
 
 #ifndef RFLINK_H_
 #define RFLINK_H_
+
+#define RFSerial Serial1
 
 #define BPS_RF_LINK 57600 // default: 9600
 #define RF_STACK_SIZE 20
@@ -64,7 +66,7 @@ void updateLowPriorityRFLink() {
 		char buf[60];
 
 		sprintf(buf, "config|%d|%lu|\n", currentParameterConfiguration, (long)(param[currentParameterConfiguration]*10000));
-		Serial1.write(buf);
+		RFSerial.write(buf);
 
 		currentParameterConfiguration ++;
 
@@ -83,7 +85,7 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 		double *pArrayParameters, int *pAutospeedController, double *pV_ms_goal) {
 
 	// Start serial communication @BAUD_RATE per second with ground station
-	Serial1.begin(BPS_RF_LINK);
+	RFSerial.begin(BPS_RF_LINK);
 
 	// Set pointer to variables
 	rf_uavAutomode = pUavAutomode;
@@ -323,7 +325,7 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 			latPow6, lonPow6,
 			angleDiffToTarget, autopilotInt, currentWP);
 
-	Serial1.write(buf);
+	RFSerial.write(buf);
 }
 
 /**
@@ -332,15 +334,15 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 void sendRFMessage(char *msg) {
 	char buf[250];
 	sprintf(buf, "msg|%s|\n", msg);
-	Serial1.write(buf);
+	RFSerial.write(buf);
 }
 
 
 void updateCriticalRFLink() {
 
-	if (Serial1.available()) {
+	if (RFSerial.available()) {
 		// get the new byte:
-		char inChar = (char)Serial1.read();
+		char inChar = (char)RFSerial.read();
 		// add it to the inputString:
 		inputString += inChar;
 		// if the incoming character is a newline, set a flag

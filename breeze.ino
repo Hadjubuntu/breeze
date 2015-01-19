@@ -16,19 +16,16 @@
  * 
  * First succesful flight : 03/12/2014
  */
- 
+
 #include "Breeze.h"
 #include "Scenario.h"
 #include <Wire.h>
 #include <BMP085.h>
 
 
-long dt100HzSum = 0;
-long iter100Hz = 0;
 
-/*******************************************************************
- * Main function
- ******************************************************************/
+// Setup the UAV
+//---------------------------------------------------------------
 void setup() {
 	Serial.begin(115200) ;
 	Serial.println("startup") ;
@@ -151,7 +148,7 @@ void fullManual() {
 		UAVCore->deciThrustPercent = 0;	
 		UAVCore->attitudeCommanded->roll = 0;		
 		UAVCore->attitudeCommanded->pitch = 0;
-		UAVCore->attitudeCommanded->yaw = 15;
+		UAVCore->attitudeCommanded->yaw = 0;
 	}
 }
 
@@ -159,10 +156,10 @@ void fullManual() {
 void reinitFlightModeParameters() {
 	// Desactivate autospeed controller
 	AUTOSPEED_CONTROLLER = 0;
-	
+
 	// Desactivate takeoff start time
 	time_TakeOffStart = 0; 
-	
+
 	// Desactivate this function
 	rf_automodeSwitchToken = false;
 }
@@ -172,11 +169,11 @@ void reinitFlightModeParameters() {
  ******************************************************************/
 void process100HzTask() {
 	G_Dt = (currentTime - hundredHZpreviousTime) / S_TO_US;
-	
+
 
 	// Update attitude from gyro
 	updateAttitude() ;
-	
+
 
 	if (hundredHZpreviousTime > 0) {
 		dt100HzSum += (currentTime - hundredHZpreviousTime);
@@ -339,7 +336,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-	
+
 	/*Serial.print("Airspeed : ");
 	Serial.print(airspeed_ms_mean->getAverage());
 	Serial.println(" m/s");
@@ -413,6 +410,14 @@ void process1HzTask() {
 void measureCriticalSensors() {
 	if (USE_GPS_NAVIGUATION) {
 		updateGPS();
+	}
+
+	if (USE_RADIO_FUTABA) {
+		sBus.FeedLine();
+		if (sBus.toChannels == 1){
+			sBus.UpdateChannels();
+			sBus.toChannels = 0;
+		}
 	}
 
 	updateCriticalRFLink();

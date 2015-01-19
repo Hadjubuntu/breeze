@@ -26,6 +26,7 @@ typedef struct T_MISSION_WP {
 
 typedef struct T_MISSION_CIRCLE {
 	GeoPosition center;
+	double radiusMeters;
 } MissionCircle ;
 
 typedef struct T_MISSION_ELEMENT {

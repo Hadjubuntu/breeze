@@ -23,7 +23,7 @@
  TODO do all times with unsigned long ...
  *
  *  Created on: 25 august 2014
- *      Author: hadjmoody
+ *      Author: Arien Hadj-Salah
  */
 #define NB_SAMPLING 30
 #define MAX_TIME_ELAPSED_RELEVANT_DATA 10*S_TO_US // 10 seconds
@@ -84,7 +84,9 @@ public:
 		}
 	};
 
-
+	/**
+	 * Evaluate mean value of the filter
+	 */
 	double getAverage() {
 		// If no values return zero
 		if (index==0 && !hasCycle) {
@@ -131,6 +133,9 @@ public:
 		return average / nSum;
 	}
 
+	/**
+	 * Get derivative value of the filter
+	 */
 	double getDerivative() {
 		if (index < 1 && !hasCycle) {
 			return 0.0;
@@ -167,6 +172,9 @@ public:
 	};
 
 
+	/**
+	 * Tells whether if the data is relevant (not too old) or not
+	 */
 	bool areDataRelevant(long pTime) {
 	    if (index == 0 && !hasCycle) {
             return false;

@@ -10,6 +10,7 @@
 
 #define Bound(_x, _min, _max) { if (_x > (_max)) _x = (_max); else if (_x < (_min)) _x = (_min); }
 #define BoundAbs(_x, _max) Bound(_x, -(_max), (_max))
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #define NormRadAngle(x) { \
     while (x > M_PI) x -= 2 * M_PI; \
     while (x < -M_PI) x += 2 * M_PI; \
@@ -43,6 +44,7 @@ enum FlightState {
 #define START_IN_AUTOPILOT 0
 #define V_MIN_TAKEOFF_MS 5 // Speed m/s through GPS or Pitot sensor
 #define USE_GPS_NAVIGUATION 0
+#define USE_RADIO_FUTABA 0
 #define GPS_COLD_START_DURATION_S 20 // Actually its 42s but we'll wait for the first data to throw..
 // @deprecated #define USE_RANGE_FINDER 0
 #define USE_AIRSPEED_SENSOR 1
@@ -150,6 +152,9 @@ void initializeUAVConfiguration() {
 	param[ID_G_I_THRUST] = 0.45f;
 	param[ID_AUTOAIRSPEED_MAX_SUM_ERR] = 200;
 }
+
+
+
 
 
 #endif /* COMMON_H_ */

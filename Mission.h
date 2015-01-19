@@ -66,6 +66,20 @@ bool missionWPNav(MissionElement *el) {
 
 bool missionCircleNav(MissionElement *el) {
 	bool elRunning = true;
+	double distToCenter = geoDistance(el->missionCircle.center, currentPosition);
+
+	if (distToCenter >= el->missionCircle.radiusMeters * 2) {
+		MissionWP wpCenter;
+		wpCenter.wp = el->missionCircle.center;
+
+		navToWP(wpCenter);
+	}
+	else {
+		if (distToCenter <= el->missionCircle.radiusMeters) {
+
+		}
+	}
+
 	return elRunning;
 }
 

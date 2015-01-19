@@ -1,8 +1,12 @@
 /*
  * Sensor_Gyro_10DOF.h
+ * IMU 10-dof based on gyro, accelerometer, magnometer and barometer.
+ *
+ * Gyro : ITG3200D
+ * Acc : ADXL345
  *
  *  Created on: 11 oct. 2014
- *      Author: hadjmoody
+ *      Author: Adrien Hadj-Salah
  */
 
 #ifndef SENSOR_GYRO_10DOF_H_
@@ -249,8 +253,6 @@ void updateGyroData() {
 	kalAngleY = Predicted_roll;
 	gyroZangle += Gyro_output[2] / 14.375 * dt;
 
-	//servo_x.write(Predicted_pitch); DECOMMENTER POUR ACTIVER LES SERVOS
-	//servo_y.write(Predicted_roll); DECOMMENTER POUR ACTIVER LES SERVOS
 
 
 #if MEASURE_VIBRATION
