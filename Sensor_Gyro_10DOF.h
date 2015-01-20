@@ -12,7 +12,7 @@
 #ifndef SENSOR_GYRO_10DOF_H_
 #define SENSOR_GYRO_10DOF_H_
 
-#include <Wire.h>
+#include "Wire.h"
 #include "Common.h"
 #include "I2C.h"
 
@@ -91,15 +91,7 @@ void getAccelerometerReadings(int Accel_out[])
 //-------------------------------------------
 // Initialize IMU with calibration values
 void setupGyro() {
-	int Gyro_cal_x_sample = 0;
-	int Gyro_cal_y_sample = 0;
-	int Gyro_cal_z_sample = 0;
 
-	int Accel_cal_x_sample = 0;
-	int Accel_cal_y_sample = 0;
-	int Accel_cal_z_sample = 0;
-
-	int i;
 	delay(5);
 	Wire.begin();
 
@@ -113,6 +105,16 @@ void setupGyro() {
 	delay(200);
 
 #if ENABLE_IMU_CALIBRATION == 1
+
+	int Gyro_cal_x_sample = 0;
+	int Gyro_cal_y_sample = 0;
+	int Gyro_cal_z_sample = 0;
+
+	int Accel_cal_x_sample = 0;
+	int Accel_cal_y_sample = 0;
+	int Accel_cal_z_sample = 0;
+
+	int i;
 
 	int nbSampleCalib = 100; // 100 original
 	int sampleDurationMs = 50; // 50 original

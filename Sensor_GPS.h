@@ -16,8 +16,6 @@
 #ifndef SENSOR_GPS_H_
 #define SENSOR_GPS_H_
 
-#define GPS_COLD_START_DURATION_S 8
-
 // Maximum error of dilution for horizontal GPS location
 #define HDOP_MAX_TOLERANCE 3.0
 #define NB_DATA_TO_THROWOUT 5

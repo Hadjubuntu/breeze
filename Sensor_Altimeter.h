@@ -8,7 +8,7 @@
 #ifndef SENSOR_ALTIMETER_H_
 #define SENSOR_ALTIMETER_H_
 
-#include <BMP085.h>
+#include "Sensor_AltimeterBMP085.h"
 
 
 // Gain to be multiplied with the ground altitude offset

@@ -16,7 +16,7 @@
 
 #if GYRO_TYPE == T_GYRO_MPU6050
 #include "Sensor_Gyro.h"
-#else if GYRO_TYPE == T_GYRO_ITG3200
+#elif GYRO_TYPE == T_GYRO_ITG3200
 #include "Sensor_Gyro_10DOF.h"
 #endif
 

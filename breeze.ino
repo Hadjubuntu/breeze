@@ -19,8 +19,8 @@
 
 #include "Breeze.h"
 #include "Scenario.h"
-#include <Wire.h>
-#include <BMP085.h>
+#include "Wire.h"
+#include "Sensor_AltimeterBMP085.h"
 
 
 
@@ -164,6 +164,8 @@ void reinitFlightModeParameters() {
 	rf_automodeSwitchToken = false;
 }
 
+double sumAccX = 0.0;
+
 /*******************************************************************
  * 100Hz task (each 10 ms)
  ******************************************************************/
@@ -183,6 +185,14 @@ void process100HzTask() {
 	if (iter100Hz > 100000) {
 		iter100Hz = 0;
 		dt100HzSum = 0;
+	}
+	
+	double accXOnly = (Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch)));
+	if (accXOnly > 0.0001) {
+		sumAccX += G_Dt * accXOnly;
+	}
+	else {
+		sumAccX = sumAccX - (sumAccX/10.0);
 	}
 
 	hundredHZpreviousTime = currentTime;
@@ -314,7 +324,11 @@ void process10HzTask() {
 	Serial.print(" | Acc X = ");
 	Serial.print((Accel_output[0] - Accel_cal_x)/256);
 	Serial.print(" | Acc X only = ");
-	Serial.println((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
+	Serial.print((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
+	Serial.print(" | Sum Acc X (speed x) = ");
+	Serial.print(sumAccX);
+	Serial.print(" | G_dt (ms) = ");
+	Serial.println(G_Dt*1000);
 #endif
 
 }
