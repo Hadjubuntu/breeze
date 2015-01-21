@@ -10,8 +10,8 @@
 
 
 #include "Common.h"
-#include "Navig.h"
-#include "FlightControl.h"
+#include "modules/nav/Navig.h"
+#include "modules/flight_control/FlightControl.h"
 
 void flightByGPS() {
 	// If UAV high than 5 meters, then go to flying mode directly

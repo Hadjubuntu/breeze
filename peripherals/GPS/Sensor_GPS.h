@@ -10,8 +10,8 @@
  *  Created on: 8 sept. 2014
  *      Author: hadjmoody
  */
-#include "ublox.h"
-#include "Navig.h"
+#include "peripherals/GPS/ublox.h"
+#include "modules/nav/Navig.h"
 
 #ifndef SENSOR_GPS_H_
 #define SENSOR_GPS_H_

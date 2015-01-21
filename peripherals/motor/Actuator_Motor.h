@@ -8,7 +8,7 @@
 #ifndef ACTUATOR_MOTOR_H_
 #define ACTUATOR_MOTOR_H_
 
-#include "Math.h"
+#include "math/Math.h"
 
 
 #define THRUST_SLEW_RATE_ACTIVATED 1

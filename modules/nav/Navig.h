@@ -1,6 +1,6 @@
-#include "Math.h"
+#include "math/Math.h"
 #include "Common.h"
-#include "FilterAverage.h"
+#include "math/FilterAverage.h"
 
 #ifndef NAVIG_H_
 #define NAVIG_H_

@@ -6,9 +6,9 @@
  *      Author: Adrien Hadj-Salah
  */
 // #include <stdint.h>
-#include "Math.h"
-#include "MissionCommon.h"
-#include "Navig2.h"
+#include "math/Math.h"
+#include "modules/mission/MissionCommon.h"
+#include "modules/nav/Navig2.h"
 
 #ifndef MISSION_H_
 #define MISSION_H_

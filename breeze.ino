@@ -18,9 +18,9 @@
  */
 
 #include "Breeze.h"
-#include "Scenario.h"
-#include "Wire.h"
-#include "Sensor_AltimeterBMP085.h"
+#include "modules/scenario/Scenario.h"
+#include "arch/AVR/wire/Wire.h"
+#include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 
 
 

@@ -11,7 +11,7 @@
 #define SCENARIO_RTL_H_
 
 #include "Common.h"
-#include "Navig.h"
+#include "modules/nav/Navig.h"
 
 
 bool rtlFromSky = false;

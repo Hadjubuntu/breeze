@@ -9,8 +9,8 @@
 #ifndef SENSOR_SERVO_H_
 #define SENSOR_SERVO_H_
 
-#include "ServoAPM.h"
-#include "Math.h"
+#include "peripherals/servo/ServoAPM.h"
+#include "math/Math.h"
 
 #define USE_FLAPS 1
 

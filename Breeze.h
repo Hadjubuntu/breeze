@@ -12,24 +12,24 @@
 #include <stdlib.h>
 
 #include "Common.h"
-#include "Sensor_Servo.h"
+#include "peripherals/servo/Sensor_Servo.h"
 
 #if GYRO_TYPE == T_GYRO_MPU6050
-#include "Sensor_Gyro.h"
+#include "peripherals/IMU/Sensor_Gyro.h"
 #elif GYRO_TYPE == T_GYRO_ITG3200
-#include "Sensor_Gyro_10DOF.h"
+#include "peripherals/IMU/Sensor_Gyro_10DOF.h"
 #endif
 
-#include "Sensor_RangeDetector2.h"
-#include "Actuator_Motor.h"
-#include "Sensor_Airspeed.h"
-#include "Sensor_GPS.h"
-#include "Navig.h"
-#include "FlightControl.h"
-#include "RFLink.h"
-#include "Sensor_Altimeter.h"
+#include "peripherals/range_detector/Sensor_RangeDetector2.h"
+#include "peripherals/motor/Actuator_Motor.h"
+#include "peripherals/airspeed/Sensor_Airspeed.h"
+#include "peripherals/GPS/Sensor_GPS.h"
+#include "modules/nav/Navig.h"
+#include "modules/flight_control/FlightControl.h"
+#include "modules/rflink/RFLink.h"
+#include "peripherals/altimeter/Sensor_Altimeter.h"
 
-#include "RadioSBUSFutaba.h"
+#include "peripherals/radio_sbus/RadioSBUSFutaba.h"
 
 long dt100HzSum = 0;
 long iter100Hz = 0;

@@ -2,10 +2,10 @@
 #define SENSOR_GYRO_H_
 
 #include "Common.h"
-#include "I2C.h"
+#include "arch/AVR/I2C/I2C.h"
 #include "Arduino.h"
-#include "Kalman.h"
-#include "FilterAverage.h"
+#include "math/Kalman.h"
+#include "math/FilterAverage.h"
 
 /**
 Arduino UNO      L3G board

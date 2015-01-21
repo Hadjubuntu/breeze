@@ -5,7 +5,7 @@
  *      Author: hadjmoody
  */
 
-#include "Wire.h"
+#include "arch/AVR/wire/Wire.h"
 #include "Arduino.h"
 
 #ifndef I2C_H_

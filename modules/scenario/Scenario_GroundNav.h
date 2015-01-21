@@ -9,7 +9,7 @@
 #define SCENARIO_GROUNDNAV_H_
 
 #include "Common.h"
-#include "Navig.h"
+#include "modules/nav/Navig.h"
 
 /**
  * Ground Nav aims to test the GPS naviguation by steering the plane on the ground

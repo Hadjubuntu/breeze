@@ -12,15 +12,15 @@
 #ifndef SENSOR_GYRO_10DOF_H_
 #define SENSOR_GYRO_10DOF_H_
 
-#include "Wire.h"
+#include "arch/AVR/wire/Wire.h"
 #include "Common.h"
-#include "I2C.h"
+#include "arch/AVR/I2C/I2C.h"
 
 #define MEASURE_VIBRATION 1
 #define ENABLE_IMU_CALIBRATION 0
 
 #if MEASURE_VIBRATION
-#include "math.h"
+#include "../../math/Math.h"
 double accNoise = 0.0; // Noise accelerometer measure in G (means output steady equals 1 due to gravity)
 #endif
 

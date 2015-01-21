@@ -22,7 +22,7 @@
 #ifndef _AQ_ublox_H_
 #define _AQ_ublox_H_
 
-#include "GpsDataType.h"
+#include "peripherals/GPS/GpsDataType.h"
 
 
 struct gpsData gpsData; // This is accessed by the parser functions directly !

@@ -9,7 +9,6 @@
 #define SCENARIO_STABILIZEONLY_H_
 
 #include "Common.h"
-
 /**
  * The plane must try to keep the roll and pitch to 0
  */
