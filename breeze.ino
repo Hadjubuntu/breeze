@@ -22,6 +22,7 @@
 #include "arch/AVR/wire/Wire.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 
+#include "modules/mission/Mission.h"
 
 
 // Setup the UAV
