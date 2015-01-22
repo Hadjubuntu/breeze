@@ -1,8 +1,8 @@
 /*
  * Kalman.h
  *
- *  Created on: 14 ao�t 2014
- *      Author: hadjmoody
+ *  Created on: 14 august 2014
+ *      Author: Adrien Hadj-Salah
  */
 
 #ifndef KALMAN_H_

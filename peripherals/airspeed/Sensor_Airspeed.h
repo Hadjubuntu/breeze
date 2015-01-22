@@ -9,6 +9,7 @@
 #define SENSOR_AIRSPEED_H_
 
 #include "Arduino.h"
+#include "arch/AVR/MCU/MCU.h"
 
 #define ANALOG_PIN_AIRSPEED 6
 double K_airspeed_factor = 3.91; // 5.0/1023*(2/2.5)*1000.0 analog output to volt to Pascal
@@ -22,7 +23,7 @@ void setupAirspeed() {
 	long ref_pressure_sum = 0;
 	int nb_samples = 300;
 
-	Serial.println("Airspeed calibration...");
+	Logger.println("Airspeed calibration...");
 
 	for (int i=1;i<=nb_samples;i++) {
 		ref_pressure_sum += K_airspeed_factor*(analogRead(ANALOG_PIN_AIRSPEED));
@@ -53,44 +54,4 @@ double updateAirspeed() {
 }
 
 
-#endif /* SENSOR_AIRSPEED_H_ */
-
-/** OLD :
- *
-void setupAirspeed() {
-	// Analog wiring to PIN airspeed
-
-	// Warm-up airspeed sensor
-	delay(20); // Wait for 20 ms before calibrating
-
-	// Pitot sensor calibration
-	airspeedCalibration();
-}
-
-double airspeedVoltageReader() {
-	int pValue = analogRead(ANALOG_PIN_AIRSPEED);
-	return pValue / 1023.0 * 5.0;
-}
-
-void airspeedCalibration() {
-	int nbCalib = 50;
-	double vOffsetSum = 0.0;
-
-	for (int i = 0; i < nbCalib; i ++) {
-		vOffsetSum += airspeedVoltageReader();
-	}
-
-	_vOffset = constrain(vOffsetSum/nbCalib, 2.25, 2.75);
-}
-
-// Call it 5Hz
-// en.wikipedia.org/wiki/Pitot_tube
-// TODO improve EAS to TAS with altitude and pressure for further flight plan with high alt
-double updateAirspeed() {
-	double vOut = airspeedVoltageReader();
-	double dKpa = 819.0*max(0.0, vOut - _vOffset);
-	double airspeed_ms = sqrt(_airspeed_ratio * dKpa);
-
-	return airspeed_ms;
-}
- */
+#endif

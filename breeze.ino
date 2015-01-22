@@ -18,78 +18,11 @@
  */
 
 #include "Breeze.h"
+#include "modules/scheduler/Scheduler.h"
 #include "modules/scenario/Scenario.h"
 #include "arch/AVR/wire/Wire.h"
+#include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
-
-#include "modules/mission/Mission.h"
-
-
-// Setup the UAV
-//---------------------------------------------------------------
-void setup() {
-	Serial.begin(115200) ;
-	Serial.println("startup") ;
-	previousTime = micros();
-
-	setupMotors() ;
-	Serial.println("Motors armed");
-
-	// Create UAV structure and set variables to default values
-	initializeUAVStructure(UAVCore) ;
-	initializeUAVConfiguration();
-	initFlightControl();
-	Serial.println("UAV software initialized and flight control also");
-
-	// Initialize components
-	setupGyro() ;
-	Serial.println("Gyro armed");
-
-	setupAltimeter();
-	Serial.println("Altimeter armed");
-
-	setupServos() ;
-	Serial.println("Servos armed");
-
-	/*if (USE_RANGE_FINDER) {
-		setupRangeDetector() ;
-		Serial.println("Range detector armed");
-	}*/
-
-
-	if (USE_GPS_NAVIGUATION) {
-		setupGPS();
-		Serial.println("GPS armed");
-
-		initNavig();
-		Serial.println("Naviguation controller armed");
-	}
-
-	if (USE_AIRSPEED_SENSOR) {
-		setupAirspeed();
-		Serial.println("Airspeed sensor armed");
-	}
-
-	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
-			&aileronCmd, &gouvernCmd, &rubberCmd, &flapsCmd,
-			UAVCore->attitudeCommanded,
-			&NAVIG_METHOD_ANGLE_DIFF,
-			param,
-			&AUTOSPEED_CONTROLLER,
-			&(UAVCore->v_ms_goal)) ;
-	Serial.println("RF link armed");
-
-
-	Serial.println("Breeze armed");
-	sendRFMessage("UAV_armed");
-
-	// Initial state of flight : take-off after setup finished
-	UAVCore->flightState = TAKEOFF;
-
-
-	// Wait 2 seconds before starting
-	delay(2000) ;
-}
 
 
 
@@ -187,7 +120,7 @@ void process100HzTask() {
 		iter100Hz = 0;
 		dt100HzSum = 0;
 	}
-	
+
 	double accXOnly = (Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch)));
 	if (accXOnly > 0.0001) {
 		sumAccX += G_Dt * accXOnly;
@@ -254,23 +187,23 @@ void process50HzTask() {
 		rtlNav();
 		break;
 	default:
-		Serial.println("Unknow flight mode");
+		Logger.println("Unknow flight mode");
 		break;		
 	}
 
 
 	// Study performance
-	// long cDt = micros();
+	// long cDt = timeUs();
 
 	// Update RF data down and up
 	updateRFLink50Hz() ;
 
 	/*
         Study performance (This function costs 1.2 ms max)
-	double dt = (micros()-cDt)/1000.0;
-	Serial.print("RF 50 Hz time elapsed in function =  ");
-	Serial.print(dt, 2);
-	Serial.println(" ms");
+	double dt = (timeUs()-cDt)/1000.0;
+	Logger.print("RF 50 Hz time elapsed in function =  ");
+	Logger.print(dt, 2);
+	Logger.println(" ms");
 	 */
 
 	/*if (USE_RANGE_FINDER) {
@@ -316,20 +249,20 @@ void process10HzTask() {
 
 
 #if MEASURE_VIBRATION	
-	Serial.print("Acc noise vibration = ");
-	Serial.print(accNoise);
-	Serial.print(" | roll = ");
-	Serial.print(UAVCore->currentAttitude->roll);
-	Serial.print(" | pitch = ");
-	Serial.print(UAVCore->currentAttitude->pitch);
-	Serial.print(" | Acc X = ");
-	Serial.print((Accel_output[0] - Accel_cal_x)/256);
-	Serial.print(" | Acc X only = ");
-	Serial.print((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
-	Serial.print(" | Sum Acc X (speed x) = ");
-	Serial.print(sumAccX);
-	Serial.print(" | G_dt (ms) = ");
-	Serial.println(G_Dt*1000);
+	Logger.print("Acc noise vibration = ");
+	Logger.print(accNoise);
+	Logger.print(" | roll = ");
+	Logger.print(UAVCore->currentAttitude->roll);
+	Logger.print(" | pitch = ");
+	Logger.print(UAVCore->currentAttitude->pitch);
+	Logger.print(" | Acc X = ");
+	Logger.print((Accel_output[0] - Accel_cal_x)/256);
+	Logger.print(" | Acc X only = ");
+	Logger.print((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
+	Logger.print(" | Sum Acc X (speed x) = ");
+	Logger.print(sumAccX);
+	Logger.print(" | Gdt(0) (ms) = ");
+	Logger.println(G_Dt*1000.0);
 #endif
 
 }
@@ -352,14 +285,16 @@ void process5HzTask() {
  ******************************************************************/
 void process2HzTask() {
 
-	/*Serial.print("Airspeed : ");
-	Serial.print(airspeed_ms_mean->getAverage());
-	Serial.println(" m/s");
+	/*Logger.print("Airspeed : ");
+	Logger.print(airspeed_ms_mean->getAverage());
+	Logger.println(" m/s");
 
-	Serial.print("Dt 100 Hz = ");
-	Serial.print(dt100HzSum/iter100Hz);
-	Serial.println(" us");
+	Logger.print("Dt 100 Hz = ");
+	Logger.print(dt100HzSum/iter100Hz);
+	Logger.println(" us");
 	 */
+	
+	 //schedulerStats();
 }
 
 
@@ -381,39 +316,39 @@ void process1HzTask() {
 
 	//---------------------------------------------------------
 	// Print some data to the user
-	/*Serial.print("V ms goal = ");
-	Serial.print(UAVCore->v_ms_goal);
-	Serial.print("\t | \t Thrust % = ") ;
-	Serial.println(UAVCore->deciThrustPercent/10.0);
-	Serial.print("Autopilot : ");
-	Serial.println(UAVCore->autopilot ? "On" : "Off");
+	/*Logger.print("V ms goal = ");
+	Logger.print(UAVCore->v_ms_goal);
+	Logger.print("\t | \t Thrust % = ") ;
+	Logger.println(UAVCore->deciThrustPercent/10.0);
+	Logger.print("Autopilot : ");
+	Logger.println(UAVCore->autopilot ? "On" : "Off");
 
 
-	Serial.print("    \tMesured\tCommanded\t\tCommand");
-	Serial.println(" ");
-	Serial.print("Roll\t\t");
-	Serial.print(UAVCore->currentAttitude->roll) ;
-	Serial.print("\t\t");
-	Serial.print(UAVCore->attitudeCommanded->roll) ;
-	Serial.print("\t\t\t");
-	Serial.print(aileronCmd) ;
+	Logger.print("    \tMesured\tCommanded\t\tCommand");
+	Logger.println(" ");
+	Logger.print("Roll\t\t");
+	Logger.print(UAVCore->currentAttitude->roll) ;
+	Logger.print("\t\t");
+	Logger.print(UAVCore->attitudeCommanded->roll) ;
+	Logger.print("\t\t\t");
+	Logger.print(aileronCmd) ;
 
-	Serial.println(" ");
-	Serial.print("Pitch\t\t");
-	Serial.print(UAVCore->currentAttitude->pitch) ;
-	Serial.print("\t\t");
-	Serial.print(UAVCore->attitudeCommanded->pitch) ;
-	Serial.print("\t\t\t");
-	Serial.print(gouvernCmd) ;
+	Logger.println(" ");
+	Logger.print("Pitch\t\t");
+	Logger.print(UAVCore->currentAttitude->pitch) ;
+	Logger.print("\t\t");
+	Logger.print(UAVCore->attitudeCommanded->pitch) ;
+	Logger.print("\t\t\t");
+	Logger.print(gouvernCmd) ;
 
-	Serial.println(" ");
-	Serial.print("Yaw\t\t");
-	Serial.print(UAVCore->currentAttitude->yaw) ;
-	Serial.print("\t\t");
-	Serial.print(UAVCore->attitudeCommanded->yaw) ;
-	Serial.print("\t\t\t");
-	Serial.print(rubberCmd) ;
-	Serial.println(" ");
+	Logger.println(" ");
+	Logger.print("Yaw\t\t");
+	Logger.print(UAVCore->currentAttitude->yaw) ;
+	Logger.print("\t\t");
+	Logger.print(UAVCore->attitudeCommanded->yaw) ;
+	Logger.print("\t\t\t");
+	Logger.print(rubberCmd) ;
+	Logger.println(" ");
 	 */
 }
 
@@ -438,16 +373,101 @@ void measureCriticalSensors() {
 	updateCriticalRFLink();
 }
 
+
+
+Task uavTasks[] = {
+		{&process100HzTask, 0, 10000, 5000, 0},
+		{&process50HzTask, 0, 20000, 10000, 0},
+		{&process20HzTask, 0, 50000, 25000, 0},
+		{&process10HzTask, 0, 100000, 50000, 0},
+		{&process5HzTask, 0, 200000, 50000, 0},
+		{&process2HzTask, 0, 500000, 50000, 0},
+		{&process1HzTask, 0, 1000000, 50000, 0}};
+
+// Setup the UAV
+//---------------------------------------------------------------
+void setup() {
+	Logger.begin(115200) ;
+	Logger.println("startup") ;
+	previousTime = timeUs();
+
+	setupMotors() ;
+	Logger.println("Motors armed");
+
+	// Create UAV structure and set variables to default values
+	initializeUAVStructure(UAVCore) ;
+	initializeUAVConfiguration();
+	initFlightControl();
+	Logger.println("UAV software initialized and flight control also");
+
+	// Initialize components
+	setupGyro() ;
+	Logger.println("Gyro armed");
+
+	setupAltimeter();
+	Logger.println("Altimeter armed");
+
+	setupServos() ;
+	Logger.println("Servos armed");
+
+	/*if (USE_RANGE_FINDER) {
+		setupRangeDetector() ;
+		Logger.println("Range detector armed");
+	}*/
+
+
+	if (USE_GPS_NAVIGUATION) {
+		setupGPS();
+		Logger.println("GPS armed");
+
+		initNavig();
+		Logger.println("Naviguation controller armed");
+	}
+
+	if (USE_AIRSPEED_SENSOR) {
+		setupAirspeed();
+		Logger.println("Airspeed sensor armed");
+	}
+
+	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
+			&aileronCmd, &gouvernCmd, &rubberCmd, &flapsCmd,
+			UAVCore->attitudeCommanded,
+			&NAVIG_METHOD_ANGLE_DIFF,
+			param,
+			&AUTOSPEED_CONTROLLER,
+			&(UAVCore->v_ms_goal)) ;
+	Logger.println("RF link armed");
+
+
+	Logger.println("Breeze armed");
+	sendRFMessage("UAV_armed");
+
+	// Initialize Scheduler
+	int nbTasks = sizeof(uavTasks) / sizeof(uavTasks[0]);
+	schedulerInit(uavTasks, nbTasks);
+
+	// Initial state of flight : take-off after setup finished
+	UAVCore->flightState = TAKEOFF;
+
+
+	// Wait 2 seconds before starting
+	delay(2000) ;
+}
+
+
+
 /*******************************************************************
  * Main loop funtions
  ******************************************************************/
 void loop () {
 
-	currentTime = micros();
+	currentTime = timeUs();
 	deltaTime = currentTime - previousTime;
 
 	measureCriticalSensors();
-
+	schedulerRun();
+	
+	/**
 	// ================================================================
 	// 100Hz task loop
 	// ================================================================
@@ -503,4 +523,5 @@ void loop () {
 	if (frameCounter >= 100) {
 		frameCounter = 0;
 	}
+	*/
 }

@@ -8,12 +8,13 @@
 #ifndef SENSOR_ALTIMETER_H_
 #define SENSOR_ALTIMETER_H_
 
+#include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 
 
 // Gain to be multiplied with the ground altitude offset
 // in order to force to have 0 as altitude on the ground, due to ground variations
-#define K_ALTITUDE_OFFSET 1.8
+#define K_ALTITUDE_OFFSET 1.0
 
 // Altimeter
 BMP085 dps = BMP085();
@@ -45,9 +46,8 @@ void setupAltimeter() {
 
 void updateAltimeter() {
 	dps.getTemperature(&Temperature);
-	dps.getPressure(&Pressure);
 	dps.getAltitude(&Altitude);
-	altitudeBarometer->addValue(Altitude-AltitudeOffset, micros());
+	altitudeBarometer->addValue(Altitude-AltitudeOffset, timeUs());
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

@@ -82,6 +82,7 @@ float getSpeedScaler(int deciThrustPercent)
 
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
+// Takes around 1 ms on Atmega2560
 void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {

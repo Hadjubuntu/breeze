@@ -19,7 +19,7 @@
 
 /*
  * FilterAverage.h
- 
+
  TODO do all times with unsigned long ...
  *
  *  Created on: 25 august 2014
@@ -29,10 +29,10 @@
 #define MAX_TIME_ELAPSED_RELEVANT_DATA 10*S_TO_US // 10 seconds
 
 long absolute(long v) {
-if (v < 0) {
-    v = -v;
-}
-return v;
+	if (v < 0) {
+		v = -v;
+	}
+	return v;
 }
 
 class FilterAverage {
@@ -62,16 +62,17 @@ public:
 		}
 
 		if (pTimeUpdate > timeUpdate[previousIndexValue]) {
-			if (pValue > minFilterLowPass && pValue < maxFilterHighPass) {
-				values[index] = pValue;
-				timeUpdate[index] = pTimeUpdate;
-				index++;
+			Bound(pValue, minFilterLowPass, maxFilterHighPass);
 
-				if (index >= NB_SAMPLING) {
-					index = 0;
-					hasCycle = true;
-				}
+			values[index] = pValue;
+			timeUpdate[index] = pTimeUpdate;
+			index++;
+
+			if (index >= NB_SAMPLING) {
+				index = 0;
+				hasCycle = true;
 			}
+
 		}
 	};
 
@@ -176,14 +177,14 @@ public:
 	 * Tells whether if the data is relevant (not too old) or not
 	 */
 	bool areDataRelevant(long pTime) {
-	    if (index == 0 && !hasCycle) {
-            return false;
-	    }
+		if (index == 0 && !hasCycle) {
+			return false;
+		}
 
-	    int i = index-1;
-	    if (i < 0 && hasCycle) {
-            i = NB_SAMPLING-1;
-	    }
+		int i = index-1;
+		if (i < 0 && hasCycle) {
+			i = NB_SAMPLING-1;
+		}
 
 		return (absolute(pTime-timeUpdate[i]) < MAX_TIME_ELAPSED_RELEVANT_DATA);
 	};

@@ -1,3 +1,4 @@
+#include "arch/AVR/MCU/MCU.h"
 #include "math/Math.h"
 #include "Common.h"
 #include "math/FilterAverage.h"
@@ -96,7 +97,7 @@ void initNavig() {
 				beforeLandingPosition = wps[NB_WAYPOINTS-2];
 			}
 			else {
-				Serial.println("Error, not enough waypoints to have a descent before landing position.");
+				Logger.println("Error, not enough waypoints to have a descent before landing position.");
 			}
 		}
 
@@ -105,9 +106,9 @@ void initNavig() {
 		Vector2 vect2BeforeLandingPos = geoPositionToVector2(beforeLandingPosition);
 		landingHoldHeading = angleBearingToNorthDeg(vect2LandingPos.y - vect2BeforeLandingPos.y, vect2LandingPos.x - vect2BeforeLandingPos.x);
 
-		Serial.print("To land, UAV will maintain ");
-		Serial.print(landingHoldHeading);
-		Serial.println(" degrees heading");
+		Logger.print("To land, UAV will maintain ");
+		Logger.print(landingHoldHeading);
+		Logger.println(" degrees heading");
 	}
 }
 
@@ -201,7 +202,7 @@ bool checkGPSPosition(long cTime, double pLat, double pLon, double pAlt) {
 
 			// Remove position if too far
 			if (distMetersPreviousPosToNewPos > MAX_DISTANCE_BETWEEN_ESTIM_AND_POS) {
-				Serial.println("GPS position deleted, seems to be a glitch");
+				Logger.println("GPS position deleted, seems to be a glitch");
 				glitchIter ++;
 				allOk = false;
 			}
@@ -213,7 +214,7 @@ bool checkGPSPosition(long cTime, double pLat, double pLon, double pAlt) {
 			lastGoodUpdate = cTime;
 		}
 		if (glitchIter > NB_GPS_GLITCHES_MAX) {
-			Serial.println("Too many glitches, return home procedure");
+			Logger.println("Too many glitches, return home procedure");
 			returnHome();
 		}
 
@@ -228,7 +229,7 @@ bool checkGPSPosition(long cTime, double pLat, double pLon, double pAlt) {
 // Update data received by GPS
 void updateGPSData(double pLat, double pLon, double pAlt, double pVms, int pCourseDegrees, long pFixtime) {
 
-	long ctime = micros();
+	long ctime = timeUs();
 	// Update GPS data each 100ms to have  10Hz update
 	if (gpsLastUpdateFixtime != pFixtime) {
 		// Protect from negative altitude in meters
@@ -321,7 +322,7 @@ double diffAngleUsingCapDegrees(double currentCapHeadingDeg, double targetedCapD
 // This function computes all navigation parameter
 // Takes 5ms on Atmega 2560
 void updateHeading(FilterAverage *altitudeBarometer) {
-	long cTime = micros();
+	long cTime = timeUs();
 	if (currentPosition.time > cTime) {
 		cTime = currentPosition.time;
 	}
@@ -345,9 +346,9 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 		}
 		// If the waypoint is impossible to reach, go home
 		else if (distance > GPS_MAX_DISTANCE) {
-			Serial.print("Waypoint to far (");
-			Serial.print(distance);
-			Serial.println(" m)");
+			Logger.print("Waypoint to far (");
+			Logger.print(distance);
+			Logger.println(" m)");
 			returnHome();
 		}
 

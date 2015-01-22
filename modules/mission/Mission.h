@@ -6,6 +6,9 @@
  *      Author: Adrien Hadj-Salah
  */
 // #include <stdint.h>
+
+
+#include "arch/AVR/MCU/MCU.h"
 #include "math/Math.h"
 #include "modules/mission/MissionCommon.h"
 #include "modules/nav/Navig2.h"

@@ -7,6 +7,7 @@
 
 // Inspired by paparazzi uav => fixedwing > nav.c
 
+#include "arch/AVR/MCU/MCU.h"
 #include "modules/mission/MissionCommon.h"
 #include "modules/nav/Navig.h"
 #include "modules/flight_control/FlightControl.h"
@@ -44,7 +45,7 @@ bool navCloseEnoughToWP(MissionWP el) {
 }
 
 void navToWP(MissionWP el) {
-	long cTime = micros();
+	long cTime = timeUs();
 	double dist2WPMeters = 0.0;
 
 	dist2WPMeters = geoDistance(currentPosition, el.wp);
