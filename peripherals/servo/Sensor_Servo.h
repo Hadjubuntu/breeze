@@ -12,13 +12,24 @@
 #include "peripherals/servo/ServoAPM.h"
 #include "math/Math.h"
 
+enum SurfaceControlMode {
+	SC_THREE_AXIS_NORMAL, // Aileron, elevator, rubber
+	SC_ELEVON, // Aileron and elevator
+};
+
+enum SurfaceControlMode SC_MODE = SC_THREE_AXIS_NORMAL;
+
 #define USE_FLAPS 1
+#define USE_RUBBER 1
 
 //--------------------------------------
 // Configuration (Same order as Pilatus pin number)
 #define PIN_SERVO_AILERON_LEFT 44 // Pilatus 1
 #define PIN_SERVO_GOUVERN 2 // Pilatus 2
+
+#if (USE_RUBBER == 1)
 #define PIN_SERVO_RUBBER 3 // Pilatus 3 ..
+#endif
 
 #define PIN_SERVO_AILERON_RIGHT 5 // Pilatus 5
 
@@ -55,36 +66,9 @@
 #define FLAPS_RIGHT_DOWN 1130
 #define FLAPS_RIGHT_FULL 1750
 
-/**
- * PILATUS CONFIGURATION
- * // Default ROLL position in microseconds
-#define DEFAULT_ROLL_LEFT_POS 1530
-#define DEFAULT_ROLL_LEFT_MIN 1170
-#define DEFAULT_ROLL_LEFT_MAX 1970
-#define DEFAULT_ROLL_RIGHT_POS 1410
-#define DEFAULT_ROLL_RIGHT_MIN 1050
-#define DEFAULT_ROLL_RIGHT_MAX 1850
 
-// Default GOUVERN position in microseconds
-#define DEFAULT_GOUVERN_POS 1480
-#define DEFAULT_GOUVERN_MIN 1010
-// Because we need 12mm pitch down and 28mm pitch up, we choose to have (1/3)(min - diff(pos, min))
-#define DEFAULT_GOUVERN_MAX 1625
-
-
-// Default Rubber position in microseconds
-#define DEFAULT_RUBBER_POS 1480
-#define DEFAULT_RUBBER_MIN 1140
-#define DEFAULT_RUBBER_MAX 1820
-
-#define FLAPS_LEFT_DOWN 1850
-#define FLAPS_LEFT_FULL 1230
-
-#define FLAPS_RIGHT_DOWN 1130
-#define FLAPS_RIGHT_FULL 1750
- */
-
-
+// Private variables
+//----------------------------------------------------
 int aileronCmd = 0 ;
 int gouvernCmd = 0 ;
 int rubberCmd = 0 ;
@@ -93,11 +77,15 @@ int rubberCmd = 0 ;
 int flapsCurrentCmd = 0;
 int flapsCmd = 0;
 
-
+// Transform a position from +/- 45 degrees
+// into a delay in microseconds
+//----------------------------------------------------
 double factorCmd2Us(int pos, int vmin, int vmax) {
 	return max(vmax-pos, pos-vmin) / 4500.0;
 }
 
+// Initialize servo at startup position
+//----------------------------------------------------
 void setupServos() {
 	setupServoAPM();
 	delay(100);
@@ -110,13 +98,35 @@ void setupServos() {
 	servoAPM_write(PIN_SERVO_FLAPS_RIGHT, FLAPS_RIGHT_DOWN);
 #endif
 
+#if (USE_RUBBER == 1)
 	servoAPM_write(PIN_SERVO_RUBBER, DEFAULT_RUBBER_POS);
 	servoAPM_write(PIN_SERVO_GOUVERN, DEFAULT_GOUVERN_POS);
+#endif
 
 	delay(100);
 }
 
 
+// Update elevon position
+//---------------------------------------------------
+double elevon_aileron = 0.4;
+double elevon_elevator = 0.7;
+void writeElevon() {
+	double elevonCmd = elevon_aileron * aileronCmd + elevon_elevator * gouvernCmd;
+	int dCmdLeftUs = (int) (factorCmd2Us(DEFAULT_ROLL_LEFT_POS, DEFAULT_ROLL_LEFT_MIN, DEFAULT_ROLL_LEFT_MAX) * elevonCmd);
+	int dCmdRightUs = (int) (factorCmd2Us(DEFAULT_ROLL_RIGHT_POS, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX) * elevonCmd);
+	int leftCmdUs, rightCmdUs;
+
+	leftCmdUs = constrain(DEFAULT_ROLL_LEFT_POS - dCmdLeftUs, DEFAULT_ROLL_LEFT_MIN, DEFAULT_ROLL_LEFT_MAX);
+	rightCmdUs = constrain(DEFAULT_ROLL_RIGHT_POS - dCmdRightUs, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX);
+
+
+	servoAPM_write(PIN_SERVO_AILERON_LEFT, leftCmdUs);
+	servoAPM_write(PIN_SERVO_AILERON_RIGHT, rightCmdUs);
+}
+
+// Update aileron position
+//----------------------------------------------------
 void writeRoll() {           
 	int dCmdLeftUs = (int) (factorCmd2Us(DEFAULT_ROLL_LEFT_POS, DEFAULT_ROLL_LEFT_MIN, DEFAULT_ROLL_LEFT_MAX) * aileronCmd);
 	int dCmdRightUs = (int) (factorCmd2Us(DEFAULT_ROLL_RIGHT_POS, DEFAULT_ROLL_RIGHT_MIN, DEFAULT_ROLL_RIGHT_MAX) * aileronCmd);
@@ -130,6 +140,9 @@ void writeRoll() {
 	servoAPM_write(PIN_SERVO_AILERON_RIGHT, rightCmdUs);
 }
 
+
+// Update elevator position
+//----------------------------------------------------
 void writeGouvern() {
 	int sign = -1;
 
@@ -139,15 +152,22 @@ void writeGouvern() {
 	servoAPM_write(PIN_SERVO_GOUVERN, cmdUs);
 }
 
+// Update rubber position
+//----------------------------------------------------
 void writeRubber() {
-    int sign = 1;
+#if (USE_RUBBER == 1)
+	int sign = 1;
 
 	int dCmdUs = (int) (factorCmd2Us(DEFAULT_RUBBER_POS, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX) * rubberCmd);
 	int cmdUs = constrain(DEFAULT_RUBBER_POS + sign*dCmdUs, DEFAULT_RUBBER_MIN, DEFAULT_RUBBER_MAX);
 
 	servoAPM_write(PIN_SERVO_RUBBER, cmdUs);
+#endif
 }
 
+
+// Update flaps position
+//----------------------------------------------------
 void writeFlaps() {
 #if (USE_FLAPS == 1)
 	// 0 means no flaps
@@ -183,6 +203,26 @@ void writeFlaps() {
 		servoAPM_write(PIN_SERVO_FLAPS_RIGHT, FLAPS_RIGHT_FULL);
 	}
 #endif
+}
+
+
+
+
+// Manage functions to be called in order to control
+// surfaces
+//----------------------------------------------------
+void updateSurfaceControls() {
+	switch (SC_MODE) {
+	case SC_THREE_AXIS_NORMAL:
+		writeRoll() ;
+		writeGouvern();
+		writeFlaps();
+		writeRubber();
+		break;
+	case SC_ELEVON:
+		writeElevon();
+		break;
+	}
 }
 
 #endif /* SENSOR_SERVO_H_ */

@@ -1,5 +1,5 @@
 #include "arch/AVR/MCU/MCU.h"
-#include "math/Math.h"
+#include "modules/nav/NavigCommon.h"
 #include "Common.h"
 #include "math/FilterAverage.h"
 
@@ -12,7 +12,6 @@
 // Variables
 long lastGoodUpdate = 0;
 
-#define DIST_TO_WAYPOINT_FOR_VALIDATION 6 // 2 meters for ground plan, 10 meters for real flight
 
 int NB_WAYPOINTS = 2;
 GeoPosition wps[] = {{489183720, 21389020, 0.5, 0},
@@ -116,13 +115,7 @@ bool isGPSDataRelevant(long cTime) {
 	return ((cTime - currentPosition.time) < GPS_TIME_OUT);
 }
 
-double geoDistance(GeoPosition pos1, GeoPosition pos2) {
-	double dlon = (pos2.lon - pos1.lon)*1e-7;
-	double dlat = (pos2.lat - pos1.lat)*1e-7;
-	double a = pow2(sin(toRad(dlat/2))) + cos(toRad(pos1.lat*1e-7)) * cos(toRad(pos2.lat*1e-7)) * pow2(sin(toRad(dlon/2)));
-	double c = 2 * atan2( sqrt(a), sqrt(1-a) );
-	return R * c;
-}
+
 
 
 GeoPosition getGeoPositionEstimation(long cTime, bool *hasBeenUpdate) {

@@ -55,7 +55,7 @@ double yawToHoldHeading(double currentHeadingDeg, double headingCapDeg) {
 // Adapt deflection depending on plane's speed
 float getSpeedScaler(int deciThrustPercent)
 {
-	float aspeed, speed_scaler;
+	float speed_scaler;
 	if (USE_AIRSPEED_SENSOR) {
 		double v_ms = airspeed_ms_mean->getAverage();
 
@@ -152,7 +152,6 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
 		double dt, long ctime, double desiredRoll, double desiredPitch, double desiredYaw)
 {
-	int sign = 1;
 
 	// If error with dt, then set roll pitch and yaw as desired
 	if (dt <= 0) {

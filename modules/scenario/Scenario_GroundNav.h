@@ -56,7 +56,7 @@ void groundNavDemo() {
 		// Simple move the rubber depending on gps roll demand
 		UAVCore->attitudeCommanded->roll = 0;
 		UAVCore->attitudeCommanded->pitch = 10;
-		UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * angleDiff;
+		UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * yawDesired;
 	}
 }
 

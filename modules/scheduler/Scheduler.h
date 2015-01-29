@@ -45,13 +45,13 @@ long getTaskAverageDurationUs(int pIndex) {
 
 /**
  * Example taken :
-Task #0 duration 3475 us | slot time taken : 34% | 100 Hz
-Task #1 duration 97 us | slot time taken : 0% | 50 Hz
-Task #2 duration 200 us | slot time taken : 0% | 20 Hz
-Task #3 duration 22769 us | slot time taken : 22% | 10 Hz
-Task #4 duration 6 us | slot time taken : 0% | 5 Hz
-Task #5 duration 25109 us | slot time taken : 5% | 2 Hz
-Task #6 duration 2875 us | slot time taken : 0% | 1 Hz
+Task #0 duration 3180 us | slot time taken : 31%
+Task #1 duration 1223 us | slot time taken : 6%
+Task #2 duration 200 us | slot time taken : 0%
+Task #3 duration 26141 us | slot time taken : 26%
+Task #4 duration 4 us | slot time taken : 0%
+Task #5 duration 23707 us | slot time taken : 4%
+Task #6 duration 3055 us | slot time taken : 0%
 
  *
  */

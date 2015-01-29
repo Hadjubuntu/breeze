@@ -9,7 +9,7 @@
 
 #include "arch/AVR/MCU/MCU.h"
 #include "modules/mission/MissionCommon.h"
-#include "modules/nav/Navig.h"
+#include "modules/nav/NavigCommon.h"
 #include "modules/flight_control/FlightControl.h"
 #include "peripherals/altimeter/Sensor_Altimeter.h"
 

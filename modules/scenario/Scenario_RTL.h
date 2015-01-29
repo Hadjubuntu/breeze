@@ -35,7 +35,6 @@ void rtlNav() {
 		flapsCmd = 90;
 	}
 	else {
-		double yawDesired = 0.0;
 		updateHeading(altitudeBarometer);
 
 		if (rtlFromSky == true) {

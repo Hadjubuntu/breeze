@@ -13,7 +13,8 @@ void missionInit() {
 }
 
 
-void missionAdd(MissionElementType type, MissionElement *element) {
+
+void missionAdd(MissionElement *element) {
 	uint8_t index = _mission.insertIdx;
 	_mission.elements[index] = (*element);
 
@@ -65,7 +66,7 @@ void missionRun() {
 	}
 	else {
 		bool el_running = false;
-		MissionElement *el = _mission[_mission.currentIdx] ;
+		MissionElement *el = &(_mission.elements[_mission.currentIdx]);
 
 		switch (el->type) {
 		case _missionWP:
@@ -94,4 +95,91 @@ void missionRun() {
 	}
 
 	lastMissionRunExecUs = time;
+}
+
+
+/**********************************************************************
+ * Parsing function
+ **********************************************************************/
+
+void parseRFMissionInput(char *rf_str) {
+	// Parse data
+	//-------------------------------------------------------
+	int typeAction = -1;
+	long lat, lon;
+	int altitudeMeters, durationSeconds;
+
+	int iPos = 0;
+	char * pch;
+	pch = strtok (rf_str,"|");
+	while (pch != NULL)	{
+		switch (iPos) {
+		case 0:
+			// Do nothing with the header
+			break;
+		case 1:
+			typeAction = atoi(pch);
+			break;
+		case 2:
+			lat = atol(pch);
+			break;
+		case 3:
+			lon = atol(pch);
+			break;
+		case 4:
+			altitudeMeters = atoi(pch);
+			break;
+		case 4:
+			durationSeconds = atoi(pch);
+			break;
+		default:
+			// Do nothing
+			break;
+		}
+
+		pch = strtok (NULL, "|");
+		iPos ++;
+	}
+
+	// Make action
+	//-------------------------------------------------------
+	if (typeAction > 0) {
+		MissionElement *missionEl1 = new MissionElement();
+
+		switch (typeAction) {
+		case 1:
+			// Add a new WP
+			//-----------------------------------------------
+
+			// Create the element
+			missionEl1->durationSeconds = durationSeconds;
+			missionEl1->type = _missionWP;
+
+			MissionWP missionElementWP;
+			missionElementWP.wp.alt = altitudeMeters;
+			missionElementWP.wp.lat = lat;
+			missionElementWP.wp.lon = lon;
+
+			missionEl1->missionWP = missionElementWP;
+
+			// Add it to the list
+			missionAdd(missionEl1);
+			break;
+
+		case 2:
+			// Add a new circular mission element
+			//------------------------------------------------
+			missionEl1->durationSeconds = durationSeconds;
+			missionEl1->type = _missionCircle;
+
+			MissionCircle missionElementCircle;
+			missionElementCircle.center.alt = altitudeMeters;
+			missionElementCircle.center.lat = lat;
+			missionElementCircle.center.lon = lon;
+
+			missionElementCircle.radiusMeters = 10; // TODO to be defined by RF parameter
+
+			break;
+		}
+	}
 }

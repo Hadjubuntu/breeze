@@ -26,7 +26,7 @@
 #include "peripherals/GPS/Sensor_GPS.h"
 #include "modules/nav/Navig.h"
 #include "modules/flight_control/FlightControl.h"
-#include "modules/rflink/RFLink.h"
+#include "modules/rflink/RFLink2.h"
 #include "peripherals/altimeter/Sensor_Altimeter.h"
 
 #include "peripherals/radio_sbus/RadioSBUSFutaba.h"
@@ -34,8 +34,6 @@
 long dt100HzSum = 0;
 long iter100Hz = 0;
 
-// main loop time variable
-unsigned long frameCounter = 0; // main loop executive frame counter
 
 // Memorable times
 unsigned long time_TakeOffStart = 0;
@@ -48,13 +46,6 @@ unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 unsigned long deltaTime = 0;
 
-#define TASK_100HZ 1
-#define TASK_50HZ 2
-#define TASK_20HZ 5
-#define TASK_10HZ 10
-#define TASK_5HZ 20
-#define TASK_2HZ 50
-#define TASK_1HZ 100
 
 // sub loop time variable
 unsigned long oneHZpreviousTime = 0;

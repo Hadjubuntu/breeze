@@ -58,17 +58,9 @@ void updateAttitude() {
  * Write command output to the servos
  ******************************************************************/
 void processCommand() {
-	writeRoll() ;
-	writeGouvern();
-	writeFlaps();
-	writeRubber();
+	
+	updateSurfaceControls();
 }
-
-
-/*void updateRangeFinder() {
-	UAVCore->altitudeSonar->addValue(distCm, rangeTimeMeasureUs);
-}*/
-
 
 
 
@@ -98,7 +90,6 @@ void reinitFlightModeParameters() {
 	rf_automodeSwitchToken = false;
 }
 
-double sumAccX = 0.0;
 
 /*******************************************************************
  * 100Hz task (each 10 ms)
@@ -119,14 +110,6 @@ void process100HzTask() {
 	if (iter100Hz > 100000) {
 		iter100Hz = 0;
 		dt100HzSum = 0;
-	}
-
-	double accXOnly = (Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch)));
-	if (accXOnly > 0.0001) {
-		sumAccX += G_Dt * accXOnly;
-	}
-	else {
-		sumAccX = sumAccX - (sumAccX/10.0);
 	}
 
 	hundredHZpreviousTime = currentTime;
@@ -192,28 +175,22 @@ void process50HzTask() {
 	}
 
 
-	// Study performance
-	// long cDt = timeUs();
 
 	// Update RF data down and up
+	//------------------------------------------------------------
 	updateRFLink50Hz() ;
 
-	/*
-        Study performance (This function costs 1.2 ms max)
-	double dt = (timeUs()-cDt)/1000.0;
-	Logger.print("RF 50 Hz time elapsed in function =  ");
-	Logger.print(dt, 2);
-	Logger.println(" ms");
-	 */
 
+	//------------------------------------------------------------
 	/*if (USE_RANGE_FINDER) {
 			// Update range finder data
 			ultrasonicMakePulse();
 			updateRangeFinder();
 	}*/
-
+	
 	// Motor update
 	// Command motor at % thrust
+	//------------------------------------------------------------
 	motorUpdateCommandDeciPercent(UAVCore->deciThrustPercent);
 
 }
@@ -242,9 +219,11 @@ void process20HzTask() {
  ******************************************************************/
 void process10HzTask() {
 	// Update low priority rf com
+	//------------------------------------------------------------
 	updateLowPriorityRFLink();
 
 	// Update altimeter
+	//------------------------------------------------------------
 	updateAltimeter();
 
 
@@ -259,8 +238,7 @@ void process10HzTask() {
 	Logger.print((Accel_output[0] - Accel_cal_x)/256);
 	Logger.print(" | Acc X only = ");
 	Logger.print((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
-	Logger.print(" | Sum Acc X (speed x) = ");
-	Logger.print(sumAccX);
+
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
 #endif
@@ -294,7 +272,7 @@ void process2HzTask() {
 	Logger.println(" us");
 	 */
 	
-	 //schedulerStats();
+	 schedulerStats();
 }
 
 
@@ -440,7 +418,6 @@ void setup() {
 
 
 	Logger.println("Breeze armed");
-	sendRFMessage("UAV_armed");
 
 	// Initialize Scheduler
 	int nbTasks = sizeof(uavTasks) / sizeof(uavTasks[0]);
@@ -466,62 +443,4 @@ void loop () {
 
 	measureCriticalSensors();
 	schedulerRun();
-	
-	/**
-	// ================================================================
-	// 100Hz task loop
-	// ================================================================
-	if (deltaTime >= 10000) {
-		frameCounter++;
-
-		process100HzTask();
-
-		// ================================================================
-		// 50Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_50HZ == 0) {  //  50 Hz tasks
-			process50HzTask();
-		}
-
-		// ================================================================
-		// 20Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_20HZ == 0) {  //  20 Hz tasks
-			process20HzTask();
-		}
-		// ================================================================
-		// 10Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_10HZ == 0) {  //   10 Hz tasks
-			process10HzTask();
-		}
-
-		// ================================================================
-		// 5Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_5HZ == 0) {  //   5 Hz tasks
-			process5HzTask();
-		}
-
-		// ================================================================
-		// 2Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_2HZ == 0) {  //   2 Hz tasks
-			process2HzTask();
-		}
-
-		// ================================================================
-		// 1Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
-			process1HzTask();
-		}
-
-		previousTime = currentTime;
-	}
-
-	if (frameCounter >= 100) {
-		frameCounter = 0;
-	}
-	*/
 }

@@ -9,6 +9,8 @@
  therefore uses only char var[size], and strok and strcmp.
  */
 
+#include <stdio.h>
+#include "arch/AVR/MCU/MCU.h"
 #include "Common.h"
 
 #ifndef RFLINK_H_
@@ -328,14 +330,6 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 	RFSerial.write(buf);
 }
 
-/**
- * Send message to the RF ground-station
- */
-void sendRFMessage(char *msg) {
-	char buf[250];
-	sprintf(buf, "msg|%s|\n", msg);
-	RFSerial.write(buf);
-}
 
 
 void updateCriticalRFLink() {
@@ -351,7 +345,7 @@ void updateCriticalRFLink() {
 			RFStack[stackReceivedPosition] = inputString;
 			inputString = "";
 
-			lastTimeLinkWithGS = micros();
+			lastTimeLinkWithGS = timeUs();
 
 			incrStackReceivedPosition();
 		}

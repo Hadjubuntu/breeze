@@ -25,11 +25,15 @@ void missionInit();
 
 // Insert a new mission element to the list
 //--------------------------------------------------
-void missionAdd(MissionElementType t, MissionElement *e);
+void missionAdd(MissionElement *e);
 
 // Run the mission to determine which attitude must be commanded
 //--------------------------------------------------
 void missionRun();
+
+// Parse rf input into mission action
+//--------------------------------------------------
+void parseRFMissionInput(char *);
 
 
 //--------------------------------------------------
