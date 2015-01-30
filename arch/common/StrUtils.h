@@ -125,11 +125,10 @@ StringArray str_explode(char *pStr, char limiter) {
 	/* allocation mémoire pour le tableau de sous-tableaux :   */
 	char **output = (char**) malloc((sizeOutput+1) * sizeof(char*));
 
+
 	char * pch;
-	char str_array[strlen(source)];
 	int lengthToCopy = 0;
-	strncpy(str_array, source, strlen(source)+1);
-	pch = strtok (str_array, "|");
+	pch = strtok (source, "|");
 
 	for (int iPos = 0; iPos <= sizeOutput; iPos++) {
 		lengthToCopy = strlen(pch);
@@ -144,6 +143,65 @@ StringArray str_explode(char *pStr, char limiter) {
 
 	outputSA.array = output;
 	outputSA.sizeArray = sizeOutput;
+
+	free(pch);
+
+	return outputSA;
+}
+
+
+/**
+ * Struct of a string array
+ */
+typedef struct T_EMBEDDED_STRING_ARRAY {
+	char array[20][125];
+	int sizeArray;
+} EStringArray;
+
+
+// Embedded version
+EStringArray _embedded_str_explode(char *pStr, char limiter) {
+
+	char source[strlen(pStr) + 1];
+	strcpy(source, pStr);
+
+	char str_limiter[1];
+	str_limiter[0] = limiter;
+
+	if (str_endWith(pStr, str_limiter)) {
+		strcat(source, "\n");
+	}
+
+	EStringArray outputSA;
+
+	int sizeOutput = str_countChar(source, limiter);
+
+
+	/* allocation mémoire pour le tableau de sous-tableaux :   */
+
+
+
+	char * pch;
+	int lengthToCopy = 0;
+	pch = strtok (source, "|");
+
+	for (int iPos = 0; iPos <= sizeOutput; iPos++) {
+		lengthToCopy = strlen(pch);
+		if (lengthToCopy > 0 && pch[0] != '\n') {
+			if (pch[lengthToCopy-1] == '\n') {
+				lengthToCopy --;
+			}
+
+			str_resetCharArray(outputSA.array[iPos]);
+			strncpy(outputSA.array[iPos], pch, lengthToCopy);
+		}
+		pch = strtok (NULL, "|");
+	}
+
+	outputSA.sizeArray = sizeOutput;
+
+	free(pch);
+
 
 	return outputSA;
 }

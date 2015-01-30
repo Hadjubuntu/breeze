@@ -121,7 +121,6 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 	rf_autospeed_controller = pAutospeedController;
 	rf_v_ms_goal = pV_ms_goal;
 
-	rfstack.init();
 
 	Serial.println("Starting com RF");
 }
@@ -130,7 +129,11 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 
 void makeActionInStack(int i) {
 	char *rfcmd = rfstack.get(i);
-	StringArray rfcmd_tokens = str_explode(rfcmd, '|');
+	if (rfcmd == NULL) {
+		return ;
+	}
+
+	EStringArray rfcmd_tokens = _embedded_str_explode(rfcmd, '|');
 
 
 	if (str_startsWith(rfcmd, "auto")) {
@@ -200,6 +203,10 @@ void makeActionInStack(int i) {
 
 
 		ID_parameter = atoi(rfcmd_tokens.array[1]);
+		Serial.println(rfcmd);
+		Serial.print("Parameter ID (without atoi) = ");
+		Serial.println(rfcmd_tokens.array[1]);
+
 		if (rfcmd_tokens.sizeArray > 1) {
 			value_parameter = atof(rfcmd_tokens.array[2]);
 			hasValue = true;
@@ -216,7 +223,7 @@ void makeActionInStack(int i) {
 
 
 	// Free memory
-	free(rfcmd_tokens.array);
+	//free(rfcmd_tokens.array);
 }
 
 // Update RF link each 20 ms (50 Hz)
@@ -276,7 +283,7 @@ void updateCriticalRFLink() {
 
 		inputStringIdx ++;
 
-		// TODO error fix me here
+
 		// if the incoming character is a newline, set a flag
 		// so the main loop can do something about it:
 		//----------------------------------------------------------

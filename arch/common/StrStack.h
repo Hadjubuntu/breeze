@@ -8,28 +8,32 @@
 #ifndef STRSTACK_H_
 #define STRSTACK_H_
 
-#define STACK_SIZE 20
-#define PACK_LENGTH_STR 100
+#define STACK_SIZE 5
+#define PACK_LENGTH_STR 125
 
 
 class StrStack {
 private:
-	bool stackIsReady = false;
+	bool stackIsReady ;
 	int currentIdx;
 	int makeIdx;
 	bool nextRound ;
 	char stack[STACK_SIZE][PACK_LENGTH_STR];
 
 public:
-	void init() ;
+	StrStack();
 	void insert(char *pStr);
 	void make(void (*callbackFunction)(int));
 	char* get(int);
+	int getCurrentIdx();
 };
 
 
-void StrStack::init() {
+StrStack::StrStack() {
 	currentIdx = 0;
+	makeIdx = 0;
+	stackIsReady = true;
+	nextRound = false;
 	stackIsReady = true;
 }
 
@@ -75,5 +79,8 @@ void StrStack::insert(char *pStr) {
 	}
 }
 
+int StrStack::getCurrentIdx() {
+	return currentIdx;
+}
 
 #endif /* STRSTACK_H_ */

@@ -16,7 +16,7 @@
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
 
-#define MEASURE_VIBRATION 1
+#define MEASURE_VIBRATION 0
 #define ENABLE_IMU_CALIBRATION 0
 
 #if MEASURE_VIBRATION

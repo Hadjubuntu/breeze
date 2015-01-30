@@ -272,7 +272,7 @@ void process2HzTask() {
 	Logger.println(" us");
 	 */
 	
-	 schedulerStats();
+	// schedulerStats();
 }
 
 
