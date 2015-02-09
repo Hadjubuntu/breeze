@@ -104,7 +104,8 @@ typedef struct T_STRING_ARRAY {
 
 /**
  * Explode a string into array using a delimiter char value
- */
+ * @deprecated on embedded atmega processor due to memory problems
+
 StringArray str_explode(char *pStr, char limiter) {
 
 	char source[strlen(pStr) + 1];
@@ -148,7 +149,7 @@ StringArray str_explode(char *pStr, char limiter) {
 
 	return outputSA;
 }
-
+*/
 
 /**
  * Struct of a string array

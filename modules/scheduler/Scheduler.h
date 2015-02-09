@@ -45,13 +45,24 @@ long getTaskAverageDurationUs(int pIndex) {
 
 /**
  * Example taken :
-Task #0 duration 3180 us | slot time taken : 31%
-Task #1 duration 1223 us | slot time taken : 6%
-Task #2 duration 200 us | slot time taken : 0%
-Task #3 duration 26141 us | slot time taken : 26%
+ *
+ * Using RFLink2.h
+Task #0 duration 3106 us | slot time taken : 31%
+Task #1 duration 1203 us | slot time taken : 6%
+Task #2 duration 196 us | slot time taken : 0%
+Task #3 duration 21872 us | slot time taken : 21%
+Task #4 duration 5 us | slot time taken : 0%
+Task #5 duration 23124 us | slot time taken : 4%
+Task #6 duration 3065 us | slot time taken : 0%
+
+Usign RFLink1
+Task #0 duration 3095 us | slot time taken : 30%
+Task #1 duration 1273 us | slot time taken : 6%
+Task #2 duration 197 us | slot time taken : 0%
+Task #3 duration 21903 us | slot time taken : 21%
 Task #4 duration 4 us | slot time taken : 0%
-Task #5 duration 23707 us | slot time taken : 4%
-Task #6 duration 3055 us | slot time taken : 0%
+Task #5 duration 23126 us | slot time taken : 4%
+Task #6 duration 3023 us | slot time taken : 0%
 
  *
  */

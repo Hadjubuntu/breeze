@@ -153,39 +153,43 @@ void makeActionInStack(int i) {
 	else if (str_startsWith(rfcmd, "flaps")) {
 		(*rf_deciThrustPercent) = atoi(rfcmd_tokens.array[1]);
 	}
-	else if (str_startsWith(rfcmd, "ac")) {
-		// Force UAV to stabilize to the desired attitude
-		rf_manual_StabilizedFlight = 1;
+
+	if (USE_RADIO_FUTABA == 0) {
+		if (str_startsWith(rfcmd, "ac")) {
+			// Force UAV to stabilize to the desired attitude
+			rf_manual_StabilizedFlight = 1;
 
 
-		rf_attitudeCommanded->roll = atoi(rfcmd_tokens.array[1])/100.0;
-		rf_attitudeCommanded->pitch = atoi(rfcmd_tokens.array[2])/100.0;
-		rf_attitudeCommanded->yaw = atoi(rfcmd_tokens.array[3])/100.0;
+			rf_attitudeCommanded->roll = atoi(rfcmd_tokens.array[1])/100.0;
+			rf_attitudeCommanded->pitch = atoi(rfcmd_tokens.array[2])/100.0;
+			rf_attitudeCommanded->yaw = atoi(rfcmd_tokens.array[3])/100.0;
 
-		// Using autospeed controller, we control speed
-		if (*rf_autospeed_controller == 1) {
-			(*rf_v_ms_goal) = 1.7f*SCALING_SPEED* atoi(rfcmd_tokens.array[4])/1000.0;
+			// Using autospeed controller, we control speed
+			if (*rf_autospeed_controller == 1) {
+				(*rf_v_ms_goal) = 1.7f*SCALING_SPEED* atoi(rfcmd_tokens.array[4])/1000.0;
+			}
+			// Without autospeed, user controls throttle
+			else {
+				(*rf_deciThrustPercent) =  atoi(rfcmd_tokens.array[4]);
+			}
+
 		}
-		// Without autospeed, user controls throttle
-		else {
+		else if (str_startsWith(rfcmd, "sc")) {
+
+			// Force UAV to stabilize to the desired attitude
+			rf_manual_StabilizedFlight = 0;
+			// Force UAV to not use autospeed controller
+			rf_autospeed_controller = 0;
+
+			rf_attitudeCommanded->roll = atoi(rfcmd_tokens.array[1])/100.0;
+			rf_attitudeCommanded->pitch = atoi(rfcmd_tokens.array[2])/100.0;
+			rf_attitudeCommanded->yaw = atoi(rfcmd_tokens.array[3])/100.0;
 			(*rf_deciThrustPercent) =  atoi(rfcmd_tokens.array[4]);
 		}
-
 	}
-	else if (str_startsWith(rfcmd, "sc")) {
 
-		// Force UAV to stabilize to the desired attitude
-		rf_manual_StabilizedFlight = 0;
-		// Force UAV to not use autospeed controller
-		rf_autospeed_controller = 0;
-
-		rf_attitudeCommanded->roll = atoi(rfcmd_tokens.array[1])/100.0;
-		rf_attitudeCommanded->pitch = atoi(rfcmd_tokens.array[2])/100.0;
-		rf_attitudeCommanded->yaw = atoi(rfcmd_tokens.array[3])/100.0;
-		(*rf_deciThrustPercent) =  atoi(rfcmd_tokens.array[4]);
-	}
 	// Stop the airplane, no thrust and no command on servo.
-	else if (str_startsWith(rfcmd, "shutdown")) {
+	if (str_startsWith(rfcmd, "shutdown")) {
 		(*rf_aileronCmd) = 0;
 		(*rf_gouvernCmd) = 0;
 		(*rf_rubberCmd) = 0;
@@ -203,9 +207,6 @@ void makeActionInStack(int i) {
 
 
 		ID_parameter = atoi(rfcmd_tokens.array[1]);
-		Serial.println(rfcmd);
-		Serial.print("Parameter ID (without atoi) = ");
-		Serial.println(rfcmd_tokens.array[1]);
 
 		if (rfcmd_tokens.sizeArray > 1) {
 			value_parameter = atof(rfcmd_tokens.array[2]);
@@ -221,9 +222,6 @@ void makeActionInStack(int i) {
 	}
 	// Process others commands ..
 
-
-	// Free memory
-	//free(rfcmd_tokens.array);
 }
 
 // Update RF link each 20 ms (50 Hz)
@@ -232,11 +230,12 @@ void updateRFLink50Hz() {
 	rfstack.make(&makeActionInStack) ;
 }
 
-/**
+
+/****************************************************************************
  * Send to ground station, informations about UAV
  * such as attitude, speed and location
  * Takes around 1 ms
- */
+ *****************************************************************************/
 void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airspeedCentiMs, long latPow6, long lonPow6, int angleDiffToTarget, bool autopilot, int currentWP) {
 	char buf[250];
 	int autopilotInt = 0;

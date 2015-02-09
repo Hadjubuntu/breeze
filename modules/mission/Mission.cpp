@@ -105,46 +105,16 @@ void missionRun() {
 void parseRFMissionInput(char *rf_str) {
 	// Parse data
 	//-------------------------------------------------------
-	int typeAction = -1;
-	long lat, lon;
-	int altitudeMeters, durationSeconds;
 
-	int iPos = 0;
-	char * pch;
-	pch = strtok (rf_str,"|");
-	while (pch != NULL)	{
-		switch (iPos) {
-		case 0:
-			// Do nothing with the header
-			break;
-		case 1:
-			typeAction = atoi(pch);
-			break;
-		case 2:
-			lat = atol(pch);
-			break;
-		case 3:
-			lon = atol(pch);
-			break;
-		case 4:
-			altitudeMeters = atoi(pch);
-			break;
-		case 4:
-			durationSeconds = atoi(pch);
-			break;
-		default:
-			// Do nothing
-			break;
-		}
+	EStringArray rfPayload = _embedded_str_explode(rf_str, '|');
+	int typeAction = atoi(rfPayload.array[1]);
 
-		pch = strtok (NULL, "|");
-		iPos ++;
-	}
 
 	// Make action
 	//-------------------------------------------------------
 	if (typeAction > 0) {
-		MissionElement *missionEl1 = new MissionElement();
+		bool missionPrepared = true;
+		MissionElement missionEl1 ;
 
 		switch (typeAction) {
 		case 1:
@@ -152,34 +122,41 @@ void parseRFMissionInput(char *rf_str) {
 			//-----------------------------------------------
 
 			// Create the element
-			missionEl1->durationSeconds = durationSeconds;
-			missionEl1->type = _missionWP;
+			missionEl1.durationSeconds = atoi(rfPayload.array[2]);
+			missionEl1.type = _missionWP;
 
 			MissionWP missionElementWP;
-			missionElementWP.wp.alt = altitudeMeters;
-			missionElementWP.wp.lat = lat;
-			missionElementWP.wp.lon = lon;
+			missionElementWP.wp.alt = atof(rfPayload.array[5]);
+			missionElementWP.wp.lat = atof(rfPayload.array[3]);
+			missionElementWP.wp.lon = atof(rfPayload.array[4]);
 
-			missionEl1->missionWP = missionElementWP;
+			missionEl1.missionWP = missionElementWP;
 
-			// Add it to the list
-			missionAdd(missionEl1);
 			break;
 
 		case 2:
 			// Add a new circular mission element
 			//------------------------------------------------
-			missionEl1->durationSeconds = durationSeconds;
-			missionEl1->type = _missionCircle;
+			missionEl1.durationSeconds = atoi(rfPayload.array[2]);
+			missionEl1.type = _missionCircle;
 
 			MissionCircle missionElementCircle;
-			missionElementCircle.center.alt = altitudeMeters;
-			missionElementCircle.center.lat = lat;
-			missionElementCircle.center.lon = lon;
+			missionElementCircle.center.alt = atof(rfPayload.array[5]);
+			missionElementCircle.center.lat = atof(rfPayload.array[3]);
+			missionElementCircle.center.lon = atof(rfPayload.array[4]);
+			missionElementCircle.radiusMeters = atof(rfPayload.array[6]);
 
-			missionElementCircle.radiusMeters = 10; // TODO to be defined by RF parameter
-
+			missionEl1.missionWP = missionElementCircle;
 			break;
+		default:
+			missionPrepared = false;
+			break;
+		}
+
+
+		if (missionPrepared) {
+			// Add it to the list
+			missionAdd(&missionEl1);
 		}
 	}
 }

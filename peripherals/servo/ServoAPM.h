@@ -2,12 +2,7 @@
  * ServoAPM.h
  *
  *  Created on: 29 oct. 2014
- *      Author: hadjmoody
- *
- *      TODO read S-BUS futaba radio :
- *      https://github.com/mikeshub/FUTABA_SBUS
- *      or https://github.com/zendes/SBUS/blob/master/SBUS.cpp
- *      or paparazzi sbus code
+ *      Author: Adrien Hadj-Salah
  */
 
 #ifndef SERVOAPM_H_

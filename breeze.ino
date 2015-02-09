@@ -90,6 +90,12 @@ void reinitFlightModeParameters() {
 	rf_automodeSwitchToken = false;
 }
 
+void updateRFRadioFutaba() {
+	UAVCore->attitudeCommanded->roll = (sBus.channels[0]-1500)/0.045;
+	UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-1500)/0.045;
+	UAVCore->attitudeCommanded->yaw = (sBus.channels[2]-1500)/0.045;
+	UAVCore->deciThrustPercent = max((sBus.channels[3]-1000), 0);
+}
 
 /*******************************************************************
  * 100Hz task (each 10 ms)
@@ -179,6 +185,7 @@ void process50HzTask() {
 	// Update RF data down and up
 	//------------------------------------------------------------
 	updateRFLink50Hz() ;
+	updateRFRadioFutaba();
 
 
 	//------------------------------------------------------------
@@ -272,7 +279,7 @@ void process2HzTask() {
 	Logger.println(" us");
 	 */
 	
-	// schedulerStats();
+	schedulerStats();
 }
 
 
@@ -405,6 +412,10 @@ void setup() {
 	if (USE_AIRSPEED_SENSOR) {
 		setupAirspeed();
 		Logger.println("Airspeed sensor armed");
+	}
+	
+	if (USE_RADIO_FUTABA) {
+		setupRadioFutaba();
 	}
 
 	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
