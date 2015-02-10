@@ -105,51 +105,51 @@ typedef struct T_STRING_ARRAY {
 /**
  * Explode a string into array using a delimiter char value
  * @deprecated on embedded atmega processor due to memory problems
-
-StringArray str_explode(char *pStr, char limiter) {
-
-	char source[strlen(pStr) + 1];
-	strcpy(source, pStr);
-
-	char str_limiter[1];
-	str_limiter[0] = limiter;
-
-	if (str_endWith(pStr, str_limiter)) {
-		strcat(source, "\n");
-	}
-
-	StringArray outputSA;
-
-	int sizeOutput = str_countChar(source, limiter);
-
-
-	/* allocation mémoire pour le tableau de sous-tableaux :   */
-	char **output = (char**) malloc((sizeOutput+1) * sizeof(char*));
-
-
-	char * pch;
-	int lengthToCopy = 0;
-	pch = strtok (source, "|");
-
-	for (int iPos = 0; iPos <= sizeOutput; iPos++) {
-		lengthToCopy = strlen(pch);
-		if (pch[lengthToCopy-1] == '\n') {
-			lengthToCopy --;
-		}
-
-		output[iPos] = (char *) malloc((lengthToCopy+1) * sizeof(char));
-		strncpy(output[iPos], pch, lengthToCopy);
-		pch = strtok (NULL, "|");
-	}
-
-	outputSA.array = output;
-	outputSA.sizeArray = sizeOutput;
-
-	free(pch);
-
-	return outputSA;
-}
-*/
+ * */
+//
+//StringArray str_explode(char *pStr, char limiter) {
+//
+//	char source[strlen(pStr) + 1];
+//	strcpy(source, pStr);
+//
+//	char str_limiter[1];
+//	str_limiter[0] = limiter;
+//
+//	if (str_endWith(pStr, str_limiter)) {
+//		strcat(source, "\n");
+//	}
+//
+//	StringArray outputSA;
+//
+//	int sizeOutput = str_countChar(source, limiter);
+//
+//
+//	/* allocation mémoire pour le tableau de sous-tableaux :   */
+//	char **output = (char**) malloc((sizeOutput+1) * sizeof(char*));
+//
+//
+//	char * pch;
+//	int lengthToCopy = 0;
+//	pch = strtok (source, "|");
+//
+//	for (int iPos = 0; iPos <= sizeOutput; iPos++) {
+//		lengthToCopy = strlen(pch);
+//		if (pch[lengthToCopy-1] == '\n') {
+//			lengthToCopy --;
+//		}
+//
+//		output[iPos] = (char *) malloc((lengthToCopy+1) * sizeof(char));
+//		strncpy(output[iPos], pch, lengthToCopy);
+//		pch = strtok (NULL, "|");
+//	}
+//
+//	outputSA.array = output;
+//	outputSA.sizeArray = sizeOutput;
+//
+//	free(pch);
+//
+//	return outputSA;
+//}
 
 /**
  * Struct of a string array

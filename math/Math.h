@@ -16,6 +16,8 @@
 #define abs(val) ((val) < 0 ? -(val) : (val))
 #endif
 
+#define PI     3.14159265f
+
 // Earth radius in meters near 45° nord
 #define R 6378100.0f
 #define GPS_AROUND_LATITUDE 2.1 // Latitude around we are flying in degrees
@@ -25,6 +27,9 @@
 #define LOCATION_SCALING_FACTOR 0.011131884502145034f
 // inverse of LOCATION_SCALING_FACTOR
 #define LOCATION_SCALING_FACTOR_INV 89.83204953368922f
+
+#define RAD2DEG 57.29578
+#define DEG2RAD 0.01745329
 
 //------------------------------------------------
 // Structures
@@ -218,6 +223,41 @@ int isign(int a) {
 	else {
 		return -1;
 	}
+}
+
+#define FAST_ATAN2_PIBY2_FLOAT  1.5707963f
+// fast_atan2 - faster version of atan2
+//      126 us on AVR cpu vs 199 for regular atan2
+//      absolute error is < 0.005 radians or 0.28 degrees
+//      origin source: https://gist.github.com/volkansalma/2972237/raw/
+float fast_atan2(float y, float x)
+{
+   if (x == 0.0f) {
+       if (y > 0.0f) {
+           return FAST_ATAN2_PIBY2_FLOAT;
+       }
+       if (y == 0.0f) {
+           return 0.0f;
+       }
+       return -FAST_ATAN2_PIBY2_FLOAT;
+   }
+   float atan;
+   float z = y/x;
+   if (fabs( z ) < 1.0f) {
+       atan = z / (1.0f + 0.28f * z * z);
+       if (x < 0.0f) {
+           if (y < 0.0f) {
+               return atan - PI;
+           }
+           return atan + PI;
+       }
+   } else {
+       atan = FAST_ATAN2_PIBY2_FLOAT - (z / (z * z + 0.28f));
+       if (y < 0.0f) {
+           return atan - PI;
+       }
+   }
+   return atan;
 }
 
 #endif /* MATH_H_ */

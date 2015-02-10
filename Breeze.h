@@ -31,9 +31,6 @@
 
 #include "peripherals/radio_sbus/RadioSBUSFutaba.h"
 
-long dt100HzSum = 0;
-long iter100Hz = 0;
-
 
 // Memorable times
 unsigned long time_TakeOffStart = 0;

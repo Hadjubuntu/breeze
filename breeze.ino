@@ -12,7 +12,7 @@
  * - Serial1 for RF link on 18 (blue) 19 (green) Rx Tx
  * 
  ***********************************************************
- * Using Timer 4 for ESC, timer 3 for servo with lib,  Serial2 (Hardware Rx Pin 17 mega) for GPS
+ * Using Timer 4 for ESC, Serial2 (Hardware Rx Pin 17 mega) for GPS
  * 
  * First succesful flight : 03/12/2014
  */
@@ -58,7 +58,6 @@ void updateAttitude() {
  * Write command output to the servos
  ******************************************************************/
 void processCommand() {
-	
 	updateSurfaceControls();
 }
 
@@ -107,16 +106,6 @@ void process100HzTask() {
 	// Update attitude from gyro
 	updateAttitude() ;
 
-
-	if (hundredHZpreviousTime > 0) {
-		dt100HzSum += (currentTime - hundredHZpreviousTime);
-		iter100Hz ++;
-	}
-
-	if (iter100Hz > 100000) {
-		iter100Hz = 0;
-		dt100HzSum = 0;
-	}
 
 	hundredHZpreviousTime = currentTime;
 }
@@ -194,7 +183,7 @@ void process50HzTask() {
 			ultrasonicMakePulse();
 			updateRangeFinder();
 	}*/
-	
+
 	// Motor update
 	// Command motor at % thrust
 	//------------------------------------------------------------
@@ -229,12 +218,12 @@ void process10HzTask() {
 	//------------------------------------------------------------
 	updateLowPriorityRFLink();
 
-	// Update altimeter
-	//------------------------------------------------------------
-	updateAltimeter();
-
-
-#if MEASURE_VIBRATION	
+	Logger.print("roll = ");
+	Logger.print(UAVCore->currentAttitude->roll);
+	Logger.print(" | pitch = ");
+	Logger.println(UAVCore->currentAttitude->pitch);
+	
+#if MEASURE_VIBRATION
 	Logger.print("Acc noise vibration = ");
 	Logger.print(accNoise);
 	Logger.print(" | roll = ");
@@ -261,6 +250,10 @@ void process5HzTask() {
 		UAVCore->v_ms = lastVms;
 		v_ms_mean->addValue(UAVCore->v_ms, currentTime);
 	}
+
+	// Update altimeter
+	//------------------------------------------------------------
+	updateAltimeter();
 }
 
 
@@ -278,10 +271,10 @@ void process2HzTask() {
 	Logger.print(dt100HzSum/iter100Hz);
 	Logger.println(" us");
 	 */
-	
+
+
 	schedulerStats();
 }
-
 
 
 
@@ -289,6 +282,11 @@ void process2HzTask() {
  * 1Hz task 
  ******************************************************************/
 void process1HzTask() {
+
+	//---------------------------------------------------------
+	// Update barometer temperature for altitude eval
+	updateBaroTemperatureLowFreq();
+
 
 	//---------------------------------------------------------
 	// Send data to the ground station
@@ -413,7 +411,7 @@ void setup() {
 		setupAirspeed();
 		Logger.println("Airspeed sensor armed");
 	}
-	
+
 	if (USE_RADIO_FUTABA) {
 		setupRadioFutaba();
 	}

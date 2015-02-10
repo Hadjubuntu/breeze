@@ -44,6 +44,7 @@ long getTaskAverageDurationUs(int pIndex) {
 }
 
 /**
+ * This function takes around 23ms
  * Example taken :
  *
  * Using RFLink2.h
@@ -64,9 +65,28 @@ Task #4 duration 4 us | slot time taken : 0%
 Task #5 duration 23126 us | slot time taken : 4%
 Task #6 duration 3023 us | slot time taken : 0%
 
+New altimeter
+Task #0 duration 3078 us | slot time taken : 30%
+Task #1 duration 201 us | slot time taken : 1%
+Task #2 duration 199 us | slot time taken : 0%
+Task #3 duration 279 us | slot time taken : 0%
+Task #4 duration 4 us | slot time taken : 0%
+Task #5 duration 22785 us | slot time taken : 4%
+Task #6 duration 9058 us | slot time taken : 0%
+
+Return alt delay
+Task #0 duration 3086 us | slot time taken : 30%
+Task #1 duration 203 us | slot time taken : 1%
+Task #2 duration 195 us | slot time taken : 0%
+Task #3 duration 8 us | slot time taken : 0%
+Task #4 duration 6793 us | slot time taken : 3%
+Task #5 duration 22989 us | slot time taken : 4%
+Task #6 duration 7752 us | slot time taken : 0%
+
  *
  */
 void schedulerStats() {
+
 	for (int i = 0; i < nbTasks; i ++) {
 		long taskDurationUs = getTaskAverageDurationUs(i);
 		long nextTickUs = tasks[i].tickIntervalUs;
@@ -96,11 +116,11 @@ void schedulerRun() {
 			cTask->processTask();
 			long durationUs = timeUs() - cTask->lastStartTimeUs;
 			cTask->averageDurationUs = 0.3 * durationUs + 0.7 * cTask->averageDurationUs;
-//			if (cTask->averageDurationUs > cTask->maxDurationUs) {
-//				Serial.print("Error task #");
-//				Serial.print(i);
-//				Serial.println(" too long");
-//			}
+			//			if (cTask->averageDurationUs > cTask->maxDurationUs) {
+			//				Serial.print("Error task #");
+			//				Serial.print(i);
+			//				Serial.println(" too long");
+			//			}
 		}
 	}
 }

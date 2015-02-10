@@ -29,11 +29,11 @@ long lastUpdateAHRS_Us = 0;
 // Output variables
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
 
-int Gyro_output[3],Accel_output[3];
+int Gyro_output[2],Accel_output[3];
 
 float dt = 0.01;
 
-float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
+float Gyro_cal_x,Gyro_cal_y,Accel_cal_x,Accel_cal_y,Accel_cal_z;
 float raw_accel_roll, raw_accel_pitch;
 
 //valeur initiales axe X (pitch)
@@ -64,16 +64,17 @@ float P01 = 0.1;
 float Kk0, Kk1;
 
 
+
 //lecture gyroscope - datasheet ITG3200
 //-------------------------------------
 void getGyroscopeReadings(int Gyro_out[])
 {
-	byte buffer[6];
-	readFrom(0x68,0x1D,6,buffer);
+	byte buffer[4];
+	readFrom(0x68,0x1D,4,buffer);
 
 	Gyro_out[0]=(((int)buffer[0]) << 8 ) | buffer[1];
 	Gyro_out[1]=(((int)buffer[2]) << 8 ) | buffer[3];
-	Gyro_out[2]=(((int)buffer[4]) << 8 ) | buffer[5];
+	// We don't retrieve gyro z value because it not used and reading takes time
 }
 
 //lecture accelerometre - datasheet ADXL345
@@ -108,7 +109,6 @@ void setupGyro() {
 
 	int Gyro_cal_x_sample = 0;
 	int Gyro_cal_y_sample = 0;
-	int Gyro_cal_z_sample = 0;
 
 	int Accel_cal_x_sample = 0;
 	int Accel_cal_y_sample = 0;
@@ -126,7 +126,6 @@ void setupGyro() {
 
 		Gyro_cal_x_sample += Gyro_output[0];
 		Gyro_cal_y_sample += Gyro_output[1];
-		Gyro_cal_z_sample += Gyro_output[2];
 
 		Accel_cal_x_sample += Accel_output[0];
 		Accel_cal_y_sample += Accel_output[1];
@@ -137,7 +136,6 @@ void setupGyro() {
 
 	Gyro_cal_x = Gyro_cal_x_sample / nbSampleCalib;
 	Gyro_cal_y = Gyro_cal_y_sample / nbSampleCalib;
-	Gyro_cal_z = Gyro_cal_z_sample / nbSampleCalib;
 
 	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
 	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
@@ -147,8 +145,6 @@ void setupGyro() {
 	Serial.print(Gyro_cal_x);
 	Serial.print("; ");
 	Serial.print(Gyro_cal_y);
-	Serial.print("; ");
-	Serial.print(Gyro_cal_z);
 	Serial.println(" ");
 	Serial.print("Acc cal x; y; z : ");
 	Serial.print(Accel_cal_x);
@@ -172,7 +168,6 @@ Pilatus calib :
 	 */
 	Gyro_cal_x = 29.0;
 	Gyro_cal_y = 21.0;
-	Gyro_cal_z = -9.0;
 	Accel_cal_x = -4.0;
 	Accel_cal_y = 10.0;
 	Accel_cal_z = -34.0;
@@ -184,6 +179,10 @@ Pilatus calib :
 // Update AHRS (Attitude and Heading Reference System)
 // using Kalman filter
 void updateGyroData() {
+
+	float rel_accZ;
+
+
 	long currentTimeUs = micros() ;
 	dt = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
 	if (lastUpdateAHRS_Us == 0) {
@@ -196,10 +195,17 @@ void updateGyroData() {
 	getGyroscopeReadings(Gyro_output);
 	getAccelerometerReadings(Accel_output);
 
-	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	// Declare variables
+	rel_accZ = (Accel_output[2] - Accel_cal_z)/256;
+	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
+	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+
+
+	// Eval
+	raw_accel_pitch = fast_atan2((Accel_output[1] - Accel_cal_y) / 256, rel_accZ) * RAD2DEG;
 	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
 
-	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ 14.375) * dt;
+	Gyro_pitch = Gyro_pitch + gyroXrate;
 
 	//conserver l'echelle +/-180° pour l'axe X du gyroscope
 	//-----------------------------------------------------
@@ -208,12 +214,12 @@ void updateGyroData() {
 
 	//sortie du filtre de Kalman pour les X (pitch)
 	//---------------------------------------------
-	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
+	Predicted_pitch = Predicted_pitch + gyroXrate;
 
-	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	raw_accel_roll = fast_atan2((Accel_output[0] - Accel_cal_x) / 256, rel_accZ) * RAD2DEG;
 	Accel_roll = 0.3 * Accel_roll + 0.7 * raw_accel_roll;
 
-	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ 14.375) * dt;
+	Gyro_roll = Gyro_roll + gyroYrate;
 
 	//conserver l'echelle +/-180° pour l'axe Y du gyroscope
 	//-----------------------------------------------------
@@ -222,7 +228,7 @@ void updateGyroData() {
 
 	//sortie du filtre de Kalman pour les Y (roll)
 	//--------------------------------------------
-	Predicted_roll = Predicted_roll - ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+	Predicted_roll = Predicted_roll - gyroYrate;
 
 	P00 += dt * (2 * P01 + dt * P11);
 	P01 += dt * P11;
@@ -248,12 +254,9 @@ void updateGyroData() {
 
 	//-----------------------------------------------
 	// Output update
-	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
-	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
-
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
-	gyroZangle += Gyro_output[2] / 14.375 * dt;
+	// Not used	gyroZangle += Gyro_output[2] / 14.375 * dt;
 
 
 
