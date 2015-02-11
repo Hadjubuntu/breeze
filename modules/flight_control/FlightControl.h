@@ -136,6 +136,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 
 	double yawCmd = yawDesired;
 
+
 	// Update surfaces command
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);

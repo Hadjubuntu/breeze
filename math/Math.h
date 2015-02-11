@@ -16,7 +16,7 @@
 #define abs(val) ((val) < 0 ? -(val) : (val))
 #endif
 
-#define PI     3.14159265f
+// Already defined in Arduino.h  #define PI     3.14159265f
 
 // Earth radius in meters near 45° nord
 #define R 6378100.0f

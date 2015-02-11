@@ -52,7 +52,7 @@ double *rf_v_ms_goal;
 
 // In manual flight mode, we can flight with defined roll pitch yaw or servo command
 // Therefore the stabilize function is called or not
-int rf_manual_StabilizedFlight = 0;
+int rf_manual_StabilizedFlight = 1;
 
 
 
@@ -112,7 +112,7 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 	rf_flapsCmd = pFlapsCmd;
 	rf_attitudeCommanded = pAttitudeCommanded;
 
-	rf_manual_StabilizedFlight = 0;
+	rf_manual_StabilizedFlight = 1;
 
 	rf_navigationMethodAngleDiff = pNavigMethod;
 
@@ -121,8 +121,6 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 	rf_autospeed_controller = pAutospeedController;
 	rf_v_ms_goal = pV_ms_goal;
 
-
-	Serial.println("Starting com RF");
 }
 
 
@@ -172,7 +170,6 @@ void makeActionInStack(int i) {
 			else {
 				(*rf_deciThrustPercent) =  atoi(rfcmd_tokens.array[4]);
 			}
-
 		}
 		else if (str_startsWith(rfcmd, "sc")) {
 

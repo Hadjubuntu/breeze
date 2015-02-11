@@ -26,6 +26,7 @@
 
 
 
+
 /*******************************************************************
  * Flight functions
  ******************************************************************/
@@ -90,10 +91,12 @@ void reinitFlightModeParameters() {
 }
 
 void updateRFRadioFutaba() {
-	UAVCore->attitudeCommanded->roll = (sBus.channels[0]-1500)/0.045;
-	UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-1500)/0.045;
-	UAVCore->attitudeCommanded->yaw = (sBus.channels[2]-1500)/0.045;
-	UAVCore->deciThrustPercent = max((sBus.channels[3]-1000), 0);
+	if (USE_RADIO_FUTABA == 1) {		
+		UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
+		UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
+		UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
+		UAVCore->deciThrustPercent = max((sBus.channels[2]-365)/1.38, 0);
+	}
 }
 
 /*******************************************************************
@@ -126,7 +129,6 @@ void process50HzTask() {
 				&aileronCmd, &gouvernCmd, &rubberCmd,
 				UAVCore->gyroXrate, UAVCore->gyroYrate,
 				UAVCore->deciThrustPercent);
-
 	}
 
 	//-----------------------------------------------
@@ -218,11 +220,7 @@ void process10HzTask() {
 	//------------------------------------------------------------
 	updateLowPriorityRFLink();
 
-	Logger.print("roll = ");
-	Logger.print(UAVCore->currentAttitude->roll);
-	Logger.print(" | pitch = ");
-	Logger.println(UAVCore->currentAttitude->pitch);
-	
+
 #if MEASURE_VIBRATION
 	Logger.print("Acc noise vibration = ");
 	Logger.print(accNoise);
@@ -272,8 +270,7 @@ void process2HzTask() {
 	Logger.println(" us");
 	 */
 
-
-	schedulerStats();
+	//	schedulerStats();
 }
 
 
@@ -332,8 +329,22 @@ void process1HzTask() {
 	Logger.print("\t\t\t");
 	Logger.print(rubberCmd) ;
 	Logger.println(" ");
+
+	Logger.print("roll cmd = ");
+Logger.println(UAVCore->attitudeCommanded->roll);
+Logger.print("pitch cmd = ");
+Logger.println(UAVCore->attitudeCommanded->pitch);
+Logger.print("yaw cmd = ");
+Logger.println(UAVCore->attitudeCommanded->yaw);
+Logger.print("decithrust cmd = ");
+Logger.println(UAVCore->deciThrustPercent);
+Logger.print("rubber cmd =");
+Logger.println(rubberCmd);
+Logger.println("*****************************");
 	 */
+
 }
+
 
 
 /*******************************************************************
@@ -346,11 +357,7 @@ void measureCriticalSensors() {
 	}
 
 	if (USE_RADIO_FUTABA) {
-		sBus.FeedLine();
-		if (sBus.toChannels == 1){
-			sBus.UpdateChannels();
-			sBus.toChannels = 0;
-		}
+		updateCriticalRadio();
 	}
 
 	updateCriticalRFLink();
@@ -370,6 +377,7 @@ Task uavTasks[] = {
 // Setup the UAV
 //---------------------------------------------------------------
 void setup() {
+
 	Logger.begin(115200) ;
 	Logger.println("startup") ;
 	previousTime = timeUs();

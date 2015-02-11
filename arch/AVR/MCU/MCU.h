@@ -8,7 +8,12 @@
 #ifndef MCU_H_
 #define MCU_H_
 
-#define SerialLogger Serial
+#include "arch/AVR/UART/UARTDriver.h"
+
+AVRUARTDriverISRs(0);
+AVRUARTDriverInstance(uartA, 0);
+
+//#define SerialLogger Serial
 
 long timeUs() {
 	return micros();
@@ -18,28 +23,39 @@ class LoggerFacade {
 public:
 
 	void begin(unsigned long baudRate) {
-		SerialLogger.begin(baudRate);
+	//	SerialLogger.begin(baudRate);
+		uartA.begin(baudRate);
 	}
 
 	void print(const char *s) {
-		SerialLogger.print(s);
+	//	SerialLogger.print(s);
+		uartA.print(s);
 	}
 	void print(int a) {
-		SerialLogger.print(a);
+//		SerialLogger.print(a);
+		uartA.print(a);
 	}
 	void print(float a) {
-		SerialLogger.print(a);
+//		SerialLogger.print(a);
+
+		uartA.print(a);
 	}
 	void print(double a) {
-		SerialLogger.print(a);
+//		SerialLogger.print(a);
+
+		uartA.print(a);
 	}
 	void print(long a) {
-		SerialLogger.print(a);
+//		SerialLogger.print(a);
+
+		uartA.print(a);
 	}
 
 	void println(const char *s) {
-		print(s);
-		print("\n");
+//		print(s);
+//		print("\n");
+
+		uartA.println(s);
 	}
 	void println(int a) {
 		print(a);

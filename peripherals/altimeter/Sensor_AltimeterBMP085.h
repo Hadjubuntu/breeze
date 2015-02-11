@@ -17,6 +17,7 @@
 #ifndef BMP085_h
 #define BMP085_h
 
+#include "arch/AVR/MCU/MCU.h"
 #include "arch/AVR/wire/Wire.h"
 
 #if defined(ARDUINO) && ARDUINO >= 100
@@ -325,30 +326,30 @@ void BMP085::calcTruePressure() {
 }
 
 void BMP085::dumpCalData() {
-	Serial.println("---cal data start---");
-	Serial.print("ac1:");
-	Serial.println(ac1,DEC);
-	Serial.print("ac2:");
-	Serial.println(ac2,DEC);
-	Serial.print("ac3:");
-	Serial.println(ac3,DEC);
-	Serial.print("ac4:");
-	Serial.println(ac4,DEC);
-	Serial.print("ac5:");
-	Serial.println(ac5,DEC);
-	Serial.print("ac6:");
-	Serial.println(ac6,DEC);
-	Serial.print("b1:");
-	Serial.println(b1,DEC);
-	Serial.print("b2:");
-	Serial.println(b2,DEC);
-	Serial.print("mb:");
-	Serial.println(mb,DEC);
-	Serial.print("mc:");
-	Serial.println(mc,DEC);
-	Serial.print("md:");
-	Serial.println(md,DEC);
-	Serial.println("---cal data end---");
+//	Logger.println("---cal data start---");
+//	Logger.print("ac1:");
+//	Logger.println(ac1);
+//	Logger.print("ac2:");
+//	Logger.println(ac2);
+//	Logger.print("ac3:");
+//	Logger.println(ac3);
+//	Logger.print("ac4:");
+//	Logger.println(ac4);
+//	Logger.print("ac5:");
+//	Logger.println(ac5);
+//	Logger.print("ac6:");
+//	Logger.println(ac6);
+//	Logger.print("b1:");
+//	Logger.println(b1);
+//	Logger.print("b2:");
+//	Logger.println(b2);
+//	Logger.print("mb:");
+//	Logger.println(mb);
+//	Logger.print("mc:");
+//	Logger.println(mc);
+//	Logger.print("md:");
+//	Logger.println(md);
+//	Logger.println("---cal data end---");
 }
 
 //PRIVATE methods

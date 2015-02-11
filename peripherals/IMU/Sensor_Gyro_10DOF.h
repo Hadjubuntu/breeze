@@ -12,6 +12,7 @@
 #ifndef SENSOR_GYRO_10DOF_H_
 #define SENSOR_GYRO_10DOF_H_
 
+#include "arch/AVR/MCU/MCU.h"
 #include "arch/AVR/wire/Wire.h"
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
@@ -141,20 +142,20 @@ void setupGyro() {
 	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
 	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) - 256; //sortie a 256 LSB/g (gravite terrestre) => offset a 256 pour mise a 0
 
-	Serial.print("Gyro cal x; y; z : ");
-	Serial.print(Gyro_cal_x);
-	Serial.print("; ");
-	Serial.print(Gyro_cal_y);
-	Serial.println(" ");
-	Serial.print("Acc cal x; y; z : ");
-	Serial.print(Accel_cal_x);
-	Serial.print("; ");
-	Serial.print(Accel_cal_y);
-	Serial.print("; ");
-	Serial.print(Accel_cal_z);
+	Logger.print("Gyro cal x; y; z : ");
+	Logger.print(Gyro_cal_x);
+	Logger.print("; ");
+	Logger.print(Gyro_cal_y);
+	Logger.println(" ");
+	Logger.print("Acc cal x; y; z : ");
+	Logger.print(Accel_cal_x);
+	Logger.print("; ");
+	Logger.print(Accel_cal_y);
+	Logger.print("; ");
+	Logger.print(Accel_cal_z);
 
 #else
-	Serial.println("IMU's calibration already done");
+	Logger.println("IMU's calibration already done");
 	/*
 IMU only calibration
 	Gyro cal x; y; z : 27.00; 11.00; 10.00

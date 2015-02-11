@@ -68,6 +68,11 @@ void StrStack::make(void (*callbackFunction)(int)) {
 void StrStack::insert(char *pStr) {
 	if (stackIsReady) {
 		if (strlen(pStr) < PACK_LENGTH_STR) {
+
+			// Empty the previous or new string
+			str_resetCharArray(stack[currentIdx]);
+
+			// Copy bytes of string into stack at current index position
 			strncpy(stack[currentIdx], pStr, strlen(pStr));
 
 			currentIdx ++;

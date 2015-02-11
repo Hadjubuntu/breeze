@@ -67,8 +67,6 @@ void updateAltimeter() {
 
 	Altitude = dps.getAltitude();
 	altitudeBarometer->addValue(Altitude-AltitudeOffset, timeUs());
-	Serial.print("alt = ");
-	Serial.println(Altitude-AltitudeOffset);
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

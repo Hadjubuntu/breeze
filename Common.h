@@ -45,7 +45,7 @@ enum FlightState {
 // Configuration
 #define START_IN_AUTOPILOT 0
 #define USE_GPS_NAVIGUATION 0
-#define USE_RADIO_FUTABA 0
+#define USE_RADIO_FUTABA 1
 #define USE_AIRSPEED_SENSOR 1
 #define V_MIN_TAKEOFF_MS 5 // Speed m/s through GPS or Pitot sensor
 #define GPS_COLD_START_DURATION_S 8 // Actually its 42s but we'll wait for the first data to throw..

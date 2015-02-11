@@ -3,6 +3,7 @@
 #define FUTABA_SBUS_h
 
 #include <Arduino.h>
+#include "arch/AVR/MCU/MCU.h"
 
 #define SBUS_SIGNAL_OK          0x00
 #define SBUS_SIGNAL_LOST        0x01
@@ -16,6 +17,7 @@ class FUTABA_SBUS
 {
 public:
 	uint8_t sbusData[25];
+	int16_t channelsCalib[18];
 	int16_t channels[18];
 	int16_t servos[18];
 	uint8_t  failsafe_status;
@@ -57,6 +59,7 @@ void FUTABA_SBUS::begin(){
 
 	memcpy(sbusData,loc_sbusData,25);
 	memcpy(channels,loc_channels,18);
+	memcpy(channelsCalib, loc_channels, 18);
 	memcpy(servos,loc_servos,18);
 	failsafe_status = SBUS_SIGNAL_OK;
 	sbus_passthrough = 1;
@@ -252,6 +255,8 @@ void FUTABA_SBUS::FeedLine(void){
 	if (port.available() > 24){
 		while(port.available() > 0){
 			inData = port.read();
+
+
 			switch (feedState){
 			case 0:
 				if (inData != 0x0f){
@@ -291,8 +296,29 @@ void FUTABA_SBUS::FeedLine(void){
 // Initialize radio Futaba
 //----------------------------------------------------
 FUTABA_SBUS sBus;
+
+
+void updateCriticalRadio() {
+	sBus.FeedLine();
+	if (sBus.toChannels == 1){
+		sBus.UpdateChannels();
+		sBus.toChannels = 0;
+	}
+}
+
 void setupRadioFutaba() {
+	Logger.println("Setup Futaba radio");
 	sBus.begin();
+
+
+	long ctime = timeUs();
+	while ((timeUs()-ctime) < 1500000) {
+		updateCriticalRadio();
+	}
+
+	for (int i = 0; i < 7; i ++) {
+		sBus.channelsCalib[i] = sBus.channels[i];
+	}
 }
 
 #endif
