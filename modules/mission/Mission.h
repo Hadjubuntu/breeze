@@ -27,6 +27,11 @@ void missionInit();
 //--------------------------------------------------
 void missionAdd(MissionElement *e);
 
+
+// Erase the mission'elements list
+//--------------------------------------------------
+void missionErase();
+
 // Run the mission to determine which attitude must be commanded
 //--------------------------------------------------
 void missionRun();

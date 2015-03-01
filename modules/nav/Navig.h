@@ -14,8 +14,8 @@ long lastGoodUpdate = 0;
 
 
 int NB_WAYPOINTS = 2;
-GeoPosition wps[] = {{489183720, 21389020, 0.5, 0},
-		{489185210, 21385350, 0.5, 0 },
+GeoPosition wps[] = {{489183720, 21389020, 15, 0},
+		{489185210, 21385350, 5, 0 },
 };
 
 GeoPosition landingPosition = {489185210, 21385350, 0.5, 0};

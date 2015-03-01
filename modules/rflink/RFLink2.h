@@ -14,6 +14,7 @@
 #include "Common.h"
 #include "arch/common/StrUtils.h"
 #include "arch/common/StrStack.h"
+#include "modules/rflink/RFFlightPlan.h"
 
 
 // Configuration RF
@@ -149,7 +150,7 @@ void makeActionInStack(int i) {
 		(*rf_deciThrustPercent) = atoi(rfcmd_tokens.array[1]);
 	}
 	else if (str_startsWith(rfcmd, "flaps")) {
-		(*rf_deciThrustPercent) = atoi(rfcmd_tokens.array[1]);
+		(*rf_flapsCmd) = atoi(rfcmd_tokens.array[1]);
 	}
 
 	if (USE_RADIO_FUTABA == 0) {

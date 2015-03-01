@@ -99,6 +99,34 @@ void updateRFRadioFutaba() {
 	}
 }
 
+void updateRFRadoFutabaLowFreq() {
+	if (USE_RADIO_FUTABA == 1) {	
+		// LOW means manual
+		if (sBus.channels[4] < 1000) {
+			UAVCore->autopilot = false;
+		}
+		// HIGH means auto
+		else {
+			UAVCore->autopilot = true;
+		}
+
+		switch (sBus.channels[6]) {
+		case 144:
+			flapsCmd = 0;
+			break;
+		case 1024:
+			flapsCmd = 50;
+			break;
+		case 1904:
+			flapsCmd = 90;
+			break;
+		default:
+			flapsCmd = 0;
+			break;
+		}
+	}
+}
+
 /*******************************************************************
  * 100Hz task (each 10 ms)
  ******************************************************************/
@@ -252,6 +280,10 @@ void process5HzTask() {
 	// Update altimeter
 	//------------------------------------------------------------
 	updateAltimeter();
+
+	// Update low frequency futaba RF
+	//------------------------------------------------------------
+	updateRFRadoFutabaLowFreq();
 }
 
 
@@ -342,7 +374,6 @@ Logger.print("rubber cmd =");
 Logger.println(rubberCmd);
 Logger.println("*****************************");
 	 */
-
 }
 
 

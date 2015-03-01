@@ -15,7 +15,8 @@ long lastMissionRunExecUs = 0;
 
 enum MissionElementType {
 	_missionWP = 1,
-	_missionCircle = 2
+	_missionCircle = 2,
+	// _missionHeadingHold = 3,
 };
 
 // Structures
@@ -29,6 +30,7 @@ typedef struct T_MISSION_CIRCLE {
 	double radiusMeters;
 } MissionCircle ;
 
+// Generic mission element
 typedef struct T_MISSION_ELEMENT {
 
 	long durationSeconds; // = 0, disabled

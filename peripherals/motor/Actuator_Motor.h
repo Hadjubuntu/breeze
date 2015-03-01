@@ -105,7 +105,7 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 		currentDeciThrustPercent += sign * DECITHRUST_SLEW_RATE;
 	}
 
-	int pw = 1000 + currentDeciThrustPercent;
+	int pw = ESC_MIN + currentDeciThrustPercent;
 	motorUpdateCommand(pw);
 }
 

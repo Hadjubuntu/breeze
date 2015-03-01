@@ -2,6 +2,18 @@
 #ifndef FUTABA_SBUS_h
 #define FUTABA_SBUS_h
 
+/**
+ * The radio must be configured to have the channels described bellow :
+ * 0 -> aileron
+ * 1 -> elevator
+ * 2 -> throttle
+ * 3 -> rubber
+ * 4 -> auto mode on/off
+ * 5 -> potentiometer for ...
+ * 6 -> flaps 3 position off / half / full
+ * 7 -> ..
+ */
+
 #include <Arduino.h>
 #include "arch/AVR/MCU/MCU.h"
 

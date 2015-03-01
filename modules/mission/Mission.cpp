@@ -16,9 +16,18 @@ void missionInit() {
 
 void missionAdd(MissionElement *element) {
 	uint8_t index = _mission.insertIdx;
-	_mission.elements[index] = (*element);
 
-	_mission.insertIdx ++;
+	if (index < MISSION_ELEMENT_NB) {
+		_mission.elements[index] = (*element);
+		_mission.insertIdx ++;
+	}
+}
+
+void missionErase() {
+	missionInit();
+	for (int i = 0; i < MISSION_ELEMENT_NB; i ++) {
+		_mission.elements[i] = 0;
+	}
 }
 
 bool missionIsDone() {
@@ -141,9 +150,9 @@ void parseRFMissionInput(char *rf_str) {
 			missionEl1.type = _missionCircle;
 
 			MissionCircle missionElementCircle;
-			missionElementCircle.center.alt = atof(rfPayload.array[5]);
 			missionElementCircle.center.lat = atof(rfPayload.array[3]);
 			missionElementCircle.center.lon = atof(rfPayload.array[4]);
+			missionElementCircle.center.alt = atof(rfPayload.array[5]);
 			missionElementCircle.radiusMeters = atof(rfPayload.array[6]);
 
 			missionEl1.missionWP = missionElementCircle;
