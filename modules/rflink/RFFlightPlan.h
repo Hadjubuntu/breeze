@@ -27,8 +27,13 @@ bool fpIncoming = false;
 int newFpSize = 0;
 
 void initFlightPlanIncoming(int pSize) {
+
+	// Init variables
 	fpIncoming = true;
 	newFpSize = pSize;
+
+	// Delete all mission elements from the previous mission
+	missionErase();
 }
 
 void endFlightPlanIncoming() {

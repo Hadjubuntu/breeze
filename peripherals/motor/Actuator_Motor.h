@@ -9,6 +9,8 @@
 #define ACTUATOR_MOTOR_H_
 
 #include "math/Math.h"
+#include "Breeze.h"
+#include "Common.h"
 
 
 #define THRUST_SLEW_RATE_ACTIVATED 1
@@ -34,15 +36,31 @@ void initMotor();
 uint16_t _timer_period(uint16_t speed_hz) {
 	return  2000000UL / speed_hz; // F_CPU/PWM_PRESCALER /speed_hz;
 }
-/* Output freq (1/period) control */
-void set_freq(uint16_t freq_hz) {
-	uint16_t icr = _timer_period(freq_hz);
+
+// Internal function setting freq on ICR4
+void set_freq_ICR4(uint16_t icr) {
+	ICR4 = icr;
+}
+
+// Internal function setting freq on ICR3
+void set_freq_ICR3(uint16_t icr) {
 	ICR4 = icr;
 }
 
 
-void setupMotors()
-{
+/* Output freq (1/period) control */
+void set_freq(uint16_t freq_hz) {
+	uint16_t icr = _timer_period(freq_hz);
+	set_freq_ICR4(icr);
+
+	if (Firmware == QUADCOPTER) {
+		set_freq_ICR3(icr);
+	}
+}
+
+
+void setupMotors() {
+	// Initialize thrust percent (deci percent) to zero
 	currentDeciThrustPercent = 0;
 
 	PORTE |= _BV(0);
@@ -65,13 +83,36 @@ void setupMotors()
 	ICR4 = 40000; // 0.5us tick => 50hz freq
 
 
-	// Set frequence
-	set_freq(PWM_FREQUENCY);
-
 	TCCR4A |= (1<<COM4C1); // CH_3 : OC4C
 	TCCR4A |= (1<<COM4B1); // CH_4 : OC4B
 	TCCR4A |= (1<<COM4A1); // CH_5 : OC4A
 
+	// In QUADCOPTER firmware mode
+	// we need another timer for the fourth motor
+	if (Firmware == QUADCOPTER) {
+		// Pins on timer 3
+		pinMode(5, OUTPUT); // OC3A
+		pinMode(2, OUTPUT); // OC3B
+		pinMode(3, OUTPUT); // OC3C
+
+		// Timer3
+		TCCR3A =((1<<WGM31));
+		TCCR3B = (1<<WGM33)|(1<<WGM32)|(1<<CS31);
+		OCR3A = 0xFFFF; // Init OCR registers to nil output signal
+		OCR3B = 0xFFFF;
+		OCR3C = 0xFFFF;
+		ICR3 = 40000; // 0.5us tick => 50hz freq
+
+		TCCR3A |= (1<<COM3A1);
+		TCCR3A |= (1<<COM3B1);
+		TCCR3A |= (1<<COM3C1);
+	}
+
+
+	// Set frequency
+	set_freq(PWM_FREQUENCY);
+
+	// Init motor to zero thrust value at start
 	initMotor();
 }
 
@@ -95,7 +136,7 @@ void motorUpdateCommand(int pThrust)
 // Update motor thrust using deci percent (deci for precision)
 void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 
-    int dDeciThrust = deciThrustPercentNewCmd - currentDeciThrustPercent;
+	int dDeciThrust = deciThrustPercentNewCmd - currentDeciThrustPercent;
 
 	if (THRUST_SLEW_RATE_ACTIVATED == 0 || abs(dDeciThrust) < DECITHRUST_SLEW_RATE) {
 		currentDeciThrustPercent = deciThrustPercentNewCmd ;
@@ -107,6 +148,10 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 
 	int pw = ESC_MIN + currentDeciThrustPercent;
 	motorUpdateCommand(pw);
+}
+
+void updateMotorRepartition() {
+
 }
 
 void testMotor() {

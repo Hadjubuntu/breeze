@@ -11,6 +11,7 @@
 
 #include "peripherals/servo/ServoAPM.h"
 #include "math/Math.h"
+#include "Common.h"
 
 enum SurfaceControlMode {
 	SC_THREE_AXIS_NORMAL, // Aileron, elevator, rubber
@@ -87,21 +88,26 @@ double factorCmd2Us(int pos, int vmin, int vmax) {
 // Initialize servo at startup position
 //----------------------------------------------------
 void setupServos() {
-	setupServoAPM();
-	delay(100);
 
-	servoAPM_write(PIN_SERVO_AILERON_LEFT, DEFAULT_ROLL_LEFT_POS);
-	servoAPM_write(PIN_SERVO_AILERON_RIGHT, DEFAULT_ROLL_RIGHT_POS);
+
+	if (Firmware == FIXED_WING) {
+		setupServoAPM();
+		delay(100);
+
+		servoAPM_write(PIN_SERVO_AILERON_LEFT, DEFAULT_ROLL_LEFT_POS);
+		servoAPM_write(PIN_SERVO_AILERON_RIGHT, DEFAULT_ROLL_RIGHT_POS);
 
 #if (USE_FLAPS == 1)
-	servoAPM_write(PIN_SERVO_FLAPS_LEFT, FLAPS_LEFT_DOWN);
-	servoAPM_write(PIN_SERVO_FLAPS_RIGHT, FLAPS_RIGHT_DOWN);
+		servoAPM_write(PIN_SERVO_FLAPS_LEFT, FLAPS_LEFT_DOWN);
+		servoAPM_write(PIN_SERVO_FLAPS_RIGHT, FLAPS_RIGHT_DOWN);
 #endif
 
 #if (USE_RUBBER == 1)
-	servoAPM_write(PIN_SERVO_RUBBER, DEFAULT_RUBBER_POS);
-	servoAPM_write(PIN_SERVO_GOUVERN, DEFAULT_GOUVERN_POS);
+		servoAPM_write(PIN_SERVO_RUBBER, DEFAULT_RUBBER_POS);
+		servoAPM_write(PIN_SERVO_GOUVERN, DEFAULT_GOUVERN_POS);
 #endif
+
+	}
 
 	delay(100);
 }

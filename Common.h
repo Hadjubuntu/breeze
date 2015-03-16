@@ -8,6 +8,13 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+enum FIRMWARE {
+	FIXED_WING,
+	QUADCOPTER,
+	ROCKET
+};
+FIRMWARE Firmware = FIXED_WING;
+
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
 #define Bound(_x, _min, _max) { if (_x > (_max)) _x = (_max); else if (_x < (_min)) _x = (_min); }
@@ -142,8 +149,10 @@ void initializeUAVConfiguration() {
 
 	// Flight control stabilization parameters
 	param[ID_G_TAU] = 0.5f;
-	param[ID_G_P_ROLL] = 1.2f;
-	param[ID_G_D_ROLL] = 0.05f;
+
+	param[ID_G_P_ROLL] = 1.0f;
+	param[ID_G_D_ROLL] = 0.04f;
+
 	param[ID_G_P_PITCH] = 1.0f;
 	param[ID_G_D_PITCH] = 0.04f;
 

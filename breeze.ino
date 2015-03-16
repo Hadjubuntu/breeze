@@ -59,7 +59,17 @@ void updateAttitude() {
  * Write command output to the servos
  ******************************************************************/
 void processCommand() {
-	updateSurfaceControls();
+	switch (Firmware) {
+	case FIXED_WING:
+		updateSurfaceControls();
+		break;
+	case QUADCOPTER:
+		updateMotorRepartition();
+		break;
+	default:
+		Logger.println("Unknow firmware");
+		break;
+	}
 }
 
 
@@ -110,7 +120,7 @@ void updateRFRadoFutabaLowFreq() {
 			UAVCore->autopilot = true;
 		}
 
-		switch (sBus.channels[6]) {
+		switch (sBus.channels[7]) {
 		case 144:
 			flapsCmd = 0;
 			break;
@@ -207,12 +217,6 @@ void process50HzTask() {
 	updateRFRadioFutaba();
 
 
-	//------------------------------------------------------------
-	/*if (USE_RANGE_FINDER) {
-			// Update range finder data
-			ultrasonicMakePulse();
-			updateRangeFinder();
-	}*/
 
 	// Motor update
 	// Command motor at % thrust
@@ -411,6 +415,14 @@ void setup() {
 
 	Logger.begin(115200) ;
 	Logger.println("startup") ;
+	switch (Firmware) {
+	case FIXED_WING:
+		Logger.println("Fixed wing firmware");
+		break;
+	case QUADCOPTER:
+		Logger.println("Quadcopter firmware");
+		break;
+	}
 	previousTime = timeUs();
 
 	setupMotors() ;
@@ -431,11 +443,6 @@ void setup() {
 
 	setupServos() ;
 	Logger.println("Servos armed");
-
-	/*if (USE_RANGE_FINDER) {
-		setupRangeDetector() ;
-		Logger.println("Range detector armed");
-	}*/
 
 
 	if (USE_GPS_NAVIGUATION) {
