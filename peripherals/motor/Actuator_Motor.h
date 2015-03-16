@@ -9,13 +9,26 @@
 #define ACTUATOR_MOTOR_H_
 
 #include "math/Math.h"
-#include "Breeze.h"
+#include "peripherals/servo/Sensor_Servo.h"
 #include "Common.h"
 
 
 #define THRUST_SLEW_RATE_ACTIVATED 1
 #define DECITHRUST_SLEW_RATE 20 // Max of decithrust difference each 50ms
 int currentDeciThrustPercent;
+
+/**
+ * Quadcopter configuration
+ * X1       X2			pin6     pin7
+ *   .     .
+ *     .  .
+ *      Q
+ *     .  .
+ *   .     .
+ * X3       X4         pin8     pin5
+ *
+ */
+int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
 #define ESC_MAX_PROTECTION 2000
@@ -122,15 +135,27 @@ void initMotor() {
 }
 
 
+
 void motorUpdateCommand(int pThrust)
 {
 	if (pThrust > ESC_MAX_PROTECTION) {
 		pThrust = ESC_MAX_PROTECTION;
 	}
 
-	OCR4A = pThrust  << 1 ;
-	OCR4B = pThrust  << 1 ;
-	OCR4C = pThrust  << 1 ;
+	switch (Firmware) {
+	case FIXED_WING:
+		OCR4A = pThrust  << 1 ;
+		break;
+
+	case QUADCOPTER:
+		OCR4A = thrustX1  << 1 ;
+		OCR4B = thrustX2  << 1 ;
+		OCR4C = thrustX3  << 1 ;
+		OCR3A = thrustX4  << 1 ;
+		break;
+	}
+
+
 }
 
 // Update motor thrust using deci percent (deci for precision)
@@ -151,7 +176,26 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 }
 
 void updateMotorRepartition() {
+	int factor = 150;
 
+	// Protection to shutdown all motors
+	if (currentDeciThrustPercent < 10) {
+		thrustX1 = 0;
+		thrustX2 = 0;
+		thrustX3 = 0;
+		thrustX4 = 0;
+	}
+	else {
+		thrustX1 = ESC_MIN + currentDeciThrustPercent + (aileronCmd/4500)*factor - (gouvernCmd/4500)*factor ;
+		thrustX2 = ESC_MIN + currentDeciThrustPercent - (aileronCmd/4500)*factor - (gouvernCmd/4500)*factor ;
+		thrustX3 = ESC_MIN + currentDeciThrustPercent + (aileronCmd/4500)*factor + (gouvernCmd/4500)*factor;
+		thrustX4 = ESC_MIN + currentDeciThrustPercent - (aileronCmd/4500)*factor + (gouvernCmd/4500)*factor ;
+
+		Bound(thrustX1, 0, ESC_MAX);
+		Bound(thrustX2, 0, ESC_MAX);
+		Bound(thrustX3, 0, ESC_MAX);
+		Bound(thrustX4, 0, ESC_MAX);
+	}
 }
 
 void testMotor() {
