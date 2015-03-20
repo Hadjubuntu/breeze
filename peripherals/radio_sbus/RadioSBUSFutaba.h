@@ -28,6 +28,7 @@
 class FUTABA_SBUS
 {
 public:
+	long lastUpdateUs;
 	uint8_t sbusData[25];
 	int16_t channelsCalib[18];
 	int16_t channels[18];
@@ -78,6 +79,7 @@ void FUTABA_SBUS::begin(){
 	toChannels = 0;
 	bufferIndex=0;
 	feedState = 0;
+	lastUpdateUs = timeUs();
 }
 
 int16_t FUTABA_SBUS::Channel(uint8_t ch) {
@@ -312,8 +314,9 @@ FUTABA_SBUS sBus;
 
 void updateCriticalRadio() {
 	sBus.FeedLine();
-	if (sBus.toChannels == 1){
+	if (sBus.toChannels == 1 ){
 		sBus.UpdateChannels();
+		sBus.lastUpdateUs = timeUs();
 		sBus.toChannels = 0;
 	}
 }

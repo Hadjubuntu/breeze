@@ -79,6 +79,8 @@ public:
     double getQbias() { return Q_bias; };
     double getRmeasure() { return R_measure; };
 
+    double getOfflineAngle() { return angle; }
+
 private:
     /* Kalman filter variables */
     double Q_angle; // Process noise variance for the accelerometer

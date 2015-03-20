@@ -29,6 +29,7 @@ long lastUpdateAHRS_Us = 0;
 // TODO simplifier les variables utilisés et de sortie
 // Output variables
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
+float rel_accZ;
 
 int Gyro_output[2],Accel_output[3];
 
@@ -180,9 +181,6 @@ Pilatus calib :
 // Update AHRS (Attitude and Heading Reference System)
 // using Kalman filter
 void updateGyroData() {
-
-	float rel_accZ;
-
 
 	long currentTimeUs = micros() ;
 	dt = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;

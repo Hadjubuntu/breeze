@@ -148,10 +148,16 @@ void motorUpdateCommand(int pThrust)
 		break;
 
 	case QUADCOPTER:
-		OCR4A = thrustX1  << 1 ;
-		OCR4B = thrustX2  << 1 ;
-		OCR4C = thrustX3  << 1 ;
-		OCR3A = thrustX4  << 1 ;
+
+		Bound(thrustX1, ESC_MIN, ESC_MAX);
+		Bound(thrustX2, ESC_MIN, ESC_MAX);
+		Bound(thrustX3, ESC_MIN, ESC_MAX);
+		Bound(thrustX4, ESC_MIN, ESC_MAX);
+
+		OCR4A = thrustX1  << 1 ; // pin 6
+		OCR4B = thrustX2  << 1 ; // pin 7
+		OCR4C = thrustX3  << 1 ; // pin 8
+		OCR3A = thrustX4  << 1 ; // pin 5
 		break;
 	}
 
@@ -176,25 +182,20 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 }
 
 void updateMotorRepartition() {
-	int factor = 150;
+	int factor = 125;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
-		thrustX1 = 0;
-		thrustX2 = 0;
-		thrustX3 = 0;
-		thrustX4 = 0;
+		thrustX1 = ESC_MIN;
+		thrustX2 = ESC_MIN;
+		thrustX3 = ESC_MIN;
+		thrustX4 = ESC_MIN;
 	}
 	else {
-		thrustX1 = ESC_MIN + currentDeciThrustPercent + (aileronCmd/4500)*factor - (gouvernCmd/4500)*factor ;
-		thrustX2 = ESC_MIN + currentDeciThrustPercent - (aileronCmd/4500)*factor - (gouvernCmd/4500)*factor ;
-		thrustX3 = ESC_MIN + currentDeciThrustPercent + (aileronCmd/4500)*factor + (gouvernCmd/4500)*factor;
-		thrustX4 = ESC_MIN + currentDeciThrustPercent - (aileronCmd/4500)*factor + (gouvernCmd/4500)*factor ;
-
-		Bound(thrustX1, 0, ESC_MAX);
-		Bound(thrustX2, 0, ESC_MAX);
-		Bound(thrustX3, 0, ESC_MAX);
-		Bound(thrustX4, 0, ESC_MAX);
+		thrustX1 = ESC_MIN + currentDeciThrustPercent + (int)((aileronCmd/4500.0)*factor + (gouvernCmd/4500.0)*factor) ;
+		thrustX2 = ESC_MIN + currentDeciThrustPercent - (int)((aileronCmd/4500.0)*factor - (gouvernCmd/4500.0)*factor) ;
+		thrustX3 = ESC_MIN + currentDeciThrustPercent + (int)((aileronCmd/4500.0)*factor - (gouvernCmd/4500.0)*factor);
+		thrustX4 = ESC_MIN + currentDeciThrustPercent - (int)((aileronCmd/4500.0)*factor + (gouvernCmd/4500.0)*factor) ;
 	}
 }
 

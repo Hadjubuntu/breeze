@@ -13,7 +13,12 @@ enum FIRMWARE {
 	QUADCOPTER,
 	ROCKET
 };
-FIRMWARE Firmware = FIXED_WING;
+FIRMWARE Firmware = QUADCOPTER;
+
+#if Firmware == QUADCOPTER
+#include "firmware/quadcopter/AltitudeController.h"
+#endif
+
 
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))

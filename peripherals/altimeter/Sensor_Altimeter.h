@@ -10,6 +10,7 @@
 
 #include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
+#include "math/Kalman.h"
 
 
 // Gain to be multiplied with the ground altitude offset
@@ -54,19 +55,28 @@ void setupAltimeter() {
 
 	AltitudeOffset = (long)(K_ALTITUDE_OFFSET * offset);
 
-	altitudeBarometer = new FilterAverage(30, 0, 20000, true);
-
+	altitudeBarometer = new FilterAverage(2, 0, 20000, true);
 
 	delay(500);
 
 }
 
+double altDt = 0.1;
+long altPrevious = 0;
 
 void updateAltimeter() {
+	if (altPrevious == 0) {
+		altDt = 0.1;
+	}
+	else {
+		altDt = (micros()-altPrevious) / S_TO_US;
+	}
 	ultraUpdateAlt();
 
 	Altitude = dps.getAltitude();
 	altitudeBarometer->addValue(Altitude-AltitudeOffset, timeUs());
+
+	altPrevious = micros();
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

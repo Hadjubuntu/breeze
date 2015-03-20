@@ -101,16 +101,25 @@ void reinitFlightModeParameters() {
 }
 
 void updateRFRadioFutaba() {
-	if (USE_RADIO_FUTABA == 1) {		
-		UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
-		UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
-		UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
-		UAVCore->deciThrustPercent = max((sBus.channels[2]-365)/1.38, 0);
+	if (USE_RADIO_FUTABA == 1) {
+		// Connexion lost with 
+		if (timeUs() - sBus.lastUpdateUs > S_TO_US) {
+			// failsafe
+			UAVCore->deciThrustPercent = 0;
+			UAVCore->autopilot = false;
+		}
+		else {
+			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
+			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
+			UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
+			UAVCore->deciThrustPercent = max((sBus.channels[2]-365)/1.38, 0);
+		}
 	}
 }
 
 void updateRFRadoFutabaLowFreq() {
-	if (USE_RADIO_FUTABA == 1) {	
+	if (USE_RADIO_FUTABA == 1) {
+
 		// LOW means manual
 		if (sBus.channels[4] < 1000) {
 			UAVCore->autopilot = false;
@@ -229,6 +238,12 @@ void process50HzTask() {
  * 20Hz task (50ms)
  ******************************************************************/
 void process20HzTask() {
+
+	// TODO to be continued
+	if (Firmware == QUADCOPTER) {
+		altitudeHoldController();
+	}
+
 	// Update airspeed sensor
 	if (USE_AIRSPEED_SENSOR) {
 		double newAirspeedVms = updateAirspeed();
@@ -307,6 +322,17 @@ void process2HzTask() {
 	 */
 
 	//	schedulerStats();
+ /**	Logger.println("--------------------------");
+	Logger.print("X1 = ");
+	Logger.println(thrustX1);
+	Logger.print("X2 = ");
+	Logger.println(thrustX2);
+	Logger.print("X3 = ");
+	Logger.println(thrustX3);
+	Logger.print("X4 = ");
+	Logger.println(thrustX4);
+	Logger.print("sbus[4] = ");
+	Logger.println(sBus.channels[4]); */
 }
 
 
