@@ -100,9 +100,10 @@ public:
 	// BMP Sensors
 	void getPressure(int32_t *_Pa);                // pressure in Pa + offset
 	long getAltitude();       // altitude in centimeters + offset
-	void getTemperature(int32_t *_Temperature);    // temperature in C�   
+	long getTemperature();    // temperature in Celsius
 	void calcTrueTemperature();                    // calc temperature data b5 (only needed if AUTO_UPDATE_TEMPERATURE is false)  
 	void calcTruePressure();    // calc Pressure in Pa
+	void calTruPressureState1();
 	// dummy stuff
 	void dumpCalData();                           // debug only
 
@@ -111,6 +112,7 @@ public:
 
 	void updateAltitudeCm();
 
+	bool _pressure_updated;
 private:
 
 	int ac1,ac2,ac3,b1,b2,mb,mc,md;               // cal data  
@@ -139,7 +141,6 @@ private:
 	long _dt_us;
 
 	long _true_pressure;
-	bool _pressure_updated;
 
 };
 
@@ -164,7 +165,7 @@ BMP085::BMP085() {
 }
 
 void BMP085::init() {
-	init(MODE_ULTRA_LOW_POWER, 0, true);
+	init(MODE_HIGHRES, 0, true);
 }
 
 void BMP085::init(byte _BMPMode, int32_t _initVal, bool _Unitmeters){
@@ -222,6 +223,8 @@ void BMP085::getPressure(int32_t *_Pa){
 	calcTrueTemperature();
 	while (_true_pressure == 0) {
 		calcTruePressure();
+		delay(26);
+		calTruPressureState1();
 	}
 
 	*_Pa = _true_pressure / pow((1 - (float)_param_centimeters / 4433000), 5.255) + _Pa_Offset;
@@ -239,9 +242,8 @@ long BMP085::getAltitude(){
 	return _altitude_cm;
 }
 
-void BMP085::getTemperature(int32_t *_Temperature) {
-	calcTrueTemperature();                            // force b5 update
-	*_Temperature = ((b5 + 8) >> 4);
+long BMP085::getTemperature() {
+	return  ((b5 + 8) >> 4) / 10;
 }
 
 void BMP085::calcTrueTemperature(){
@@ -261,29 +263,16 @@ void BMP085::calcTrueTemperature(){
 	b5 = x1 + x2;
 }
 
-
-void BMP085::calcTruePressure() {
-
-	//read Raw Pressure
-	if (_chip_state == 0) {
-		writemem(CONTROL, READ_PRESSURE+(_oss << 6));
-		_last_write_cmd_us = micros();
-		_chip_state = 1;
-	}
-
-
-	delay(_pressure_waittime[_oss]); // TODO ne plus avoir de delay
-
+void BMP085::calTruPressureState1() {
 	if (_chip_state == 1) {
-		long c_dt_us = micros()-_last_write_cmd_us;
+		long c_dt_us = timeUs()-_last_write_cmd_us;
 
-		if (c_dt_us >= _pressure_waittime[_oss]*1000 ) { // && c_dt_us < _pressure_waittime[_oss]*1000+200
+		 if (c_dt_us >= _pressure_waittime[_oss]*1000) { // && c_dt_us < _pressure_waittime[_oss]*1000+200
 			_dt_us = c_dt_us;
 
 			long up,x1,x2,x3,b3,b6,p;
 			unsigned long b4,b7;
 			int32_t tmp;
-
 
 
 			readmem(CONTROL_OUTPUT, 3, _buff);
@@ -308,13 +297,13 @@ void BMP085::calcTruePressure() {
 			x2 = (-7357 * p) >> 16;
 			long tmpTruePressure = p + ((x1 + x2 + 3791) >> 4);
 
-			if (_pressure_updated) {
-				_true_pressure = 0.7*_true_pressure + 0.3*tmpTruePressure;
-			}
-			else {
+//			if (_pressure_updated) {
+//				_true_pressure = 0.1*_true_pressure + 0.9*tmpTruePressure;
+//			}
+//			else {
 				_true_pressure = tmpTruePressure;
 				_pressure_updated = true;
-			}
+//			}
 
 			// Force update altitude cm
 			updateAltitudeCm();
@@ -322,34 +311,43 @@ void BMP085::calcTruePressure() {
 			_chip_state = 0;
 		}
 	}
+}
 
+void BMP085::calcTruePressure() {
+
+	//read Raw Pressure
+	if (_chip_state == 0) {
+		writemem(CONTROL, READ_PRESSURE+(_oss << 6));
+		_last_write_cmd_us = timeUs();
+		_chip_state = 1;
+	}
 }
 
 void BMP085::dumpCalData() {
-//	Logger.println("---cal data start---");
-//	Logger.print("ac1:");
-//	Logger.println(ac1);
-//	Logger.print("ac2:");
-//	Logger.println(ac2);
-//	Logger.print("ac3:");
-//	Logger.println(ac3);
-//	Logger.print("ac4:");
-//	Logger.println(ac4);
-//	Logger.print("ac5:");
-//	Logger.println(ac5);
-//	Logger.print("ac6:");
-//	Logger.println(ac6);
-//	Logger.print("b1:");
-//	Logger.println(b1);
-//	Logger.print("b2:");
-//	Logger.println(b2);
-//	Logger.print("mb:");
-//	Logger.println(mb);
-//	Logger.print("mc:");
-//	Logger.println(mc);
-//	Logger.print("md:");
-//	Logger.println(md);
-//	Logger.println("---cal data end---");
+	//	Logger.println("---cal data start---");
+	//	Logger.print("ac1:");
+	//	Logger.println(ac1);
+	//	Logger.print("ac2:");
+	//	Logger.println(ac2);
+	//	Logger.print("ac3:");
+	//	Logger.println(ac3);
+	//	Logger.print("ac4:");
+	//	Logger.println(ac4);
+	//	Logger.print("ac5:");
+	//	Logger.println(ac5);
+	//	Logger.print("ac6:");
+	//	Logger.println(ac6);
+	//	Logger.print("b1:");
+	//	Logger.println(b1);
+	//	Logger.print("b2:");
+	//	Logger.println(b2);
+	//	Logger.print("mb:");
+	//	Logger.println(mb);
+	//	Logger.print("mc:");
+	//	Logger.println(mc);
+	//	Logger.print("md:");
+	//	Logger.println(md);
+	//	Logger.println("---cal data end---");
 }
 
 //PRIVATE methods

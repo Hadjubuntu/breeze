@@ -65,23 +65,16 @@ Task #4 duration 4 us | slot time taken : 0%
 Task #5 duration 23126 us | slot time taken : 4%
 Task #6 duration 3023 us | slot time taken : 0%
 
-New altimeter
-Task #0 duration 3078 us | slot time taken : 30%
-Task #1 duration 201 us | slot time taken : 1%
-Task #2 duration 199 us | slot time taken : 0%
-Task #3 duration 279 us | slot time taken : 0%
-Task #4 duration 4 us | slot time taken : 0%
-Task #5 duration 22785 us | slot time taken : 4%
-Task #6 duration 9058 us | slot time taken : 0%
 
-Return alt delay
-Task #0 duration 3086 us | slot time taken : 30%
-Task #1 duration 203 us | slot time taken : 1%
-Task #2 duration 195 us | slot time taken : 0%
+New BMP085
+Task #0 duration 2622 us | slot time taken : 26%
+Task #1 duration 932 us | slot time taken : 4%
+Task #2 duration 521 us | slot time taken : 1%
 Task #3 duration 8 us | slot time taken : 0%
-Task #4 duration 6793 us | slot time taken : 3%
-Task #5 duration 22989 us | slot time taken : 4%
-Task #6 duration 7752 us | slot time taken : 0%
+Task #4 duration 382 us | slot time taken : 0%
+Task #5 duration 4 us | slot time taken : 0%
+Task #6 duration 32931 us | slot time taken : 3%
+
 
  *
  */

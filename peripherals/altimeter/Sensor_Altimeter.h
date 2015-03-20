@@ -17,7 +17,7 @@
 // in order to force to have 0 as altitude on the ground, due to ground variations
 #define K_ALTITUDE_OFFSET 1.0
 
-// Altimeter
+// Altimeter (Differential pressure sensor DPS)
 BMP085 dps = BMP085();
 FilterAverage *altitudeBarometer;
 long Temperature = 0, Pressure = 0, Altitude = 0, AltitudeOffset = 0;
@@ -27,9 +27,14 @@ void updateBaroTemperatureLowFreq() {
 }
 
 
-void ultraUpdateAlt() {
+void callUpdateAlt() {
 	dps.calcTruePressure();
 }
+
+void highFreqCheckUpdateAlt() {
+	dps.calTruPressureState1();
+}
+
 
 void setupAltimeter() {
 	//----------------------------------------------------------
@@ -41,42 +46,45 @@ void setupAltimeter() {
 
 	updateBaroTemperatureLowFreq();
 
-	for (int i = 0; i < nbMeasureOffset; i ++) {
+	int i = 0;
+	while (i < nbMeasureOffset) {
 
-		updateBaroTemperatureLowFreq();
-		ultraUpdateAlt();
+		callUpdateAlt();
+		highFreqCheckUpdateAlt();
 
-		AltitudeOffsetData = dps.getAltitude();
-		if (AltitudeOffsetData > 0) {
-			offset = (0.8f*offset) + (0.2f*AltitudeOffsetData);
+		if (dps._pressure_updated) {
+			AltitudeOffsetData = dps.getAltitude();
+			if (AltitudeOffsetData > 0 && AltitudeOffsetData < 1000) {
+				offset = (0.7f*offset) + (0.3f*AltitudeOffsetData);
+			}
+
+			i++;
+			dps._pressure_updated = false;
 		}
-		delay(10);
 	}
 
 	AltitudeOffset = (long)(K_ALTITUDE_OFFSET * offset);
 
-	altitudeBarometer = new FilterAverage(2, 0, 20000, true);
+	altitudeBarometer = new FilterAverage(4, 0, 20000, true);
 
-	delay(500);
+	Logger.print("Altimeter offset = ");
+	Logger.println(AltitudeOffset);
 
+	delay(200);
 }
 
-double altDt = 0.1;
-long altPrevious = 0;
+long previousAlt = 0;
 
 void updateAltimeter() {
-	if (altPrevious == 0) {
-		altDt = 0.1;
-	}
-	else {
-		altDt = (micros()-altPrevious) / S_TO_US;
-	}
-	ultraUpdateAlt();
+
+	callUpdateAlt();
 
 	Altitude = dps.getAltitude();
-	altitudeBarometer->addValue(Altitude-AltitudeOffset, timeUs());
+	if (abs(Altitude - previousAlt) < 500) {
+		altitudeBarometer->addValue(Altitude, timeUs());
+		previousAlt = Altitude;
+	}
 
-	altPrevious = micros();
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

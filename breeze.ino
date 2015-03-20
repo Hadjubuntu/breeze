@@ -100,6 +100,12 @@ void reinitFlightModeParameters() {
 	rf_automodeSwitchToken = false;
 }
 
+
+
+
+/*******************************************************************
+ * Radio Futaba Controller
+ ******************************************************************/
 void updateRFRadioFutaba() {
 	if (USE_RADIO_FUTABA == 1) {
 		// Connexion lost with 
@@ -146,12 +152,12 @@ void updateRFRadoFutabaLowFreq() {
 	}
 }
 
+
 /*******************************************************************
  * 100Hz task (each 10 ms)
  ******************************************************************/
 void process100HzTask() {
 	G_Dt = (currentTime - hundredHZpreviousTime) / S_TO_US;
-
 
 	// Update attitude from gyro
 	updateAttitude() ;
@@ -322,7 +328,7 @@ void process2HzTask() {
 	 */
 
 	//	schedulerStats();
- /**	Logger.println("--------------------------");
+	/**	Logger.println("--------------------------");
 	Logger.print("X1 = ");
 	Logger.println(thrustX1);
 	Logger.print("X2 = ");
@@ -404,6 +410,10 @@ Logger.print("rubber cmd =");
 Logger.println(rubberCmd);
 Logger.println("*****************************");
 	 */
+	
+	Logger.print("alt (cm) = ");
+	Logger.println(altitudeBarometer->getAverage());
+	
 }
 
 
@@ -421,7 +431,11 @@ void measureCriticalSensors() {
 		updateCriticalRadio();
 	}
 
+	// Update critical RF links
 	updateCriticalRFLink();
+	
+	// Try to update barometer
+	highFreqCheckUpdateAlt();
 }
 
 
