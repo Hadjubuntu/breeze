@@ -38,7 +38,11 @@ void missionRun();
 
 // Parse rf input into mission action
 //--------------------------------------------------
-void parseRFMissionInput(char *);
+MissionElement parseRFMissionInput(char *);
+
+// Print mission flight plan on Serial
+//--------------------------------------------------
+void printMissionFlightPlan();
 
 
 //--------------------------------------------------

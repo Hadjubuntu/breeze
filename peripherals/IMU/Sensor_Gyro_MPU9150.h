@@ -8,24 +8,30 @@
 #ifndef SENSOR_GYRO_MPU9150_H_
 #define SENSOR_GYRO_MPU9150_H_
 
+// TODO find 256 accelerometer specs value
 
 
-// TODO adapt settings for MPU9150
-// TODO find LSB data for accelerometer and gyro !
-
+#include "arch/AVR/MCU/MCU.h"
 #include "arch/AVR/wire/Wire.h"
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
 
-#define MPU9150_CHIP_ADDRESS 0x69
-#define MEASURE_VIBRATION 0
-#define ENABLE_IMU_CALIBRATION 0
+#define MPU9150_CHIP_ADDRESS 0x68
+#define MEASURE_VIBRATION 1
+#define ENABLE_IMU_CALIBRATION 1
 
+// Parameter of the IMU
+// Thoses values change when config sent to the IMU is changed
+#define ACC_LSB_PER_G 8192.0
+#define GYRO_LSB_PER_G 131.0
+
+// Enable vibration measurement
 #if MEASURE_VIBRATION
 #include "../../math/Math.h"
 double accNoise = 0.0; // Noise accelerometer measure in G (means output steady equals 1 due to gravity)
 #endif
 
+// Variables
 long lastUpdateAHRS_Us = 0;
 // TODO simplifier les variables utilisés et de sortie
 // Output variables
@@ -93,12 +99,20 @@ void setupGyro() {
 	delay(5);
 	Wire.begin();
 
+	uint8_t i2cData[14]; // Buffer for I2C data
+
+	Logger.println("start configuration IMU");
+
 	//configuration gyroscope et accelerometre
 	//----------------------------------------
-	writeTo(0x53,0x31,0x09); //accel 11 bits - +/-4g
-	writeTo(0x53,0x2D,0x08); //accel en mode mesure
-	writeTo(0x68,0x16,0x1A); //gyro +/-2000 deg/s + passe-bas a 100Hz
-	writeTo(0x68,0x15,0x09); //gyro echantillonage a 100Hz
+	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
+	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
+	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
+	i2cData[3] = 0x01; // Set Accelerometer Full Scale Range to ±4g
+	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, false)); // Write to all four registers at once
+	while (i2cWrite(MPU9150_CHIP_ADDRESS, 0x6B, 0x01, true)); // PLL with X axis gyroscope reference and disable sleep mode
+
+	Logger.println("IMU configured");
 
 	delay(200);
 
@@ -138,33 +152,31 @@ void setupGyro() {
 
 	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
 	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
-	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) - 256; //sortie a 256 LSB/g (gravite terrestre) => offset a 256 pour mise a 0
+	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) - 256.0; //sortie a 256.0 LSB/g (gravite terrestre) => offset a 256.0 pour mise a 0
 
-	Serial.print("Gyro cal x; y; z : ");
-	Serial.print(Gyro_cal_x);
-	Serial.print("; ");
-	Serial.print(Gyro_cal_y);
-	Serial.print("; ");
-	Serial.print(Gyro_cal_z);
-	Serial.println(" ");
-	Serial.print("Acc cal x; y; z : ");
-	Serial.print(Accel_cal_x);
-	Serial.print("; ");
-	Serial.print(Accel_cal_y);
-	Serial.print("; ");
-	Serial.print(Accel_cal_z);
+	Logger.print("Gyro cal x; y; z : ");
+	Logger.print(Gyro_cal_x);
+	Logger.print("; ");
+	Logger.print(Gyro_cal_y);
+	Logger.println(" ");
+	Logger.print("Acc cal x; y; z : ");
+	Logger.print(Accel_cal_x);
+	Logger.print("; ");
+	Logger.print(Accel_cal_y);
+	Logger.print("; ");
+	Logger.print(Accel_cal_z);
 
 #else
 	Serial.println("IMU's calibration already done");
 	/*
 IMU only calibration
-	Gyro cal x; y; z : 27.00; 11.00; 10.00
+	Gyro cal x; y; z : 27.00; 1256.0; 10.00
 	Acc cal x; y; z : 0.00; 0.00; -33.00
 Yak 54 calibration
-    Gyro cal x; y; z : 34.00; 21.00; -16.00
+    Gyro cal x; y; z : 34.00; 2256.0; -16.00
     Acc cal x; y; z : 22.00; -3.00; -35.00
 Pilatus calib :
-  Gyro cal x; y; z : 29.00; 21.00; -9.00
+  Gyro cal x; y; z : 29.00; 2256.0; -9.00
   Acc cal x; y; z : -4.00; 10.00; -34.00
 	 */
 	Gyro_cal_x = 29.0;
@@ -190,13 +202,12 @@ void updateGyroData() {
 	lastUpdateAHRS_Us = currentTimeUs;
 
 	// Retrieve IMU data
-	getGyroscopeReadings(Gyro_output);
-	getAccelerometerReadings(Accel_output);
+	getIMUReadings(Gyro_output, Accel_output);
 
-	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
 	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
 
-	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ 14.375) * dt;
+	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
 
 	//conserver l'echelle +/-180° pour l'axe X du gyroscope
 	//-----------------------------------------------------
@@ -205,12 +216,12 @@ void updateGyroData() {
 
 	//sortie du filtre de Kalman pour les X (pitch)
 	//---------------------------------------------
-	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
+	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
 
-	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256,(Accel_output[2] - Accel_cal_z)/256) * 180 / PI;
+	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
 	Accel_roll = 0.3 * Accel_roll + 0.7 * raw_accel_roll;
 
-	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ 14.375) * dt;
+	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
 
 	//conserver l'echelle +/-180° pour l'axe Y du gyroscope
 	//-----------------------------------------------------
@@ -219,7 +230,7 @@ void updateGyroData() {
 
 	//sortie du filtre de Kalman pour les Y (roll)
 	//--------------------------------------------
-	Predicted_roll = Predicted_roll - ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+	Predicted_roll = Predicted_roll - ((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
 
 	P00 += dt * (2 * P01 + dt * P11);
 	P01 += dt * P11;
@@ -245,19 +256,19 @@ void updateGyroData() {
 
 	//-----------------------------------------------
 	// Output update
-	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
-	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
+	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
 
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
-	gyroZangle += Gyro_output[2] / 14.375 * dt;
+	gyroZangle += Gyro_output[2] / GYRO_LSB_PER_G * dt;
 
 
 
 #if MEASURE_VIBRATION
 	//-----------------------------------------------
 	// If needed, measure vibration
-	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / 256;
+	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / 256.0;
 #endif
 }
 

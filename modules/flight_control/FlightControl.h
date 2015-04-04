@@ -87,6 +87,17 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
+#if Firmware == QUADCOPTER
+	// TO BE CONTINUED for quadcopter firmware
+	double outputRollCmd = errorRoll * param[ID_G_P_ROLL];
+	double outputPitchCmd = errorPitch * param[ID_G_P_PITCH];
+	double yawCmd = yawDesired;
+
+	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
+	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
+	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
+
+#elif Firmware == FIXED_WING
 
 	double v_ms ;
 	if (USE_AIRSPEED_SENSOR) {
@@ -141,6 +152,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
+#endif
 }
 
 

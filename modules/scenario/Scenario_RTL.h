@@ -56,7 +56,7 @@ void rtlNav() {
 		}
 		else {
 			UAVCore->attitudeCommanded->roll = 0;
-			UAVCore->attitudeCommanded->pitch = 10;
+			UAVCore->attitudeCommanded->pitch = 0;
 			UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * angleDiff;
 
 			UAVCore->v_ms_goal = 3; // m/s

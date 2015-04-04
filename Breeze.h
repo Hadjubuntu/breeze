@@ -18,6 +18,8 @@
 #include "peripherals/IMU/Sensor_Gyro.h"
 #elif GYRO_TYPE == T_GYRO_ITG3200
 #include "peripherals/IMU/Sensor_Gyro_10DOF.h"
+#elif GYRO_TYPE == T_GYRO_MPU9150
+#include "peripherals/IMU/Sensor_Gyro_MPU9150.h"
 #endif
 
 #include "peripherals/range_detector/Sensor_RangeDetector2.h"
@@ -67,14 +69,11 @@ void initializeAttitude(Attitude *att) {
 //----------------------------------------------------
 typedef struct T_UAV {
 	bool autopilot;
-	FlightState flightState ;
+	FlightState flightState;
 
 	// Thrust in deci-% (from 0 to 1000)
-	int deciThrustPercent ;
-
-	// Altitude sonar (filtered)
-	// Not used anymore because of lake of precision
-	// FilterAverage *altitudeSonar;
+	int deciThrustPercent;
+	int deciThrustCmd;
 
 	// Celerity in m/s
 	double v_ms ;

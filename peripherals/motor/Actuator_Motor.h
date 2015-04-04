@@ -14,7 +14,7 @@
 
 
 #define THRUST_SLEW_RATE_ACTIVATED 1
-#define DECITHRUST_SLEW_RATE 20 // Max of decithrust difference each 50ms
+#define DECITHRUST_SLEW_RATE 40 // Max of decithrust difference each 50ms
 int currentDeciThrustPercent;
 
 /**
@@ -29,6 +29,8 @@ int currentDeciThrustPercent;
  *
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
+int motorMatrix[4][2];
+
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
 #define ESC_MAX_PROTECTION 2000
@@ -55,9 +57,9 @@ void set_freq_ICR4(uint16_t icr) {
 	ICR4 = icr;
 }
 
-// Internal function setting freq on ICR3
-void set_freq_ICR3(uint16_t icr) {
-	ICR4 = icr;
+// Internal function setting freq on ICR5
+void set_freq_ICR5(uint16_t icr) {
+	ICR5 = icr;
 }
 
 
@@ -67,7 +69,7 @@ void set_freq(uint16_t freq_hz) {
 	set_freq_ICR4(icr);
 
 	if (Firmware == QUADCOPTER) {
-		set_freq_ICR3(icr);
+		set_freq_ICR5(icr);
 	}
 }
 
@@ -103,22 +105,45 @@ void setupMotors() {
 	// In QUADCOPTER firmware mode
 	// we need another timer for the fourth motor
 	if (Firmware == QUADCOPTER) {
-		// Pins on timer 3
-		pinMode(5, OUTPUT); // OC3A
-		pinMode(2, OUTPUT); // OC3B
-		pinMode(3, OUTPUT); // OC3C
 
-		// Timer3
-		TCCR3A =((1<<WGM31));
-		TCCR3B = (1<<WGM33)|(1<<WGM32)|(1<<CS31);
-		OCR3A = 0xFFFF; // Init OCR registers to nil output signal
-		OCR3B = 0xFFFF;
-		OCR3C = 0xFFFF;
-		ICR3 = 40000; // 0.5us tick => 50hz freq
+		// Pins on timer 5
+		pinMode(46, OUTPUT); // OC5A
+		pinMode(45, OUTPUT); // OC5B
+		pinMode(44, OUTPUT); // OC5C
 
-		TCCR3A |= (1<<COM3A1);
-		TCCR3A |= (1<<COM3B1);
-		TCCR3A |= (1<<COM3C1);
+		// Timer 5
+		TCCR5A =((1<<WGM51));
+		TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
+		OCR5A = 0xFFFF; // Init OCR registers to nil output signal
+		OCR5B = 0xFFFF;
+		OCR5C = 0xFFFF;
+		ICR5 = 40000; // 0.5us tick => 50hz freq
+
+
+		TCCR5A |= (1<<COM5A1);
+		TCCR5A |= (1<<COM5B1);
+		TCCR5A |= (1<<COM5C1);
+
+		if (QuadType == PLUS) {
+			motorMatrix[0][0] = 0;
+			motorMatrix[0][1] = 1;
+			motorMatrix[1][0] = -1;
+			motorMatrix[1][1] = 0;
+			motorMatrix[2][0] = 1;
+			motorMatrix[2][1] = 0;
+			motorMatrix[3][0] = 0;
+			motorMatrix[3][1] = -1;
+		}
+		else if (QuadType == X) {
+			motorMatrix[0][0] = 1;
+			motorMatrix[0][1] = 1;
+			motorMatrix[1][0] = -1;
+			motorMatrix[1][1] = 1;
+			motorMatrix[2][0] = 1;
+			motorMatrix[2][1] = -1;
+			motorMatrix[3][0] = -1;
+			motorMatrix[3][1] = -1;
+		}
 	}
 
 
@@ -154,10 +179,12 @@ void motorUpdateCommand(int pThrust)
 		Bound(thrustX3, ESC_MIN, ESC_MAX);
 		Bound(thrustX4, ESC_MIN, ESC_MAX);
 
-		OCR4A = thrustX1  << 1 ; // pin 6
-		OCR4B = thrustX2  << 1 ; // pin 7
-		OCR4C = thrustX3  << 1 ; // pin 8
-		OCR3A = thrustX4  << 1 ; // pin 5
+		OCR5C = thrustX1  << 1 ; // pin 44
+		OCR5B = thrustX2  << 1 ; // pin 45
+		OCR5A = thrustX3  << 1 ; // pin 46
+		OCR4C = thrustX4  << 1 ; // pin 8
+		break;
+	case ROCKET:
 		break;
 	}
 
@@ -182,7 +209,7 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 }
 
 void updateMotorRepartition() {
-	int factor = 125;
+	int factor = 60;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
@@ -192,10 +219,10 @@ void updateMotorRepartition() {
 		thrustX4 = ESC_MIN;
 	}
 	else {
-		thrustX1 = ESC_MIN + currentDeciThrustPercent + (int)((aileronCmd/4500.0)*factor + (gouvernCmd/4500.0)*factor) ;
-		thrustX2 = ESC_MIN + currentDeciThrustPercent - (int)((aileronCmd/4500.0)*factor - (gouvernCmd/4500.0)*factor) ;
-		thrustX3 = ESC_MIN + currentDeciThrustPercent + (int)((aileronCmd/4500.0)*factor - (gouvernCmd/4500.0)*factor);
-		thrustX4 = ESC_MIN + currentDeciThrustPercent - (int)((aileronCmd/4500.0)*factor + (gouvernCmd/4500.0)*factor) ;
+		thrustX1 = ESC_MIN + currentDeciThrustPercent + motorMatrix[0][0]*(aileronCmd/4500.0)*factor + motorMatrix[0][1]*(gouvernCmd/4500.0)*factor ;
+		thrustX2 = ESC_MIN + currentDeciThrustPercent + motorMatrix[1][0]*(aileronCmd/4500.0)*factor + motorMatrix[1][1]*(gouvernCmd/4500.0)*factor ;
+		thrustX3 = ESC_MIN + currentDeciThrustPercent + motorMatrix[2][0]*(aileronCmd/4500.0)*factor + motorMatrix[2][1]*(gouvernCmd/4500.0)*factor;
+		thrustX4 = ESC_MIN + currentDeciThrustPercent + motorMatrix[3][0]*(aileronCmd/4500.0)*factor + motorMatrix[3][1]*(gouvernCmd/4500.0)*factor ;
 	}
 }
 

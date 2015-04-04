@@ -1,11 +1,12 @@
 # Makefile for Breeze Project
 # old flags : -c -g -Os -w -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD 
+# /home/hadjsalah/Software/arduino-1.6.3/hardware/arduino/avr
 
 BOARD := mega2560
 
 # default arduino software directory, check software exists
 ifndef ARDUINODIR
-ARDUINODIR := /home/adrien/Software/Arduino158/arduino-1.5.8
+ARDUINODIR := /home/hadjsalah/Software/arduino-1.6.3
 endif
 ifeq "$(wildcard $(ARDUINODIR)/hardware/arduino/avr/boards.txt)" ""
 $(error ARDUINODIR is not set correctly; arduino software not found)
@@ -131,7 +132,7 @@ endif
 
 # flags
 CPPFLAGS += -Os -Wall -fno-exceptions -ffunction-sections -fdata-sections
-CPPFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums
+CPPFLAGS += -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -std=c++11
 CPPFLAGS += -mmcu=$(BOARD_BUILD_MCU)
 CPPFLAGS += -DF_CPU=$(BOARD_BUILD_FCPU) -DARDUINO=$(ARDUINOCONST)
 # CPPFLAGS += -DUSB_VID=$(BOARD_USB_VID) -DUSB_PID=$(BOARD_USB_PID)

@@ -16,7 +16,10 @@ The main function is written in Breeze.ino
 
 =======================================
 Compile the code :
-Using makefile, run make -f BreezeMakefile.mk
+1- Install arduino
+2- Change Makefile to link to your arduino folder.
+3- (TODO) Edit your arduino core library files to remove any link to Serial (Serial0)
+4- Using makefile, run make -f BreezeMakefile.mk
 
 
 =======================================

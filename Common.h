@@ -8,17 +8,6 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
-enum FIRMWARE {
-	FIXED_WING,
-	QUADCOPTER,
-	ROCKET
-};
-FIRMWARE Firmware = QUADCOPTER;
-
-#if Firmware == QUADCOPTER
-#include "firmware/quadcopter/AltitudeController.h"
-#endif
-
 
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))
@@ -29,6 +18,23 @@ FIRMWARE Firmware = QUADCOPTER;
     while (x > M_PI) x -= 2 * M_PI; \
     while (x < -M_PI) x += 2 * M_PI; \
   }
+
+enum FIRMWARE {
+	FIXED_WING,
+	QUADCOPTER,
+	ROCKET
+};
+FIRMWARE Firmware = QUADCOPTER;
+
+#if Firmware == QUADCOPTER
+#include "firmware/quadcopter/AltitudeController.h"
+
+enum QUAD_TYPE {
+	PLUS,
+	X
+};
+QUAD_TYPE QuadType = PLUS;
+#endif
 
 enum FlightMode {
 	FULL_MANUAL,
@@ -107,7 +113,8 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 
 #define T_GYRO_MPU6050 1
 #define T_GYRO_ITG3200 2
-#define GYRO_TYPE T_GYRO_ITG3200
+#define T_GYRO_MPU9150 3
+#define GYRO_TYPE T_GYRO_MPU9150
 
 
 // Common structures

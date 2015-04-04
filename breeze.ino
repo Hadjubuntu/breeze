@@ -1,18 +1,17 @@
 /**
  * Breeze Project
- * ----------------------------------------
+ * ---------------------------------------------------------
+ * Breeze is an open-source autopilot for UAV.
+ * ---------------------------------------------------------
  * 2014 (c) Adrien HADJ-SALAH
-
- * PIN list :
- * - 6 x Servos
- * - ESC (Pin 6)
- * - optionnal [GPS Pin16,17 Serial2 (Actually just one pin needed)]
+ *
  * - Airspeed on analog pin 1
- * - Gyro on SDA/SCL pin mega 20 (yellow) 21 (orange) (A4 A5 on Uno)
- * - Serial1 for RF link on 18 (blue) 19 (green) Rx Tx
+ * - Gyro on SDA/SCL pin mega 20 21
+ * - Serial1 for RF link on 18 19 Rx Tx (Xbee)
  * 
  ***********************************************************
- * Using Timer 4 for ESC, Serial2 (Hardware Rx Pin 17 mega) for GPS
+ * Serial3 (Rx pin 15 mega) for SBUS Futaba,
+ * Serial2 (Hardware Rx Pin 17 mega) for GPS
  * 
  * First succesful flight : 03/12/2014
  */
@@ -28,22 +27,18 @@
 
 
 /*******************************************************************
- * Flight functions
+ * Update IMU data
  ******************************************************************/
 // Read sensors and update data
 void updateAttitude() {  
 	// Update gyro data
 	updateGyroData();
 
-	if (GYRO_TYPE == T_GYRO_MPU6050) {
-		UAVCore->currentAttitude->roll = kalAngleX;
-		UAVCore->currentAttitude->pitch = -kalAngleY;
-	}
-	else {
-		UAVCore->currentAttitude->roll = kalAngleX;
-		UAVCore->currentAttitude->pitch = kalAngleY;
-	}
+	// Set new current attitude
+	UAVCore->currentAttitude->roll = kalAngleX;
+	UAVCore->currentAttitude->pitch = kalAngleY;
 
+	// Update heading with GPS data
 	if (USE_GPS_NAVIGUATION) {
 		UAVCore->headingCap = currentHeading;
 	}
@@ -82,6 +77,7 @@ void fullManual() {
 	if ((currentTime-lastTimeLinkWithGS) > S_TO_US*3) {
 		// TODO return home procedure : switch to auto, UAV must return home and land
 		UAVCore->deciThrustPercent = 0;	
+		UAVCore->deciThrustCmd = 0;
 		UAVCore->attitudeCommanded->roll = 0;		
 		UAVCore->attitudeCommanded->pitch = 0;
 		UAVCore->attitudeCommanded->yaw = 0;
@@ -112,6 +108,7 @@ void updateRFRadioFutaba() {
 		if (timeUs() - sBus.lastUpdateUs > S_TO_US) {
 			// failsafe
 			UAVCore->deciThrustPercent = 0;
+			UAVCore->deciThrustCmd = 0;
 			UAVCore->autopilot = false;
 		}
 		else {
@@ -119,6 +116,7 @@ void updateRFRadioFutaba() {
 			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
 			UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
 			UAVCore->deciThrustPercent = max((sBus.channels[2]-365)/1.38, 0);
+			UAVCore->deciThrustCmd = UAVCore->deciThrustPercent;
 		}
 	}
 }
@@ -244,25 +242,30 @@ void process50HzTask() {
  * 20Hz task (50ms)
  ******************************************************************/
 void process20HzTask() {
-
-	// TODO to be continued
-	if (Firmware == QUADCOPTER) {
-		altitudeHoldController();
-	}
-
-	// Update airspeed sensor
 	if (USE_AIRSPEED_SENSOR) {
 		double newAirspeedVms = updateAirspeed();
 		airspeed_ms_mean->addValue(newAirspeedVms, currentTime);
+	}
 
-		// Only if autospeed controller is activated and flight is in cruise state,
-		// then adjust thrust regarding the current speed vms
-		if (AUTOSPEED_CONTROLLER == 1) {
+	if (AUTOSPEED_CONTROLLER == 1) {
+		switch (Firmware) {
+		case FIXED_WING:
+			// Only if autospeed controller is activated and flight is in cruise state,
+			// then adjust thrust regarding the current speed vms
 			// Auto-speed control with PID
-			UAVCore->deciThrustPercent = controlSpeedWithThrustV2(currentTime, UAVCore->deciThrustPercent, UAVCore->v_ms_goal, UAVCore->currentAttitude);
+			if (USE_AIRSPEED_SENSOR) {
+				UAVCore->deciThrustPercent = controlSpeedWithThrustV2(currentTime, UAVCore->deciThrustPercent, UAVCore->v_ms_goal, UAVCore->currentAttitude);
+			}
+			break;
+		case QUADCOPTER:
+			altitudeHoldController(altitudeBarometer->getAverage(), UAVCore->deciThrustCmd, &(UAVCore->deciThrustPercent));
+			break;
+		case ROCKET:
+			break;
 		}
 	}
 }
+
 
 
 /*******************************************************************
@@ -282,9 +285,7 @@ void process10HzTask() {
 	Logger.print(" | pitch = ");
 	Logger.print(UAVCore->currentAttitude->pitch);
 	Logger.print(" | Acc X = ");
-	Logger.print((Accel_output[0] - Accel_cal_x)/256);
-	Logger.print(" | Acc X only = ");
-	Logger.print((Accel_output[0] - Accel_cal_x)/256 - sin(toRad(abs(UAVCore->currentAttitude->pitch))));
+	Logger.print((Accel_output[0] - Accel_cal_x)/ACC_LSB_PER_G);
 
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
@@ -409,11 +410,11 @@ Logger.println(UAVCore->deciThrustPercent);
 Logger.print("rubber cmd =");
 Logger.println(rubberCmd);
 Logger.println("*****************************");
-	 */
-	
+
+
 	Logger.print("alt (cm) = ");
 	Logger.println(altitudeBarometer->getAverage());
-	
+	 */
 }
 
 
@@ -433,7 +434,7 @@ void measureCriticalSensors() {
 
 	// Update critical RF links
 	updateCriticalRFLink();
-	
+
 	// Try to update barometer
 	highFreqCheckUpdateAlt();
 }
@@ -462,6 +463,8 @@ void setup() {
 	case QUADCOPTER:
 		Logger.println("Quadcopter firmware");
 		break;
+	case ROCKET:
+		break;
 	}
 	previousTime = timeUs();
 
@@ -481,8 +484,10 @@ void setup() {
 	setupAltimeter();
 	Logger.println("Altimeter armed");
 
+#if Firmware == FIXED_WING
 	setupServos() ;
 	Logger.println("Servos armed");
+#endif
 
 
 	if (USE_GPS_NAVIGUATION) {

@@ -51,6 +51,10 @@ public:
 		uartA.print(a);
 	}
 
+	void print(uint8_t a) {
+		uartA.print(a);
+	}
+
 	void println(const char *s) {
 //		print(s);
 //		print("\n");

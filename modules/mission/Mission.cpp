@@ -111,7 +111,7 @@ void missionRun() {
  * Parsing function
  **********************************************************************/
 
-void parseRFMissionInput(char *rf_str) {
+MissionElement parseRFMissionInput(char *rf_str) {
 	// Parse data
 	//-------------------------------------------------------
 
@@ -135,9 +135,9 @@ void parseRFMissionInput(char *rf_str) {
 			missionEl1.type = _missionWP;
 
 			MissionWP missionElementWP;
-			missionElementWP.wp.alt = atof(rfPayload.array[5]);
 			missionElementWP.wp.lat = atof(rfPayload.array[3]);
 			missionElementWP.wp.lon = atof(rfPayload.array[4]);
+			missionElementWP.wp.alt = atof(rfPayload.array[5]);
 
 			missionEl1.missionWP = missionElementWP;
 
@@ -165,7 +165,39 @@ void parseRFMissionInput(char *rf_str) {
 
 		if (missionPrepared) {
 			// Add it to the list
-			missionAdd(&missionEl1);
+			return missionEl1;
 		}
+	}
+
+	return 0;
+}
+
+void printMissionFlightPlan() {
+	Logger.println("Mission flight plan printing");
+	Logger.print("Current : ");
+	Logger.print(_mission.currentIdx);
+	Logger.print(" | over : ");
+	Logger.print(_mission.insertIdx);
+	Logger.println("----------------------------");
+
+	for (int i = 0; i < _mission.insertIdx; i ++) {
+		MissionElement cElement = _mission.elements[i];
+
+		Logger.print("#");
+		Logger.print(i);
+
+		switch (cElement.type) {
+		case _missionWP:
+			Logger.print("WP");
+			break;
+		case _missionCircle:
+			Logger.print("Circle");
+			break;
+		default:
+			Logger.print("Unknow mission type");
+			break;
+		}
+
+		Logger.print("\n");
 	}
 }
