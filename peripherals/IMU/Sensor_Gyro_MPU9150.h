@@ -19,6 +19,15 @@
 #define MPU9150_CHIP_ADDRESS 0x68
 #define MEASURE_VIBRATION 1
 #define ENABLE_IMU_CALIBRATION 1
+#define ENABLE_COMPASS 1
+
+//MPU9150 Compass
+#define MPU9150_CMPS_XOUT_L        0x4A   // R
+#define MPU9150_CMPS_XOUT_H        0x4B   // R
+#define MPU9150_CMPS_YOUT_L        0x4C   // R
+#define MPU9150_CMPS_YOUT_H        0x4D   // R
+#define MPU9150_CMPS_ZOUT_L        0x4E   // R
+#define MPU9150_CMPS_ZOUT_H        0x4F   // R
 
 // Parameter of the IMU
 // Thoses values change when config sent to the IMU is changed
@@ -37,7 +46,7 @@ long lastUpdateAHRS_Us = 0;
 // Output variables
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
 
-int Gyro_output[3],Accel_output[3];
+int Gyro_output[3], Accel_output[3], Mag_output[3];
 
 float dt = 0.01;
 
@@ -74,7 +83,7 @@ float Kk0, Kk1;
 
 //lecture gyroscope - datasheet ITG3200
 //-------------------------------------
-void getIMUReadings(int Gyro_out[], int Accel_out[])
+void getIMUReadings(int Gyro_out[], int Accel_out[], int Mag_out[])
 {
 	byte buffer[14];
 	readFrom(MPU9150_CHIP_ADDRESS, 0x3B, 14,buffer);
@@ -89,8 +98,16 @@ void getIMUReadings(int Gyro_out[], int Accel_out[])
 	Accel_out[2]=(((int)buffer[4]) << 8 ) | buffer[5];
 
 	// tempRaw = (i2cData[6] << 8) | i2cData[7];
+#if ENABLE_COMPASS == 1
+	readFrom(MPU9150_CHIP_ADDRESS, MPU9150_CMPS_XOUT_L, 6, buffer);
+	Mag_out[0]=(((int)buffer[0]) << 8 ) | buffer[1];
+	Mag_out[1]=(((int)buffer[2]) << 8 ) | buffer[3];
+	Mag_out[2]=(((int)buffer[4]) << 8 ) | buffer[5];
+#endif
 }
 
+
+void MPU9150_setupCompass();
 
 //-------------------------------------------
 // Initialize IMU with calibration values
@@ -114,6 +131,10 @@ void setupGyro() {
 
 	Logger.println("IMU configured");
 
+#if ENABLE_COMPASS == 1
+	MPU9150_setupCompass();
+#endif
+
 	delay(200);
 
 #if ENABLE_IMU_CALIBRATION == 1
@@ -133,7 +154,7 @@ void setupGyro() {
 
 	for(i = 0;i < nbSampleCalib;i += 1)
 	{
-		getIMUReadings(Gyro_output, Accel_output);
+		getIMUReadings(Gyro_output, Accel_output, Mag_output);
 
 		Gyro_cal_x_sample += Gyro_output[0];
 		Gyro_cal_y_sample += Gyro_output[1];
@@ -202,7 +223,7 @@ void updateGyroData() {
 	lastUpdateAHRS_Us = currentTimeUs;
 
 	// Retrieve IMU data
-	getIMUReadings(Gyro_output, Accel_output);
+	getIMUReadings(Gyro_output, Accel_output, Mag_output);
 
 	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
 	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
@@ -270,6 +291,46 @@ void updateGyroData() {
 	// If needed, measure vibration
 	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / 256.0;
 #endif
+}
+
+void MPU9150_printMagField() {
+#if ENABLE_COMPASS == 1
+	Logger.println("Mag field");
+	Logger.print("X: ");
+	Logger.print(Mag_output[0]);
+	Logger.print("Y: ");
+	Logger.print(Mag_output[1]);
+	Logger.print("Z: ");
+	Logger.println(Mag_output[2]);
+#endif
+}
+
+void MPU9150_setupCompass(){
+	byte cAddr = 0x0C;      //change Adress to Compass
+
+	writeTo(cAddr, 0x0A, 0x00); //PowerDownMode
+	writeTo(cAddr, 0x0A, 0x0F); //SelfTest
+	writeTo(cAddr, 0x0A, 0x00); //PowerDownMode
+
+	cAddr = 0x69;      //change Adress to MPU
+
+	writeTo(cAddr, 0x24, 0x40); //Wait for Data at Slave0
+	writeTo(cAddr, 0x25, 0x8C); //Set i2c address at slave0 at 0x0C
+	writeTo(cAddr, 0x26, 0x02); //Set where reading at slave 0 starts
+	writeTo(cAddr, 0x27, 0x88); //set offset at start reading and enable
+	writeTo(cAddr, 0x28, 0x0C); //set i2c address at slv1 at 0x0C
+	writeTo(cAddr, 0x29, 0x0A); //Set where reading at slave 1 starts
+	writeTo(cAddr, 0x2A, 0x81); //Enable at set length to 1
+	writeTo(cAddr, 0x64, 0x01); //overvride register
+	writeTo(cAddr, 0x67, 0x03); //set delay rate
+	writeTo(cAddr, 0x01, 0x80);
+
+	writeTo(cAddr, 0x34, 0x04); //set i2c slv4 delay
+	writeTo(cAddr, 0x64, 0x00); //override register
+	writeTo(cAddr, 0x6A, 0x00); //clear usr setting
+	writeTo(cAddr, 0x64, 0x01); //override register
+	writeTo(cAddr, 0x6A, 0x20); //enable master i2c mode
+	writeTo(cAddr, 0x34, 0x13); //disable slv4
 }
 
 
