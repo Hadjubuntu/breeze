@@ -290,6 +290,7 @@ void process10HzTask() {
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
 	
+	updateCompassData();
 	MPU9150_printMagField();
 #endif
 

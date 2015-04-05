@@ -17,6 +17,7 @@
 #include "arch/AVR/I2C/I2C.h"
 
 #define MPU9150_CHIP_ADDRESS 0x68
+#define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 1
 #define ENABLE_IMU_CALIBRATION 1
 #define ENABLE_COMPASS 1
@@ -81,9 +82,9 @@ float P01 = 0.1;
 float Kk0, Kk1;
 
 
-//lecture gyroscope - datasheet ITG3200
+// read IMU data - datasheet ITG3200
 //-------------------------------------
-void getIMUReadings(int Gyro_out[], int Accel_out[], int Mag_out[])
+void getIMUReadings(int Gyro_out[], int Accel_out[])
 {
 	byte buffer[14];
 	readFrom(MPU9150_CHIP_ADDRESS, 0x3B, 14,buffer);
@@ -98,12 +99,26 @@ void getIMUReadings(int Gyro_out[], int Accel_out[], int Mag_out[])
 	Accel_out[2]=(((int)buffer[4]) << 8 ) | buffer[5];
 
 	// tempRaw = (i2cData[6] << 8) | i2cData[7];
+}
+
+void updateCompassData() {
 #if ENABLE_COMPASS == 1
+	byte buffer[6];
+
 	readFrom(MPU9150_CHIP_ADDRESS, MPU9150_CMPS_XOUT_L, 6, buffer);
-	Mag_out[0]=(((int)buffer[0]) << 8 ) | buffer[1];
-	Mag_out[1]=(((int)buffer[2]) << 8 ) | buffer[3];
-	Mag_out[2]=(((int)buffer[4]) << 8 ) | buffer[5];
+	Mag_output[0]=(((int)buffer[0]) << 8 ) | buffer[1];
+	Mag_output[1]=(((int)buffer[2]) << 8 ) | buffer[3];
+	Mag_output[2]=(((int)buffer[4]) << 8 ) | buffer[5];
+
+	writeTo(AK8975_MAG_ADDRESS, 0x0a, 0x01);
 #endif
+}
+
+double getCompassHeading() {
+	double heading = fast_atan2((double)Mag_output[1], (double)Mag_output[0]) * RAD2DEG + 180;
+	while (heading < 0) heading += 360;
+	while (heading > 360) heading -= 360;
+	return heading;
 }
 
 
@@ -154,7 +169,7 @@ void setupGyro() {
 
 	for(i = 0;i < nbSampleCalib;i += 1)
 	{
-		getIMUReadings(Gyro_output, Accel_output, Mag_output);
+		getIMUReadings(Gyro_output, Accel_output);
 
 		Gyro_cal_x_sample += Gyro_output[0];
 		Gyro_cal_y_sample += Gyro_output[1];
@@ -223,7 +238,7 @@ void updateGyroData() {
 	lastUpdateAHRS_Us = currentTimeUs;
 
 	// Retrieve IMU data
-	getIMUReadings(Gyro_output, Accel_output, Mag_output);
+	getIMUReadings(Gyro_output, Accel_output);
 
 	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
 	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
@@ -306,31 +321,28 @@ void MPU9150_printMagField() {
 }
 
 void MPU9150_setupCompass(){
-	byte cAddr = 0x0C;      //change Adress to Compass
 
-	writeTo(cAddr, 0x0A, 0x00); //PowerDownMode
-	writeTo(cAddr, 0x0A, 0x0F); //SelfTest
-	writeTo(cAddr, 0x0A, 0x00); //PowerDownMode
+	writeTo(AK8975_MAG_ADDRESS, 0x0A, 0x00); //PowerDownMode
+	writeTo(AK8975_MAG_ADDRESS, 0x0A, 0x0F); //SelfTest
+	writeTo(AK8975_MAG_ADDRESS, 0x0A, 0x00); //PowerDownMode
 
-	cAddr = 0x69;      //change Adress to MPU
+	writeTo(MPU9150_CHIP_ADDRESS, 0x24, 0x40); //Wait for Data at Slave0
+	writeTo(MPU9150_CHIP_ADDRESS, 0x25, 0x8C); //Set i2c address at slave0 at 0x0C
+	writeTo(MPU9150_CHIP_ADDRESS, 0x26, 0x02); //Set where reading at slave 0 starts
+	writeTo(MPU9150_CHIP_ADDRESS, 0x27, 0x88); //set offset at start reading and enable
+	writeTo(MPU9150_CHIP_ADDRESS, 0x28, 0x0C); //set i2c address at slv1 at 0x0C
+	writeTo(MPU9150_CHIP_ADDRESS, 0x29, 0x0A); //Set where reading at slave 1 starts
+	writeTo(MPU9150_CHIP_ADDRESS, 0x2A, 0x81); //Enable at set length to 1
+	writeTo(MPU9150_CHIP_ADDRESS, 0x64, 0x01); //overvride register
+	writeTo(MPU9150_CHIP_ADDRESS, 0x67, 0x03); //set delay rate
+	writeTo(MPU9150_CHIP_ADDRESS, 0x01, 0x80);
 
-	writeTo(cAddr, 0x24, 0x40); //Wait for Data at Slave0
-	writeTo(cAddr, 0x25, 0x8C); //Set i2c address at slave0 at 0x0C
-	writeTo(cAddr, 0x26, 0x02); //Set where reading at slave 0 starts
-	writeTo(cAddr, 0x27, 0x88); //set offset at start reading and enable
-	writeTo(cAddr, 0x28, 0x0C); //set i2c address at slv1 at 0x0C
-	writeTo(cAddr, 0x29, 0x0A); //Set where reading at slave 1 starts
-	writeTo(cAddr, 0x2A, 0x81); //Enable at set length to 1
-	writeTo(cAddr, 0x64, 0x01); //overvride register
-	writeTo(cAddr, 0x67, 0x03); //set delay rate
-	writeTo(cAddr, 0x01, 0x80);
-
-	writeTo(cAddr, 0x34, 0x04); //set i2c slv4 delay
-	writeTo(cAddr, 0x64, 0x00); //override register
-	writeTo(cAddr, 0x6A, 0x00); //clear usr setting
-	writeTo(cAddr, 0x64, 0x01); //override register
-	writeTo(cAddr, 0x6A, 0x20); //enable master i2c mode
-	writeTo(cAddr, 0x34, 0x13); //disable slv4
+	writeTo(MPU9150_CHIP_ADDRESS, 0x34, 0x04); //set i2c slv4 delay
+	writeTo(MPU9150_CHIP_ADDRESS, 0x64, 0x00); //override register
+	writeTo(MPU9150_CHIP_ADDRESS, 0x6A, 0x00); //clear usr setting
+	writeTo(MPU9150_CHIP_ADDRESS, 0x64, 0x01); //override register
+	writeTo(MPU9150_CHIP_ADDRESS, 0x6A, 0x20); //enable master i2c mode
+	writeTo(MPU9150_CHIP_ADDRESS, 0x34, 0x13); //disable slv4
 }
 
 

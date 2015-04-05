@@ -14,6 +14,8 @@
 #include <stdlib.h>
 
 
+#define EMPTY_CHAR ((char *)0)
+
 /**
  * Takes any char array, and reset each character
  * so that strcat will start from beginning of the string
@@ -26,14 +28,14 @@ void str_resetCharArray(char *p) {
 /**
  * Test whether a string starts with another string
  */
-bool str_startsWith(char *pStr, char *pStart) {
+bool str_startsWith(const char *pStr, const char *pStart) {
 	return (strlen(pStart) <= strlen(pStr) && ( strncmp(pStart,pStr,strlen(pStart)) == 0));
 }
 
 /**
  * Tells whether a string ends with
  */
-bool str_endWith(char *pStr, char *pEnd) {
+bool str_endWith(const char *pStr, const char *pEnd) {
 	bool endwidth = true;
 	int sizeStr = strlen(pStr);
 	int sizeEnd = strlen(pEnd);
@@ -73,7 +75,7 @@ int str_countChar(char *pStr, char pChar) {
  * Split string and extract the part between start and end
  */
 char *str_substring(char *pStr, int start, int end) {
-	char *output;
+	char *output = EMPTY_CHAR;
 	int lengthStr = strlen(pStr) ;
 
 	if (start <= lengthStr && end <= lengthStr) {
@@ -89,7 +91,7 @@ char *str_substring(char *pStr, int start, int end) {
 /**
  * Return boolean if two strings are equals
  */
-bool str_equals(char *str1, char *str2) {
+bool str_equals(const char *str1, const char *str2) {
 	int cmpStr = strcmp(str1, str2) ;
 	return (cmpStr == 0) ;
 }
