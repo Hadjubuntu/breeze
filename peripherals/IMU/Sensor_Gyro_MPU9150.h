@@ -18,7 +18,7 @@
 
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
-#define MEASURE_VIBRATION 1
+#define MEASURE_VIBRATION 0
 #define ENABLE_IMU_CALIBRATION 1
 #define ENABLE_COMPASS 1
 
@@ -310,13 +310,15 @@ void updateGyroData() {
 
 void MPU9150_printMagField() {
 #if ENABLE_COMPASS == 1
-	Logger.println("Mag field");
+/**	Logger.println("Mag field");
 	Logger.print("X: ");
 	Logger.print(Mag_output[0]);
 	Logger.print("Y: ");
 	Logger.print(Mag_output[1]);
 	Logger.print("Z: ");
-	Logger.println(Mag_output[2]);
+	Logger.println(Mag_output[2]);*/
+	Logger.print("Heading (deg): ");
+	Logger.println(getCompassHeading());
 #endif
 }
 

@@ -16,7 +16,7 @@
 void flightByGPS() {
 	// If UAV high than 5 meters, then go to flying mode directly
 	if (altitudeBarometer->getAverage() > 500) {
-		UAVCore->flightState == CRUISE;
+		UAVCore->flightState = CRUISE;
 	}
 
 	if (UAVCore->flightState == TAKEOFF) {

@@ -52,9 +52,9 @@ uint16_t _timer_period(uint16_t speed_hz) {
 	return  2000000UL / speed_hz; // F_CPU/PWM_PRESCALER /speed_hz;
 }
 
-// Internal function setting freq on ICR4
-void set_freq_ICR4(uint16_t icr) {
-	ICR4 = icr;
+// Internal function setting freq on ICR1
+void set_freq_ICR1(uint16_t icr) {
+	ICR1 = icr;
 }
 
 // Internal function setting freq on ICR5
@@ -66,7 +66,7 @@ void set_freq_ICR5(uint16_t icr) {
 /* Output freq (1/period) control */
 void set_freq(uint16_t freq_hz) {
 	uint16_t icr = _timer_period(freq_hz);
-	set_freq_ICR4(icr);
+	set_freq_ICR1(icr);
 
 	if (Firmware == QUADCOPTER) {
 		set_freq_ICR5(icr);
@@ -82,25 +82,22 @@ void setupMotors() {
 	PORTD |= _BV(2);
 	PORTH |= _BV(0);
 
-	pinMode(8,OUTPUT); // CH_3 (PH5/OC4C)
-	pinMode(7,OUTPUT); // CH_4 (PH4/OC4B)
-	pinMode(6,OUTPUT); // CH_5 (PH3/OC4A)
+	// Pins on timer 1
+	pinMode(11, OUTPUT); // OC1A
+	pinMode(12, OUTPUT); // OC1B
+	pinMode(13, OUTPUT); // OC1C
 
-	// Create timer 4
+	// Timer 1
+	TCCR1A =((1<<WGM11));
+	TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
+	ICR1 = 40000; // 0.5us tick => 50hz freq
+	OCR1A = 0xFFFF; // Init OCR registers to nil output signal
+	OCR1B = 0xFFFF;
+	OCR1C = 0xFFFF;
 
-	// WGM: 1 1 1 0. Clear Timer on Compare, TOP is ICR4.
-	// CS41: prescale by 8 => 0.5us tick
-	TCCR4A =((1<<WGM41));
-	TCCR4B = (1<<WGM43)|(1<<WGM42)|(1<<CS41);
-	OCR4A = 0xFFFF; // Init OCR registers to nil output signal
-	OCR4B = 0xFFFF;
-	OCR4C = 0xFFFF;
-	ICR4 = 40000; // 0.5us tick => 50hz freq
-
-
-	TCCR4A |= (1<<COM4C1); // CH_3 : OC4C
-	TCCR4A |= (1<<COM4B1); // CH_4 : OC4B
-	TCCR4A |= (1<<COM4A1); // CH_5 : OC4A
+	TCCR1A |= (1<<COM1A1);
+	TCCR1A |= (1<<COM1B1);
+	TCCR1A |= (1<<COM1C1);
 
 	// In QUADCOPTER firmware mode
 	// we need another timer for the fourth motor
@@ -169,7 +166,7 @@ void motorUpdateCommand(int pThrust)
 
 	switch (Firmware) {
 	case FIXED_WING:
-		OCR4A = pThrust  << 1 ;
+		OCR1C = pThrust  << 1 ;
 		break;
 
 	case QUADCOPTER:
@@ -182,7 +179,7 @@ void motorUpdateCommand(int pThrust)
 		OCR5C = thrustX1  << 1 ; // pin 44
 		OCR5B = thrustX2  << 1 ; // pin 45
 		OCR5A = thrustX3  << 1 ; // pin 46
-		OCR4C = thrustX4  << 1 ; // pin 8
+		OCR1C = thrustX4  << 1 ; // pin 13
 		break;
 	case ROCKET:
 		break;

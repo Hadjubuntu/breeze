@@ -23,16 +23,37 @@
 // The UAV saves the unreceived ID and ask the GCS to resend the missed datas
 // At the end, the UAV must send a ack to tell the GCS that everything has been uploaded
 
+// Variables
+//------------------------------------------------
 bool fpIncoming = false;
 int newFpLength = 0;
 int newFpIdx = 0;
 int missingFpIdxList[MISSION_ELEMENT_NB];
 int missingFpIdx = 0;
 
+// Retry send config variables
+//------------------------------------------------
+bool retryMode = false;
+int retryIdx = -1;
+
+// Pointer to retry mission uploading function in RFLink2.h
+void (*ptnRFRetryFunc)(int) ;
+
+// Initialize RF FlightPlan
+//------------------------------------------------
+void setupRFFlightPlan(void (*pPtnRetryFunc)(int)) {
+	ptnRFRetryFunc = pPtnRetryFunc;
+}
+
 void reinitMissingFpIdx() {
 	for (int i = 0; i < MISSION_ELEMENT_NB; i ++) {
 		missingFpIdxList[i] = -1;
 	}
+}
+
+void reinitRetryMode() {
+	retryIdx = -1;
+	retryMode = false;
 }
 
 void initFlightPlanIncoming(int pSize) {
@@ -54,11 +75,17 @@ void endFlightPlanIncoming() {
 	newFpIdx = 0;
 	missingFpIdx = 0;
 
-	// Send missing elements
-	// TODO keep a cpt to define a maximum of retries
-
 	// Re init missing elements
 	reinitMissingFpIdx();
+}
+
+// Tell GCS we didn't received data from a certain index
+// GCS must stop sending data and resend data from this starting
+// point
+void callForRetryFromIdx(int idxRetryStartingPoint) {
+	// Call RF
+	ptnRFRetryFunc(idxRetryStartingPoint);
+	retryIdx = idxRetryStartingPoint;
 }
 
 
@@ -71,18 +98,42 @@ void endFlightPlanIncoming() {
 // 3-.. : payload
 void updateFlightPlan(char *rfcmd, EStringArray tokens) {
 
-	// Check idx, the GCS must send flight plan is the same exact order
-	// from element 0 to the element sizeFlightPlan-1
-	int cIdx = atoi(tokens.array[1]);
-	if (cIdx != newFpIdx) {
-		missingFpIdxList[missingFpIdx] = newFpIdx;
-	}
-	// Otherwise parse payload and add mission element to the list
-	else {
-		MissionElement el = parseRFMissionInput(rfcmd);
-		missionAdd(&el); // TODO what if parse failed
+	// Check FP incoming state has been sent
+	if (fpIncoming) {
+		// Get current flightplan element index
+		int cIdx = atoi(tokens.array[1]);
 
-		newFpIdx ++;
+		// If retry succeeded, quit retry mode
+		if (retryMode
+				&& cIdx == retryIdx
+				&& cIdx == newFpIdx) {
+			reinitRetryMode();
+		}
+
+		// Check idx, the GCS must send flight plan is the same exact order
+		// from element 0 to the element sizeFlightPlan-1
+		if (cIdx != newFpIdx) {
+			missingFpIdxList[missingFpIdx] = newFpIdx;
+			callForRetryFromIdx(newFpIdx);
+		}
+		// Otherwise parse payload and add mission element to the list
+		else {
+			MissionElement el = parseRFMissionInput(rfcmd);
+			missionAdd(&el); // TODO Manage the case when parsing failed
+
+			// Increment idx to be received
+			newFpIdx ++;
+
+			// If we received all the flightplan elements,
+			// then stops incoming state
+			if (newFpIdx >= newFpLength) {
+				endFlightPlanIncoming();
+			}
+		}
+	}
+	else {
+		// TODO otherwise tells GCS error :
+		// incoming FP data without receiving new flight plan message
 	}
 }
 

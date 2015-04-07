@@ -15,7 +15,7 @@
 #include "arch/common/StrUtils.h"
 #include "arch/common/StrStack.h"
 #include "modules/rflink/RFFlightPlan.h"
-
+#include "modules/rflink/RFPlot.h"
 
 // Configuration RF
 //------------------------------------------------------------
@@ -89,6 +89,11 @@ void updateLowPriorityRFLink() {
 	}
 }
 
+void missionUploadRetry(int idxStartingPt) {
+	char buf[60];
+	sprintf(buf, "mission_upload_retry|%d|\n", idxStartingPt);
+	RFSerial.write(buf);
+}
 
 /****************************************************************************
  * Initialize RF link
@@ -122,6 +127,9 @@ void setupRFLink(bool *pUavAutomode, int *pDeciThrustPercent,
 	rf_autospeed_controller = pAutospeedController;
 	rf_v_ms_goal = pV_ms_goal;
 
+
+	// Finally setup specialized RF link for flight plan
+	setupRFFlightPlan(&missionUploadRetry);
 }
 
 

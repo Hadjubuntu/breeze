@@ -35,6 +35,7 @@ void setupSonar() {
 
 /**
  * Make pulse, sonar emits ultrasounds
+ * Must be runned at 100Hz
  */
 void sonar_makePulse() {
 	switch (sonar_pulseState) {
