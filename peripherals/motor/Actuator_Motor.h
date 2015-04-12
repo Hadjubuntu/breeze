@@ -205,8 +205,10 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 	motorUpdateCommand(pw);
 }
 
+
+
 void updateMotorRepartition() {
-	int factor = 60;
+	int factor = 80;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
@@ -216,10 +218,10 @@ void updateMotorRepartition() {
 		thrustX4 = ESC_MIN;
 	}
 	else {
-		thrustX1 = ESC_MIN + currentDeciThrustPercent + motorMatrix[0][0]*(aileronCmd/4500.0)*factor + motorMatrix[0][1]*(gouvernCmd/4500.0)*factor ;
-		thrustX2 = ESC_MIN + currentDeciThrustPercent + motorMatrix[1][0]*(aileronCmd/4500.0)*factor + motorMatrix[1][1]*(gouvernCmd/4500.0)*factor ;
-		thrustX3 = ESC_MIN + currentDeciThrustPercent + motorMatrix[2][0]*(aileronCmd/4500.0)*factor + motorMatrix[2][1]*(gouvernCmd/4500.0)*factor;
-		thrustX4 = ESC_MIN + currentDeciThrustPercent + motorMatrix[3][0]*(aileronCmd/4500.0)*factor + motorMatrix[3][1]*(gouvernCmd/4500.0)*factor ;
+		thrustX1 = ESC_MIN + currentDeciThrustPercent + motorMatrix[0][0]*(aileronCmd/9000.0)*factor + motorMatrix[0][1]*(gouvernCmd/9000.0)*factor ;
+		thrustX2 = ESC_MIN + currentDeciThrustPercent + motorMatrix[1][0]*(aileronCmd/9000.0)*factor + motorMatrix[1][1]*(gouvernCmd/9000.0)*factor ;
+		thrustX3 = ESC_MIN + currentDeciThrustPercent + motorMatrix[2][0]*(aileronCmd/9000.0)*factor + motorMatrix[2][1]*(gouvernCmd/9000.0)*factor;
+		thrustX4 = ESC_MIN + currentDeciThrustPercent + motorMatrix[3][0]*(aileronCmd/9000.0)*factor + motorMatrix[3][1]*(gouvernCmd/9000.0)*factor ;
 	}
 }
 

@@ -87,6 +87,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
+/*
 #if Firmware == QUADCOPTER
 	// TO BE CONTINUED for quadcopter firmware
 	double outputRollCmd = errorRoll * param[ID_G_P_ROLL];
@@ -96,8 +97,8 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
-
-#elif Firmware == FIXED_WING
+*/
+// #elif Firmware == FIXED_WING
 
 	double v_ms ;
 	if (USE_AIRSPEED_SENSOR) {
@@ -112,7 +113,10 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 
 
 	// Get the scaler to minimize surface command in high speed ..
-	double scaler = getSpeedScaler(deciThrustPercent);
+	double scaler = 1.0;
+#if Firmware == FIXED_WING
+	scaler = getSpeedScaler(deciThrustPercent);
+#endif
 
 	double desiredRollRate = errorRoll / param[ID_G_TAU];
 	double desiredPitchRate = errorPitch / param[ID_G_TAU];
@@ -152,7 +156,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
-#endif
+// #endif
 }
 
 

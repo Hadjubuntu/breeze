@@ -8,7 +8,7 @@
 #ifndef SENSOR_GYRO_MPU9150_H_
 #define SENSOR_GYRO_MPU9150_H_
 
-// TODO find 256 accelerometer specs value
+// TODO verify ACC_LSB_PER_G accelerometer specs value
 
 
 #include "arch/AVR/MCU/MCU.h"
@@ -19,7 +19,7 @@
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 0
-#define ENABLE_IMU_CALIBRATION 1
+#define ENABLE_IMU_CALIBRATION 0
 #define ENABLE_COMPASS 1
 
 //MPU9150 Compass
@@ -68,8 +68,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.1; // 0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 5; // 15 bruit de mesure (default: 5)
+float kalmanQ = 0.06; // 0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 0.5; // 15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -188,8 +188,12 @@ void setupGyro() {
 
 	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
 	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
-	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) - 256.0; //sortie a 256.0 LSB/g (gravite terrestre) => offset a 256.0 pour mise a 0
+	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) + ACC_LSB_PER_G; //sortie a ACC_LSB_PER_G LSB/g (gravite terrestre) => offset a ACC_LSB_PER_G pour mise a 0
 
+
+	Logger.println("------------------------------");
+	Logger.println("IMU Calibration Output");
+	Logger.println("------------------------------");
 	Logger.print("Gyro cal x; y; z : ");
 	Logger.print(Gyro_cal_x);
 	Logger.print("; ");
@@ -200,27 +204,26 @@ void setupGyro() {
 	Logger.print("; ");
 	Logger.print(Accel_cal_y);
 	Logger.print("; ");
-	Logger.print(Accel_cal_z);
+	Logger.println(Accel_cal_z);
+	Logger.println("------------------------------");
 
 #else
-	Serial.println("IMU's calibration already done");
+	Logger.println("------------------------------");
+	Logger.println("IMU Calibration Retrieve Saved Data");
+	Logger.println("------------------------------");
 	/*
-IMU only calibration
-	Gyro cal x; y; z : 27.00; 1256.0; 10.00
-	Acc cal x; y; z : 0.00; 0.00; -33.00
-Yak 54 calibration
-    Gyro cal x; y; z : 34.00; 2256.0; -16.00
-    Acc cal x; y; z : 22.00; -3.00; -35.00
-Pilatus calib :
-  Gyro cal x; y; z : 29.00; 2256.0; -9.00
-  Acc cal x; y; z : -4.00; 10.00; -34.00
+------------------------------
+IMU Calibration Output
+------------------------------
+Gyro cal x; y; z : -29.00; 59.00
+Acc cal x; y; z : 55.00; 86.00; 7996.00
 	 */
-	Gyro_cal_x = 29.0;
-	Gyro_cal_y = 21.0;
-	Gyro_cal_z = -9.0;
-	Accel_cal_x = -4.0;
-	Accel_cal_y = 10.0;
-	Accel_cal_z = -34.0;
+	Gyro_cal_x = -29.0;
+	Gyro_cal_y = 59.0;
+	Gyro_cal_z = 0.0;
+	Accel_cal_x = 55.00;
+	Accel_cal_y = 86.00;
+	Accel_cal_z = 7996.00;
 #endif
 }
 
@@ -240,7 +243,7 @@ void updateGyroData() {
 	// Retrieve IMU data
 	getIMUReadings(Gyro_output, Accel_output);
 
-	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
+	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
 	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
 
 	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
@@ -254,7 +257,7 @@ void updateGyroData() {
 	//---------------------------------------------
 	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
 
-	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / 256.0,(Accel_output[2] - Accel_cal_z)/256.0) * 180 / PI;
+	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
 	Accel_roll = 0.3 * Accel_roll + 0.7 * raw_accel_roll;
 
 	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
@@ -304,7 +307,7 @@ void updateGyroData() {
 #if MEASURE_VIBRATION
 	//-----------------------------------------------
 	// If needed, measure vibration
-	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / 256.0;
+	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / ACC_LSB_PER_G;
 #endif
 }
 
