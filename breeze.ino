@@ -124,6 +124,8 @@ void updateRFRadioFutaba() {
 void updateRFRadoFutabaLowFreq() {
 	if (USE_RADIO_FUTABA == 1) {
 
+		// Autopilot switch
+		//------------------------------------------
 		// LOW means manual
 		if (sBus.channels[4] < 1000) {
 			UAVCore->autopilot = false;
@@ -133,6 +135,17 @@ void updateRFRadoFutabaLowFreq() {
 			UAVCore->autopilot = true;
 		}
 
+		// PID tuning
+		//------------------------------------------
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 0.463;
+		param[ID_G_P_ROLL] =  factor;
+		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
+		
+		param[ID_G_P_PITCH] = factor;
+		param[ID_G_D_PITCH] = factor * 0.01 * 0.1;
+
+		// Flaps
+		//------------------------------------------
 		switch (sBus.channels[7]) {
 		case 144:
 			flapsCmd = 0;
@@ -161,15 +174,6 @@ void process100HzTask() {
 	updateAttitude() ;
 
 
-	hundredHZpreviousTime = currentTime;
-}
-
-
-/*******************************************************************
- * 50Hz task (20 ms)
- ******************************************************************/
-void process50HzTask() {
-
 	// If UAV in auto mode
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
@@ -185,6 +189,19 @@ void process50HzTask() {
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
+
+	// Update quad motors
+	motorUpdateCommandQuad();
+
+	hundredHZpreviousTime = currentTime;
+}
+
+
+/*******************************************************************
+ * 50Hz task (20 ms)
+ ******************************************************************/
+void process50HzTask() {
+
 
 	//-----------------------------------------------
 	// Autopilot switch (On / Off)
@@ -235,7 +252,10 @@ void process50HzTask() {
 	// Command motor at % thrust
 	//------------------------------------------------------------
 	motorUpdateCommandDeciPercent(UAVCore->deciThrustPercent);
-
+	
+	if (Firmware == FIXED_WING) {
+		motorUpdateCommandFixedWing();
+	}
 }
 
 /*******************************************************************
@@ -289,7 +309,7 @@ void process10HzTask() {
 
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
-	
+
 	updateCompassData();
 	MPU9150_printMagField();
 #endif
@@ -342,7 +362,15 @@ void process2HzTask() {
 	Logger.print("X4 = ");
 	Logger.println(thrustX4);
 	Logger.print("sbus[4] = ");
-	Logger.println(sBus.channels[4]); */
+	Logger.println(sBus.channels[4]); 
+	Logger.print("sbus[5] = ");
+		Logger.println(sBus.channels[5]); */
+//	Logger.print("pitch rate (deg) = ");
+//	Logger.println(-gyroYrate * ATTITUDE_CONTROL_DEG);
+//	Logger.print("setpoint pitch rate (deg) = ");
+//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 4.5);
+//	Logger.print("ratePitchError (deg) = ");
+//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 4.5 + gyroYrate * ATTITUDE_CONTROL_DEG);
 }
 
 

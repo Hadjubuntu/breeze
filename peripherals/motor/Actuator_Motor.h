@@ -29,7 +29,7 @@ int currentDeciThrustPercent;
  *
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
-int motorMatrix[4][2];
+int motorMatrix[4][3];
 
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
@@ -45,8 +45,10 @@ int motorMatrix[4][2];
 #define PWM_COUNTER_PERIOD (F_CPU/PWM_PRESCALER/PWM_FREQUENCY)
 
 // Core functions
-void motorUpdateCommand(int);
+void motorUpdateCommandDeciPercent(int);
 void initMotor();
+void motorUpdateCommandQuad();
+void motorUpdateCommandFixedWing();
 
 uint16_t _timer_period(uint16_t speed_hz) {
 	return  2000000UL / speed_hz; // F_CPU/PWM_PRESCALER /speed_hz;
@@ -122,24 +124,38 @@ void setupMotors() {
 		TCCR5A |= (1<<COM5C1);
 
 		if (QuadType == PLUS) {
-			motorMatrix[0][0] = 0;
-			motorMatrix[0][1] = 1;
+			motorMatrix[0][0] = 0; // roll
+			motorMatrix[0][1] = 1; // pitch
+			motorMatrix[0][2] = -1; // yaw
+
 			motorMatrix[1][0] = -1;
 			motorMatrix[1][1] = 0;
+			motorMatrix[1][2] = 1; // yaw
+
 			motorMatrix[2][0] = 1;
 			motorMatrix[2][1] = 0;
+			motorMatrix[2][2] = 1; // yaw
+
 			motorMatrix[3][0] = 0;
 			motorMatrix[3][1] = -1;
+			motorMatrix[3][2] = -1; // yaw
 		}
 		else if (QuadType == X) {
-			motorMatrix[0][0] = 1;
-			motorMatrix[0][1] = 1;
+			motorMatrix[0][0] = 1; // roll
+			motorMatrix[0][1] = 1; // pitch
+			motorMatrix[0][2] = -1; // yaw
+
 			motorMatrix[1][0] = -1;
 			motorMatrix[1][1] = 1;
+			motorMatrix[1][2] = 1; // yaw
+
 			motorMatrix[2][0] = 1;
 			motorMatrix[2][1] = -1;
+			motorMatrix[2][2] = 1; // yaw
+
 			motorMatrix[3][0] = -1;
 			motorMatrix[3][1] = -1;
+			motorMatrix[3][2] = -1; // yaw
 		}
 	}
 
@@ -152,40 +168,47 @@ void setupMotors() {
 }
 
 void initMotor() {
-	motorUpdateCommand(ESC_MIN);
+	motorUpdateCommandDeciPercent(0);
+
+	switch (Firmware) {
+	case FIXED_WING:
+		motorUpdateCommandFixedWing();
+		break;
+	case QUADCOPTER:
+		thrustX1 = ESC_MIN;
+		thrustX2 = ESC_MIN;
+		thrustX3 = ESC_MIN;
+		thrustX4 = ESC_MIN;
+
+		motorUpdateCommandQuad();
+		break;
+	}
 	delay(2000);
 }
 
 
 
-void motorUpdateCommand(int pThrust)
+void motorUpdateCommandQuad()
 {
-	if (pThrust > ESC_MAX_PROTECTION) {
-		pThrust = ESC_MAX_PROTECTION;
+	Bound(thrustX1, ESC_MIN, ESC_MAX);
+	Bound(thrustX2, ESC_MIN, ESC_MAX);
+	Bound(thrustX3, ESC_MIN, ESC_MAX);
+	Bound(thrustX4, ESC_MIN, ESC_MAX);
+
+	OCR5C = thrustX1  << 1 ; // pin 44
+	OCR5B = thrustX2  << 1 ; // pin 45
+	OCR5A = thrustX3  << 1 ; // pin 46
+	OCR1C = thrustX4  << 1 ; // pin 13
+}
+
+void motorUpdateCommandFixedWing() {
+	int pw = ESC_MIN + currentDeciThrustPercent;
+
+	if (pw > ESC_MAX_PROTECTION) {
+		pw = ESC_MAX_PROTECTION;
 	}
 
-	switch (Firmware) {
-	case FIXED_WING:
-		OCR1C = pThrust  << 1 ;
-		break;
-
-	case QUADCOPTER:
-
-		Bound(thrustX1, ESC_MIN, ESC_MAX);
-		Bound(thrustX2, ESC_MIN, ESC_MAX);
-		Bound(thrustX3, ESC_MIN, ESC_MAX);
-		Bound(thrustX4, ESC_MIN, ESC_MAX);
-
-		OCR5C = thrustX1  << 1 ; // pin 44
-		OCR5B = thrustX2  << 1 ; // pin 45
-		OCR5A = thrustX3  << 1 ; // pin 46
-		OCR1C = thrustX4  << 1 ; // pin 13
-		break;
-	case ROCKET:
-		break;
-	}
-
-
+	OCR1C = pw  << 1 ;
 }
 
 // Update motor thrust using deci percent (deci for precision)
@@ -200,15 +223,13 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 		int sign = isign(dDeciThrust);
 		currentDeciThrustPercent += sign * DECITHRUST_SLEW_RATE;
 	}
-
-	int pw = ESC_MIN + currentDeciThrustPercent;
-	motorUpdateCommand(pw);
 }
 
 
+double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
-	int factor = 80;
+	// rollback : int G_QUAD = 25;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
@@ -218,10 +239,14 @@ void updateMotorRepartition() {
 		thrustX4 = ESC_MIN;
 	}
 	else {
-		thrustX1 = ESC_MIN + currentDeciThrustPercent + motorMatrix[0][0]*(aileronCmd/9000.0)*factor + motorMatrix[0][1]*(gouvernCmd/9000.0)*factor ;
-		thrustX2 = ESC_MIN + currentDeciThrustPercent + motorMatrix[1][0]*(aileronCmd/9000.0)*factor + motorMatrix[1][1]*(gouvernCmd/9000.0)*factor ;
-		thrustX3 = ESC_MIN + currentDeciThrustPercent + motorMatrix[2][0]*(aileronCmd/9000.0)*factor + motorMatrix[2][1]*(gouvernCmd/9000.0)*factor;
-		thrustX4 = ESC_MIN + currentDeciThrustPercent + motorMatrix[3][0]*(aileronCmd/9000.0)*factor + motorMatrix[3][1]*(gouvernCmd/9000.0)*factor ;
+		aileronOut = aileronCmd / 100.0;
+		gouvernOut = gouvernCmd / 100.0;
+		yawOut = rubberCmd / 100.0;
+
+		thrustX1 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
+		thrustX2 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
+		thrustX3 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
+		thrustX4 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
 	}
 }
 

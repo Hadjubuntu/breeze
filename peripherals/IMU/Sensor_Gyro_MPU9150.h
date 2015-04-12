@@ -54,6 +54,10 @@ float dt = 0.01;
 float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
 float raw_accel_roll, raw_accel_pitch;
 
+// Complementary filter for raw data input
+//------------------------------
+double raw_filter_alpha = 0.99;
+
 //valeur initiales axe X (pitch)
 //------------------------------
 float Gyro_pitch = 0;
@@ -68,8 +72,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.06; // 0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 0.5; // 15 bruit de mesure (default: 5)
+float kalmanQ = 0.1; // 0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 3; // 15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -244,7 +248,7 @@ void updateGyroData() {
 	getIMUReadings(Gyro_output, Accel_output);
 
 	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
-	Accel_pitch = 0.3 * Accel_pitch + 0.7 * raw_accel_pitch;
+	Accel_pitch = (1.0-raw_filter_alpha) * Accel_pitch + raw_filter_alpha * raw_accel_pitch;
 
 	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
 
@@ -258,7 +262,7 @@ void updateGyroData() {
 	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
 
 	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
-	Accel_roll = 0.3 * Accel_roll + 0.7 * raw_accel_roll;
+	Accel_roll = (1.0-raw_filter_alpha) * Accel_roll + raw_filter_alpha * raw_accel_roll;
 
 	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
 
@@ -295,8 +299,8 @@ void updateGyroData() {
 
 	//-----------------------------------------------
 	// Output update
-	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
-	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
+	gyroXrate = 0.5*gyroXrate + 0.5*((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
+	gyroYrate = 0.5*gyroYrate + 0.5*((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
 
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;

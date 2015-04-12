@@ -79,7 +79,7 @@ float getSpeedScaler(int deciThrustPercent)
 	return speed_scaler;
 }
 
-
+#define ATTITUDE_CONTROL_DEG 57.29578f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
@@ -87,18 +87,29 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
-/*
+
 #if Firmware == QUADCOPTER
+
+	double desiredRollRate = errorRoll * 4.5;
+	double desiredPitchRate = errorPitch * 4.5;
+
+	double rateRollError = (desiredRollRate - gyroXrate * ATTITUDE_CONTROL_DEG);
+	double ratePitchError = (desiredPitchRate + gyroYrate * ATTITUDE_CONTROL_DEG);
+
 	// TO BE CONTINUED for quadcopter firmware
-	double outputRollCmd = errorRoll * param[ID_G_P_ROLL];
-	double outputPitchCmd = errorPitch * param[ID_G_P_PITCH];
+	// TODO ArduCopter used : rollrate with P coeff and derivative of of roll rate error with D coeff
+//	double outputRollCmd = errorRoll * param[ID_G_P_ROLL] + rateRollError  * param[ID_G_D_ROLL];
+//	double outputPitchCmd = errorPitch * param[ID_G_P_PITCH] + ratePitchError * param[ID_G_D_PITCH];
+	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL];
+	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH];
+
 	double yawCmd = yawDesired;
 
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
-*/
-// #elif Firmware == FIXED_WING
+
+#elif Firmware == FIXED_WING
 
 	double v_ms ;
 	if (USE_AIRSPEED_SENSOR) {
@@ -113,10 +124,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 
 
 	// Get the scaler to minimize surface command in high speed ..
-	double scaler = 1.0;
-#if Firmware == FIXED_WING
-	scaler = getSpeedScaler(deciThrustPercent);
-#endif
+	double scaler = getSpeedScaler(deciThrustPercent);
 
 	double desiredRollRate = errorRoll / param[ID_G_TAU];
 	double desiredPitchRate = errorPitch / param[ID_G_TAU];
@@ -156,7 +164,7 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
-// #endif
+#endif
 }
 
 
