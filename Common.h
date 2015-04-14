@@ -32,7 +32,7 @@ enum QUAD_TYPE {
 	PLUS,
 	X
 };
-QUAD_TYPE QuadType = X;
+QUAD_TYPE QuadType = PLUS;
 #endif
 
 enum FlightMode {
@@ -134,7 +134,7 @@ int sign(double v) {
 }
 
 
-#define NB_PARAMETERS 11
+#define NB_PARAMETERS 13
 
 #define ID_KP_GROUNDNAV 0
 // Flight control PID global
@@ -142,9 +142,11 @@ int sign(double v) {
 // roll
 #define ID_G_P_ROLL 2
 #define ID_G_D_ROLL 3
+#define ID_G_I_ROLL 11
 // pitch
 #define ID_G_P_PITCH 4
 #define ID_G_D_PITCH 5
+#define ID_G_I_PITCH 12
 // thrust
 #define ID_K_THRUST 6
 #define ID_G_P_THRUST 7
@@ -162,10 +164,12 @@ void initializeUAVConfiguration() {
 	param[ID_G_TAU] = 0.5f;
 
 	param[ID_G_P_ROLL] = 1.0f;
-	param[ID_G_D_ROLL] = 0.15f;
+	param[ID_G_D_ROLL] = 0.05f;
+	param[ID_G_I_ROLL] = 0.05f;
 
 	param[ID_G_P_PITCH] = 1.0f;
-	param[ID_G_D_PITCH] = 0.15f;
+	param[ID_G_D_PITCH] = 0.05f;
+	param[ID_G_I_PITCH] = 0.05f;
 
 	// Thrust autospeed parameters
 	param[ID_K_THRUST] = 1;

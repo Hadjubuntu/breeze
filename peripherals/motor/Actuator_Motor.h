@@ -229,7 +229,6 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
-	// rollback : int G_QUAD = 25;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
@@ -242,11 +241,12 @@ void updateMotorRepartition() {
 		aileronOut = aileronCmd / 100.0;
 		gouvernOut = gouvernCmd / 100.0;
 		yawOut = rubberCmd / 100.0;
+		yawOut = 0.0; // Yaw desactivated
 
-		thrustX1 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
-		thrustX2 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
-		thrustX3 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
-		thrustX4 = ESC_MIN + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
+		thrustX1 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
+		thrustX2 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
+		thrustX3 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
+		thrustX4 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
 	}
 }
 

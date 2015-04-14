@@ -19,7 +19,7 @@
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 0
-#define ENABLE_IMU_CALIBRATION 0
+#define ENABLE_IMU_CALIBRATION 1
 #define ENABLE_COMPASS 1
 
 //MPU9150 Compass
@@ -32,8 +32,8 @@
 
 // Parameter of the IMU
 // Thoses values change when config sent to the IMU is changed
-#define ACC_LSB_PER_G 8192.0
-#define GYRO_LSB_PER_G 131.0
+#define ACC_LSB_PER_G 16384.0
+#define GYRO_LSB_PER_G 131.0 // FS_SEL 0 131.0
 
 // Enable vibration measurement
 #if MEASURE_VIBRATION
@@ -46,6 +46,8 @@ long lastUpdateAHRS_Us = 0;
 // TODO simplifier les variables utilisés et de sortie
 // Output variables
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
+double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0;
+double rel_accZ = 0.0;
 
 int Gyro_output[3], Accel_output[3], Mag_output[3];
 
@@ -56,7 +58,8 @@ float raw_accel_roll, raw_accel_pitch;
 
 // Complementary filter for raw data input
 //------------------------------
-double raw_filter_alpha = 0.99;
+double raw_filter_alpha = 1.0;
+double alphaGyroRate = 1.0;
 
 //valeur initiales axe X (pitch)
 //------------------------------
@@ -72,8 +75,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.1; // 0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 3; // 15 bruit de mesure (default: 5)
+float kalmanQ = 0.001; // 0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 0.03; // 15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -138,17 +141,29 @@ void setupGyro() {
 	uint8_t i2cData[14]; // Buffer for I2C data
 
 	Logger.println("start configuration IMU");
+	// Wake up and reset sensor
+	while (i2cWrite(MPU9150_CHIP_ADDRESS, 0x6B, 0x80, true)); // PLL with X axis gyroscope reference and disable sleep mode
+	delay(100);
+	while (i2cWrite(MPU9150_CHIP_ADDRESS, 0x6B, 0x00, true)); // PLL with X axis gyroscope reference and disable sleep mode
+
 
 	//configuration gyroscope et accelerometre
 	//----------------------------------------
 	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
 	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
 	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
-	i2cData[3] = 0x01; // Set Accelerometer Full Scale Range to ±4g
-	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, false)); // Write to all four registers at once
-	while (i2cWrite(MPU9150_CHIP_ADDRESS, 0x6B, 0x01, true)); // PLL with X axis gyroscope reference and disable sleep mode
+	i2cData[3] = 0x00; // Set Accelerometer Full Scale Range to ±2g
+	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, true)); // Write to all four registers at once
+
 
 	Logger.println("IMU configured");
+
+	// Read and print config
+	byte buffer[2];
+	readFrom(MPU9150_CHIP_ADDRESS, 0x1B, 1, buffer);
+
+	Logger.print("IMU gyro_scale = ");
+	Logger.println(buffer[0]);
 
 #if ENABLE_COMPASS == 1
 	MPU9150_setupCompass();
@@ -192,7 +207,7 @@ void setupGyro() {
 
 	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
 	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
-	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) + ACC_LSB_PER_G; //sortie a ACC_LSB_PER_G LSB/g (gravite terrestre) => offset a ACC_LSB_PER_G pour mise a 0
+	Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) ; //sortie a ACC_LSB_PER_G LSB/g (gravite terrestre) => offset a ACC_LSB_PER_G pour mise a 0
 
 
 	Logger.println("------------------------------");
@@ -247,33 +262,38 @@ void updateGyroData() {
 	// Retrieve IMU data
 	getIMUReadings(Gyro_output, Accel_output);
 
-	raw_accel_pitch = atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
+	rel_accZ = (Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G;
+	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
+	raw_gyro_yrate = ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
+
+
+	raw_accel_pitch = fast_atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G, rel_accZ) * RAD2DEG;
 	Accel_pitch = (1.0-raw_filter_alpha) * Accel_pitch + raw_filter_alpha * raw_accel_pitch;
 
-	Gyro_pitch = Gyro_pitch + ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
+	Gyro_pitch = Gyro_pitch + raw_gyro_xrate;
 
 	//conserver l'echelle +/-180° pour l'axe X du gyroscope
 	//-----------------------------------------------------
 	if(Gyro_pitch < 180) Gyro_pitch += 360;
 	if(Gyro_pitch >= 180) Gyro_pitch -= 360;
 
-	//sortie du filtre de Kalman pour les X (pitch)
+	//sortie du filtre de Kalman pour les X (roll)
 	//---------------------------------------------
-	Predicted_pitch = Predicted_pitch + ((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
+	Predicted_pitch = Predicted_pitch + raw_gyro_xrate;
 
-	raw_accel_roll = atan2((Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G,(Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G) * 180 / PI;
+	raw_accel_roll = fast_atan2((Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G, rel_accZ) * RAD2DEG;
 	Accel_roll = (1.0-raw_filter_alpha) * Accel_roll + raw_filter_alpha * raw_accel_roll;
 
-	Gyro_roll = Gyro_roll + ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
+	Gyro_roll = Gyro_roll + raw_gyro_yrate;
 
 	//conserver l'echelle +/-180° pour l'axe Y du gyroscope
 	//-----------------------------------------------------
 	if(Gyro_roll < 180) Gyro_roll += 360;
 	if(Gyro_roll >= 180) Gyro_roll -= 360;
 
-	//sortie du filtre de Kalman pour les Y (roll)
+	//sortie du filtre de Kalman pour les Y (pitch)
 	//--------------------------------------------
-	Predicted_roll = Predicted_roll - ((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
+	Predicted_roll = Predicted_roll - raw_gyro_yrate;
 
 	P00 += dt * (2 * P01 + dt * P11);
 	P01 += dt * P11;
@@ -299,8 +319,8 @@ void updateGyroData() {
 
 	//-----------------------------------------------
 	// Output update
-	gyroXrate = 0.5*gyroXrate + 0.5*((Gyro_output[0] - Gyro_cal_x)/GYRO_LSB_PER_G) * dt;
-	gyroYrate = 0.5*gyroYrate + 0.5*((Gyro_output[1] - Gyro_cal_y)/GYRO_LSB_PER_G) * dt;
+	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
+	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
 
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
@@ -317,7 +337,7 @@ void updateGyroData() {
 
 void MPU9150_printMagField() {
 #if ENABLE_COMPASS == 1
-/**	Logger.println("Mag field");
+	/**	Logger.println("Mag field");
 	Logger.print("X: ");
 	Logger.print(Mag_output[0]);
 	Logger.print("Y: ");

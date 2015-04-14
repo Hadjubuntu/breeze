@@ -79,11 +79,14 @@ float getSpeedScaler(int deciThrustPercent)
 	return speed_scaler;
 }
 
+double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
+double MAX_I = 10;
+
 #define ATTITUDE_CONTROL_DEG 57.29578f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
-void stabilize2(double errorRoll, double errorPitch, double yawDesired,
+void stabilize2(double G_Dt, double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
@@ -93,15 +96,28 @@ void stabilize2(double errorRoll, double errorPitch, double yawDesired,
 	double desiredRollRate = errorRoll * 4.5;
 	double desiredPitchRate = errorPitch * 4.5;
 
+	// TODO reactivate gyro rate with good values of rate
 	double rateRollError = (desiredRollRate - gyroXrate * ATTITUDE_CONTROL_DEG);
 	double ratePitchError = (desiredPitchRate + gyroYrate * ATTITUDE_CONTROL_DEG);
+
+	if (deciThrustPercent > 300) {
+		sumErrorRoll += errorRoll*0.1;
+		sumErrorPitch += errorPitch*0.1;
+
+		BoundAbs(sumErrorRoll, MAX_I);
+		BoundAbs(sumErrorPitch, MAX_I);
+	}
+	else if (deciThrustPercent < 150) {
+		sumErrorRoll = 0.0;
+		sumErrorPitch = 0.0;
+	}
 
 	// TO BE CONTINUED for quadcopter firmware
 	// TODO ArduCopter used : rollrate with P coeff and derivative of of roll rate error with D coeff
 //	double outputRollCmd = errorRoll * param[ID_G_P_ROLL] + rateRollError  * param[ID_G_D_ROLL];
 //	double outputPitchCmd = errorPitch * param[ID_G_P_PITCH] + ratePitchError * param[ID_G_D_PITCH];
-	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL];
-	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH];
+	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL] + sumErrorRoll * param[ID_G_I_ROLL];
+	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH] + sumErrorPitch * param[ID_G_I_PITCH];
 
 	double yawCmd = yawDesired;
 
