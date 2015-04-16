@@ -126,19 +126,19 @@ void setupMotors() {
 		if (QuadType == PLUS) {
 			motorMatrix[0][0] = 0; // roll
 			motorMatrix[0][1] = 1; // pitch
-			motorMatrix[0][2] = -1; // yaw
+			motorMatrix[0][2] = 1; // yaw
 
 			motorMatrix[1][0] = -1;
 			motorMatrix[1][1] = 0;
-			motorMatrix[1][2] = 1; // yaw
+			motorMatrix[1][2] = -1; // yaw
 
 			motorMatrix[2][0] = 1;
 			motorMatrix[2][1] = 0;
-			motorMatrix[2][2] = 1; // yaw
+			motorMatrix[2][2] = -1; // yaw
 
 			motorMatrix[3][0] = 0;
 			motorMatrix[3][1] = -1;
-			motorMatrix[3][2] = -1; // yaw
+			motorMatrix[3][2] = 1; // yaw
 		}
 		else if (QuadType == X) {
 			motorMatrix[0][0] = 1; // roll
@@ -195,10 +195,11 @@ void motorUpdateCommandQuad()
 	Bound(thrustX3, ESC_MIN, ESC_MAX);
 	Bound(thrustX4, ESC_MIN, ESC_MAX);
 
-	OCR5C = thrustX1  << 1 ; // pin 44
-	OCR5B = thrustX2  << 1 ; // pin 45
-	OCR5A = thrustX3  << 1 ; // pin 46
-	OCR1C = thrustX4  << 1 ; // pin 13
+	OCR5C = ESC_MIN  << 1 ; // pin 44
+	OCR5B = ESC_MIN  << 1 ; // pin 45
+	OCR5A = ESC_MIN  << 1 ; // pin 46
+	OCR1C = ESC_MIN  << 1 ; // pin 13
+
 }
 
 void motorUpdateCommandFixedWing() {
@@ -241,12 +242,11 @@ void updateMotorRepartition() {
 		aileronOut = aileronCmd / 100.0;
 		gouvernOut = gouvernCmd / 100.0;
 		yawOut = rubberCmd / 100.0;
-		yawOut = 0.0; // Yaw desactivated
 
-		thrustX1 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
-		thrustX2 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
-		thrustX3 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
-		thrustX4 = ESC_MIN + 300 + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
+		thrustX1 = ESC_MIN + 360 + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
+		thrustX2 = ESC_MIN + 360 + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
+		thrustX3 = ESC_MIN + 360 + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
+		thrustX4 = ESC_MIN + 360 + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
 	}
 }
 

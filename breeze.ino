@@ -115,13 +115,19 @@ void updateRFRadioFutaba() {
 			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
 			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
 			UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
-			UAVCore->deciThrustPercent = max((sBus.channels[2]-365)/1.38, 0);
-			UAVCore->deciThrustCmd = UAVCore->deciThrustPercent;
+
+			float sbus_throttle = max((sBus.channels[2]-365)/1.38, 0);
+			if (AUTOSPEED_CONTROLLER == 0) {
+				UAVCore->deciThrustPercent = sbus_throttle;
+			}
 			
+			UAVCore->deciThrustCmd = sbus_throttle;
+
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
-				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.66;
-				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.66;
+				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.45;
+				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.45;
+				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.45;
 			}
 		}
 	}
@@ -135,52 +141,56 @@ void updateRFRadoFutabaLowFreq() {
 		// Autopilot switch
 		//------------------------------------------
 		// LOW means manual
+		 UAVCore->autopilot = false;
 		if (sBus.channels[4] < 1000) {
-			UAVCore->autopilot = false;
+			// TODO remettre autopilot, test
+			// UAVCore->autopilot = false;
+			AUTOSPEED_CONTROLLER = 0;
 		}
 		// HIGH means auto
 		else {
-			UAVCore->autopilot = true;
+			// UAVCore->autopilot = true;
+			AUTOSPEED_CONTROLLER = 1;
 		}
 
 		// PID tuning
 		//------------------------------------------
-		
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 1.8;
+
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 2.0;
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 		param[ID_G_I_ROLL] = Ki;
-		
+
 		param[ID_G_P_PITCH] = factor;
 		param[ID_G_D_PITCH] = factor * 0.01 * 0.1;
 		param[ID_G_I_PITCH] = Ki;
-		
+
 		if (sBus.channels[7] > 1300) {
-			Ki += 0.05;
-			Bound(Ki, 0.0, 5);
+			Ki += 0.02;
+			Bound(Ki, 0.0, 1.0);
 		}
 		else if (sBus.channels[7] < 600) {
-			Ki -= 0.05;
-			Bound(Ki, 0.0, 5);
+			Ki -= 0.02;
+			Bound(Ki, 0.0, 1.0);
 		}
-		
 
-//		// Flaps
-//		//------------------------------------------
-//		switch (sBus.channels[7]) {
-//		case 144:
-//			flapsCmd = 0;
-//			break;
-//		case 1024:
-//			flapsCmd = 50;
-//			break;
-//		case 1904:
-//			flapsCmd = 90;
-//			break;
-//		default:
-//			flapsCmd = 0;
-//			break;
-//		}
+
+		//		// Flaps
+		//		//------------------------------------------
+		//		switch (sBus.channels[7]) {
+		//		case 144:
+		//			flapsCmd = 0;
+		//			break;
+		//		case 1024:
+		//			flapsCmd = 50;
+		//			break;
+		//		case 1904:
+		//			flapsCmd = 90;
+		//			break;
+		//		default:
+		//			flapsCmd = 0;
+		//			break;
+		//		}
 	}
 }
 
@@ -199,7 +209,8 @@ void process100HzTask() {
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
 	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) {
-		stabilize2(G_Dt, UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll, 
+		stabilize2(
+				G_Dt, UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll, 
 				UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch,
 				UAVCore->attitudeCommanded->yaw,
 				&aileronCmd, &gouvernCmd, &rubberCmd,
@@ -272,7 +283,7 @@ void process50HzTask() {
 	// Command motor at % thrust
 	//------------------------------------------------------------
 	motorUpdateCommandDeciPercent(UAVCore->deciThrustPercent);
-	
+
 	if (Firmware == FIXED_WING) {
 		motorUpdateCommandFixedWing();
 	}
@@ -298,7 +309,7 @@ void process20HzTask() {
 			}
 			break;
 		case QUADCOPTER:
-			altitudeHoldController(altitudeBarometer->getAverage(), UAVCore->deciThrustCmd, &(UAVCore->deciThrustPercent));
+			UAVCore->deciThrustPercent = altitudeHoldController(altCF, UAVCore->deciThrustCmd, UAVCore->deciThrustPercent);
 			break;
 		case ROCKET:
 			break;
@@ -316,7 +327,13 @@ void process10HzTask() {
 	//------------------------------------------------------------
 	updateLowPriorityRFLink();
 
-	
+	// Update compass data (doesn't work)
+	//------------------------------------------------------------
+	//	updateCompassData();
+	//	double heading = getCompassHeading(UAVCore->currentAttitude);
+	//	Logger.print("heading (deg) = ");
+	//	Logger.println(heading);
+
 #if MEASURE_VIBRATION
 	Logger.print("Acc noise vibration = ");
 	Logger.print(accNoise);
@@ -329,9 +346,6 @@ void process10HzTask() {
 
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
-
-	updateCompassData();
-	MPU9150_printMagField();
 #endif
 
 }
@@ -381,31 +395,40 @@ void process2HzTask() {
 	Logger.println(thrustX3);
 	Logger.print("X4 = ");
 	Logger.println(thrustX4); 
-	
+
 	Logger.print("sbus[4] = ");
 	Logger.println(sBus.channels[4]); 
-	
+
 	Logger.print("sbus[5] = ");
 		Logger.println(sBus.channels[5]); */
-//	Logger.print("pitch rate (deg) = ");
-//	Logger.println(-gyroYrate * ATTITUDE_CONTROL_DEG);
-//	Logger.print("setpoint pitch rate (deg) = ");
-//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 4.5);
-//	Logger.print("Out roll (cmd) = ");
-//	Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
+	//	Logger.print("pitch rate (deg) = ");
+	//	Logger.println(-gyroYrate * ATTITUDE_CONTROL_DEG);
+	//	Logger.print("setpoint pitch rate (deg) = ");
+	//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 4.5);
+	//	Logger.print("Out roll (cmd) = ");
+	//	Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
 
-//		Logger.print("sum error roll = ");
-//	Logger.println(sumErrorRoll);	
-//	Logger.print("sum error pitch = ");
-//	Logger.println(sumErrorPitch);
-	
-//	Logger.println(Ki);
+	//		Logger.print("sum error roll = ");
+	//	Logger.println(sumErrorRoll);	
+	//	Logger.print("sum error pitch = ");
+	//	Logger.println(sumErrorPitch);
 
-//	Logger.print("x_rate = ");
-//	Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-//	Logger.print("roll = ");
-//	Logger.println(UAVCore->currentAttitude->roll);
+	//	Logger.println(Ki);
+
+	//	Logger.print("x_rate = ");
+	//	Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
+	//	Logger.print("roll = ");
+	//	Logger.println(UAVCore->currentAttitude->roll);
+	//	Logger.print("pitch = ");
+	//	Logger.println(UAVCore->currentAttitude->pitch);
 	
+
+	Logger.print("thrust = ");
+	Logger.println(UAVCore->deciThrustPercent/10.0);
+	Logger.print("alt setpoint (cm) = ");
+	Logger.println(altSetPointCm);
+	Logger.print("cAlt (cm) = ");
+	Logger.println(altCF);
 }
 
 

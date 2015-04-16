@@ -2,12 +2,12 @@
 #define ALTITUDE_CONTROLLER_H_
 
 long sumErrorAlt = 0;
-int altSetPointCm = -1;
+int altSetPointCm = 120; // TO BE -1 and defined at start
 
 /**
  * Altitude Hold Controller aims to keep UAV to level
  */
-void altitudeHoldController(int currentAltCm, int deciThrustCmd, int *ptnDeciThrustPercent) {
+int altitudeHoldController(int currentAltCm, int deciThrustCmd, int deciThrustPercent) {
 
 	// Init altitude setpoint
 	if (altSetPointCm == -1) {
@@ -17,24 +17,28 @@ void altitudeHoldController(int currentAltCm, int deciThrustCmd, int *ptnDeciThr
 	// PARAMETERS : int altSetPointCm, int currentAltCm, int *ptnDeciThrustPercent
 	// Update altsetpoint depending on the decithrust cmd
 	// Increase/Decrease at 20Hz of 1cm means 20cm/s of change
-	if (deciThrustCmd > 550) {
-		altSetPointCm ++;
-	}
-	else if (deciThrustCmd < 450 && altSetPointCm > 0) {
-		altSetPointCm --;
-	}
+	// TODO
+//	if (deciThrustCmd > 550) {
+//		altSetPointCm ++;
+//	}
+//	else if (deciThrustCmd < 450 && altSetPointCm > 0) {
+//		altSetPointCm --;
+//	}
 
 	// Input
-	double Kp = 1.0;
+	double Kp = 0.1;
 	double Ki = 0.05;
-	int I_max = 100;
+	int I_max = 20;
 
 	// Truncate precision on error
-	int errorCm = 10 * (int)((altSetPointCm - currentAltCm)/10.0);
+	int errorCm = altSetPointCm - currentAltCm;
 	sumErrorAlt = sumErrorAlt + errorCm;
 	Bound(sumErrorAlt, -I_max, I_max);
 
-	(*ptnDeciThrustPercent) = (*ptnDeciThrustPercent) + Kp * errorCm + Ki * sumErrorAlt;
+	float output = deciThrustPercent + 10.0*(Kp * errorCm + Ki * sumErrorAlt);
+	Bound(output, 0, 1000);
+
+	return (int) output;
 }
 
 #endif

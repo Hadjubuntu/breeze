@@ -11,22 +11,19 @@
 #ifndef MODULES_RFLINK_RFPLOT_H_
 #define MODULES_RFLINK_RFPLOT_H_
 
+#include "math/Math.h"
+
 #define DATA_BUFFER_SIZE 50
 #define NB_BYTES_PER_PACKET 85
 
 int dataIdx = 0;
 
-typedef struct T_VECTOR3D {
-	int x;
-	int y;
-	int z;
-} Vector3D;
 
-Vector3D datas[DATA_BUFFER_SIZE];
+Vector3f datas[DATA_BUFFER_SIZE];
 
 void addData(double pX, double pY, double pZ) {
 	if (dataIdx < DATA_BUFFER_SIZE) {
-		Vector3D el;
+		Vector3f el;
 		el.x = (int) (pX * 10);
 		el.y = (int) (pY * 10);
 		el.z = (int) (pZ * 10);

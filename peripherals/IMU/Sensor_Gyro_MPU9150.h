@@ -19,7 +19,7 @@
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 0
-#define ENABLE_IMU_CALIBRATION 1
+#define ENABLE_IMU_CALIBRATION 0
 #define ENABLE_COMPASS 1
 
 //MPU9150 Compass
@@ -45,9 +45,10 @@ double accNoise = 0.0; // Noise accelerometer measure in G (means output steady 
 long lastUpdateAHRS_Us = 0;
 // TODO simplifier les variables utilisés et de sortie
 // Output variables
-double gyroXrate = 0.0, gyroYrate = 0.0, gyroZangle = 0.0, kalAngleX = 0.0, kalAngleY = 0.0;
-double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0;
-double rel_accZ = 0.0;
+double kalAngleX = 0.0, kalAngleY = 0.0;
+double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0, raw_gyro_zrate = 0.0;
+double gyroXrate = 0.0, gyroYrate = 0.0, gyroZrate = 0.0;
+double gyroZangle = 0.0, rel_accZ = 0.0;
 
 int Gyro_output[3], Accel_output[3], Mag_output[3];
 
@@ -58,8 +59,8 @@ float raw_accel_roll, raw_accel_pitch;
 
 // Complementary filter for raw data input
 //------------------------------
-double raw_filter_alpha = 1.0;
-double alphaGyroRate = 1.0;
+double raw_filter_alpha = 0.9;
+double alphaGyroRate = 0.5;
 
 //valeur initiales axe X (pitch)
 //------------------------------
@@ -75,8 +76,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.001; // 0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 0.03; // 15 bruit de mesure (default: 5)
+float kalmanQ = 0.1; // 0.001   0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 5; // 0.03  15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -113,19 +114,28 @@ void updateCompassData() {
 	byte buffer[6];
 
 	readFrom(MPU9150_CHIP_ADDRESS, MPU9150_CMPS_XOUT_L, 6, buffer);
-	Mag_output[0]=(((int)buffer[0]) << 8 ) | buffer[1];
-	Mag_output[1]=(((int)buffer[2]) << 8 ) | buffer[3];
-	Mag_output[2]=(((int)buffer[4]) << 8 ) | buffer[5];
+	Mag_output[0] = (((int)buffer[0]) << 8 ) | buffer[1];
+	Mag_output[1] = (((int)buffer[2]) << 8 ) | buffer[3];
+	Mag_output[2] = (((int)buffer[4]) << 8 ) | buffer[5];
 
 	writeTo(AK8975_MAG_ADDRESS, 0x0a, 0x01);
 #endif
 }
 
-double getCompassHeading() {
-	double heading = fast_atan2((double)Mag_output[1], (double)Mag_output[0]) * RAD2DEG + 180;
-	while (heading < 0) heading += 360;
-	while (heading > 360) heading -= 360;
-	return heading;
+double compassHeading = 0.0;
+double getCompassHeading(Attitude *curAtt) {
+
+	if (abs(curAtt->roll) < 3 && abs(curAtt->pitch) < 3) {
+		double rawFieldX = (double) Mag_output[0]*0.3;
+		double rawFieldY = (double) Mag_output[1]*0.3;
+		double rawFieldZ = (double) Mag_output[2]*0.3;
+
+		compassHeading = fast_atan2(-rawFieldY, rawFieldX) * RAD2DEG;
+		while (compassHeading < 0.0) compassHeading += 360;
+		while (compassHeading > 360) compassHeading -= 360;
+	}
+
+	return compassHeading;
 }
 
 
@@ -217,6 +227,8 @@ void setupGyro() {
 	Logger.print(Gyro_cal_x);
 	Logger.print("; ");
 	Logger.print(Gyro_cal_y);
+	Logger.print("; ");
+	Logger.print(Gyro_cal_z);
 	Logger.println(" ");
 	Logger.print("Acc cal x; y; z : ");
 	Logger.print(Accel_cal_x);
@@ -234,15 +246,18 @@ void setupGyro() {
 ------------------------------
 IMU Calibration Output
 ------------------------------
-Gyro cal x; y; z : -29.00; 59.00
-Acc cal x; y; z : 55.00; 86.00; 7996.00
+Gyro cal x; y; z : -28.00; 58.00
+Acc cal x; y; z : 195.00; 240.00; -201.00
+m2 :
+Gyro cal x; y; z : -20.00; 49.00; 33.00
+Acc cal x; y; z : 34.00; 9.00; -243.00
 	 */
-	Gyro_cal_x = -29.0;
-	Gyro_cal_y = 59.0;
-	Gyro_cal_z = 0.0;
-	Accel_cal_x = 55.00;
-	Accel_cal_y = 86.00;
-	Accel_cal_z = 7996.00;
+	Gyro_cal_x = -20.00;
+	Gyro_cal_y = 49.00;
+	Gyro_cal_z = 33.0;
+	Accel_cal_x = 34.00;
+	Accel_cal_y = 9.00;
+	Accel_cal_z = -243.00;
 #endif
 }
 
@@ -265,6 +280,7 @@ void updateGyroData() {
 	rel_accZ = (Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G;
 	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
 	raw_gyro_yrate = ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
+	raw_gyro_zrate = ((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt;
 
 
 	raw_accel_pitch = fast_atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G, rel_accZ) * RAD2DEG;
@@ -321,10 +337,11 @@ void updateGyroData() {
 	// Output update
 	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
 	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
+	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
 
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
-	gyroZangle += Gyro_output[2] / GYRO_LSB_PER_G * dt;
+	gyroZangle += gyroZrate * dt;
 
 
 
@@ -335,19 +352,23 @@ void updateGyroData() {
 #endif
 }
 
-void MPU9150_printMagField() {
-#if ENABLE_COMPASS == 1
-	/**	Logger.println("Mag field");
-	Logger.print("X: ");
-	Logger.print(Mag_output[0]);
-	Logger.print("Y: ");
-	Logger.print(Mag_output[1]);
-	Logger.print("Z: ");
-	Logger.println(Mag_output[2]);*/
-	Logger.print("Heading (deg): ");
-	Logger.println(getCompassHeading());
-#endif
-}
+//Vector3f getEFAccel(Attitude *att) {
+//	Vector3f bfAccel, efAccel;
+//	bfAccel.x = Accel_roll;
+//	bfAccel.y = Accel_pitch;
+//	bfAccel.z = rel_accZ;
+//	float cos_pitch = cos(toRad(att->pitch));
+//	float sin_pitch = sin(toRad(att->pitch));
+//	float cos_roll = cos(toRad(att->roll));
+//	float sin_roll = sin(toRad(att->roll));
+//
+//	efAccel.x = cos_pitch * bfAccel.x - sin_pitch * bfAccel.z;
+//	efAccel.y = sin_pitch*sin_roll * bfAccel.x + cos_roll * bfAccel.y + cos_pitch * sin_roll * bfAccel.z;
+//	efAccel.z = sin_pitch * cos_roll * bfAccel.x - sin_roll * bfAccel.y + cos_pitch * cos_roll * bfAccel.z;
+//
+//	return efAccel;
+//}
+
 
 void MPU9150_setupCompass(){
 
@@ -372,6 +393,14 @@ void MPU9150_setupCompass(){
 	writeTo(MPU9150_CHIP_ADDRESS, 0x64, 0x01); //override register
 	writeTo(MPU9150_CHIP_ADDRESS, 0x6A, 0x20); //enable master i2c mode
 	writeTo(MPU9150_CHIP_ADDRESS, 0x34, 0x13); //disable slv4
+
+	// Throw some data
+	int throwDataCpt = 0;
+	while (throwDataCpt < 5) {
+		updateCompassData();
+		throwDataCpt ++;
+		delay(20);
+	}
 }
 
 

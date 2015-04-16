@@ -73,16 +73,21 @@ void setupAltimeter() {
 	delay(200);
 }
 
-long previousAlt = 0;
+float previousAlt = 0, altCF = 0;
 
 void updateAltimeter() {
 
 	callUpdateAlt();
-
 	Altitude = dps.getAltitude();
-	if (abs(Altitude - previousAlt) < 500) {
-		altitudeBarometer->addValue(Altitude, timeUs());
-		previousAlt = Altitude;
+
+//	if (abs(Altitude - previousAlt) < 500) {
+//		altitudeBarometer->addValue(Altitude, timeUs());
+//		previousAlt = Altitude;
+//	}
+
+	// Complementary filter
+	if (abs(Altitude) < 2000) {
+		altCF = altCF*0.4 + 0.6*Altitude;
 	}
 
 }

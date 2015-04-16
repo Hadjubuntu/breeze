@@ -275,4 +275,18 @@ float  fast_sqrt2(const float x)
 	return x*u.x*(1.5f - xhalf*u.x*u.x);// Newton step, repeating increases accuracy
 }
 
+
+// Vector3
+//-------------------------------------------------------
+typedef struct T_VECTOR3 {
+	float x;
+	float y;
+	float z;
+} Vector3f;
+
+float approx(float v) {
+	float k = 100.0;
+	return roundf(v * k) / k;
+}
+
 #endif /* MATH_H_ */

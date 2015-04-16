@@ -32,7 +32,7 @@ enum QUAD_TYPE {
 	PLUS,
 	X
 };
-QUAD_TYPE QuadType = PLUS;
+QUAD_TYPE QuadType = X;
 #endif
 
 enum FlightMode {
