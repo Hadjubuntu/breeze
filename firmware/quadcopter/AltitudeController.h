@@ -1,44 +1,60 @@
 #ifndef ALTITUDE_CONTROLLER_H_
 #define ALTITUDE_CONTROLLER_H_
 
-long sumErrorAlt = 0;
-int altSetPointCm = 120; // TO BE -1 and defined at start
+#include "arch/AVR/MCU/MCU.h"
+
+float sumErrorAlt = 0.0;
+float altSetPointCm = 25.0; // TO BE -1 and defined at start
+float output_alt_controller = 0.0;
+long altc_time = 0;
 
 /**
  * Altitude Hold Controller aims to keep UAV to level
  */
-int altitudeHoldController(int currentAltCm, int deciThrustCmd, int deciThrustPercent) {
-
-	// Init altitude setpoint
-	if (altSetPointCm == -1) {
-		altSetPointCm = currentAltCm;
-	}
+void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrustCmd) {
 
 	// PARAMETERS : int altSetPointCm, int currentAltCm, int *ptnDeciThrustPercent
 	// Update altsetpoint depending on the decithrust cmd
 	// Increase/Decrease at 20Hz of 1cm means 20cm/s of change
 	// TODO
-//	if (deciThrustCmd > 550) {
-//		altSetPointCm ++;
+//	if (deciThrustCmd > 200) {
+//		altSetPointCm = altSetPointCm + 0.5;
 //	}
-//	else if (deciThrustCmd < 450 && altSetPointCm > 0) {
-//		altSetPointCm --;
+//	else if (deciThrustCmd < 150 && altSetPointCm > 0) {
+//		altSetPointCm = altSetPointCm - 0.5;
 //	}
+//	Bound(altSetPointCm, 0, 3000);
 
 	// Input
-	double Kp = 0.1;
-	double Ki = 0.05;
-	int I_max = 20;
+	double Ki = 0.02;
+	int I_max = 40;
 
 	// Truncate precision on error
-	int errorCm = altSetPointCm - currentAltCm;
+	float climb_rate_desired = (altSetPointCm - currentAltCm)*0.05; // Into cm (0.01), then Kp=5
+	BoundAbs(climb_rate_desired, 1.5); // Bound to +/- 2m/s
+
+	float errorClimbRateCm = climb_rate_desired - climb_rate_ms;
+	sumErrorAlt = sumErrorAlt + errorClimbRateCm;
+	Bound(sumErrorAlt, -I_max, I_max);
+
+	output_alt_controller =  output_alt_controller + 10.0*(Ki * sumErrorAlt);
+	Bound(output_alt_controller, 0, 290);
+
+}
+
+/**
+ * Memo saved previous version
+ * // Input
+	double Ki = 0.02;
+	int I_max = 40;
+
+	// Truncate precision on error
+	float errorCm = altSetPointCm - currentAltCm;
 	sumErrorAlt = sumErrorAlt + errorCm;
 	Bound(sumErrorAlt, -I_max, I_max);
 
-	float output = deciThrustPercent + 10.0*(Kp * errorCm + Ki * sumErrorAlt);
-	Bound(output, 0, 1000);
-
-	return (int) output;
-}
+	output_alt_controller =  output_alt_controller + 10.0*(Ki * sumErrorAlt);
+	Bound(output_alt_controller, 0, 280);
+ */
 
 #endif

@@ -20,7 +20,7 @@
 #define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 0
 #define ENABLE_IMU_CALIBRATION 0
-#define ENABLE_COMPASS 1
+#define ENABLE_COMPASS 0
 
 //MPU9150 Compass
 #define MPU9150_CMPS_XOUT_L        0x4A   // R
@@ -53,6 +53,12 @@ double gyroZangle = 0.0, rel_accZ = 0.0;
 int Gyro_output[3], Accel_output[3], Mag_output[3];
 
 float dt = 0.01;
+
+bool acc_z_initialized = false;
+float initial_acc_z_bias = 0.0;
+float raw_projected_acc_z_on_efz = 0.0;
+float acc_z_on_efz = 0.0;
+float climb_rate = 0.0;
 
 float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
 float raw_accel_roll, raw_accel_pitch;
@@ -157,7 +163,7 @@ void setupGyro() {
 	while (i2cWrite(MPU9150_CHIP_ADDRESS, 0x6B, 0x00, true)); // PLL with X axis gyroscope reference and disable sleep mode
 
 
-	//configuration gyroscope et accelerometre
+	// Gyro and accelerometer configuration
 	//----------------------------------------
 	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
 	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
@@ -344,6 +350,28 @@ void updateGyroData() {
 	gyroZangle += gyroZrate * dt;
 
 
+	//----------------------------------------------
+	// Update acceleration on z-axis in earth-frame
+	float sin_roll = sin(toRad(kalAngleX));
+	float sin_pitch = sin(toRad(kalAngleY));
+	// Projection of the acceleration on the earth-frame z axis
+	float raw_projected_acc_z_on_efz = rel_accZ * (1.0 + 1.1*abs(sin_pitch) * abs(sin_pitch) + 1.1*abs(sin_roll) * abs(sin_roll));
+
+	float prev_acc_z;
+	if (acc_z_initialized) {
+		prev_acc_z = acc_z_on_efz;
+	}
+	else {
+		prev_acc_z = 1.0;
+		initial_acc_z_bias = (raw_projected_acc_z_on_efz-1.0);
+		acc_z_initialized = true;
+	}
+
+	acc_z_on_efz = raw_projected_acc_z_on_efz - initial_acc_z_bias;
+
+	// Integrate as a Riemann serie
+	climb_rate =  0.98*climb_rate +  (dt * G_MASS *(acc_z_on_efz - 1.0)) ;
+
 
 #if MEASURE_VIBRATION
 	//-----------------------------------------------
@@ -352,22 +380,6 @@ void updateGyroData() {
 #endif
 }
 
-//Vector3f getEFAccel(Attitude *att) {
-//	Vector3f bfAccel, efAccel;
-//	bfAccel.x = Accel_roll;
-//	bfAccel.y = Accel_pitch;
-//	bfAccel.z = rel_accZ;
-//	float cos_pitch = cos(toRad(att->pitch));
-//	float sin_pitch = sin(toRad(att->pitch));
-//	float cos_roll = cos(toRad(att->roll));
-//	float sin_roll = sin(toRad(att->roll));
-//
-//	efAccel.x = cos_pitch * bfAccel.x - sin_pitch * bfAccel.z;
-//	efAccel.y = sin_pitch*sin_roll * bfAccel.x + cos_roll * bfAccel.y + cos_pitch * sin_roll * bfAccel.z;
-//	efAccel.z = sin_pitch * cos_roll * bfAccel.x - sin_roll * bfAccel.y + cos_pitch * cos_roll * bfAccel.z;
-//
-//	return efAccel;
-//}
 
 
 void MPU9150_setupCompass(){

@@ -75,7 +75,7 @@ void setupAltimeter() {
 
 float previousAlt = 0, altCF = 0;
 
-void updateAltimeter() {
+void updateAltimeter(float rel_acc_z) {
 
 	callUpdateAlt();
 	Altitude = dps.getAltitude();
@@ -87,9 +87,14 @@ void updateAltimeter() {
 
 	// Complementary filter
 	if (abs(Altitude) < 2000) {
-		altCF = altCF*0.4 + 0.6*Altitude;
-	}
+		rel_acc_z = ((int)(rel_acc_z*10))/10.0;
+		float alpha = abs(1.0-rel_acc_z);
 
+		altCF = altCF*(0.9-alpha) + (0.1+alpha)*Altitude;
+
+		previousAlt = Altitude;
+	}
+	Bound(altCF, 0, 10000);
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

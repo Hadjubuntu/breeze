@@ -24,7 +24,8 @@
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 
 
-
+// Skeleton functions
+void measureCriticalSensors();
 
 /*******************************************************************
  * Update IMU data
@@ -69,22 +70,6 @@ void processCommand() {
 
 
 
-void fullManual() {
-	// Attitude commanded not written,
-	// Stabilize function skipped only on no stabilized mode
-	// Otherwise, user defined roll pitch to adopt and stabilized function do the job
-	// Control by RF link
-	if ((currentTime-lastTimeLinkWithGS) > S_TO_US*3) {
-		// TODO return home procedure : switch to auto, UAV must return home and land
-		UAVCore->deciThrustPercent = 0;	
-		UAVCore->deciThrustCmd = 0;
-		UAVCore->attitudeCommanded->roll = 0;		
-		UAVCore->attitudeCommanded->pitch = 0;
-		UAVCore->attitudeCommanded->yaw = 0;
-	}
-}
-
-
 void reinitFlightModeParameters() {
 	// Desactivate autospeed controller
 	AUTOSPEED_CONTROLLER = 0;
@@ -120,7 +105,7 @@ void updateRFRadioFutaba() {
 			if (AUTOSPEED_CONTROLLER == 0) {
 				UAVCore->deciThrustPercent = sbus_throttle;
 			}
-			
+
 			UAVCore->deciThrustCmd = sbus_throttle;
 
 			// Decrease command angle in quadcopter mode
@@ -141,7 +126,8 @@ void updateRFRadoFutabaLowFreq() {
 		// Autopilot switch
 		//------------------------------------------
 		// LOW means manual
-		 UAVCore->autopilot = false;
+		UAVCore->autopilot = false;
+		int old_state = AUTOSPEED_CONTROLLER;
 		if (sBus.channels[4] < 1000) {
 			// TODO remettre autopilot, test
 			// UAVCore->autopilot = false;
@@ -151,6 +137,10 @@ void updateRFRadoFutabaLowFreq() {
 		else {
 			// UAVCore->autopilot = true;
 			AUTOSPEED_CONTROLLER = 1;
+		}
+		
+		if (AUTOSPEED_CONTROLLER != old_state) {
+			output_alt_controller = 0.0;
 		}
 
 		// PID tuning
@@ -204,7 +194,8 @@ void process100HzTask() {
 	// Update attitude from gyro
 	updateAttitude() ;
 
-
+	measureCriticalSensors();
+	
 	// If UAV in auto mode
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
@@ -218,12 +209,15 @@ void process100HzTask() {
 				UAVCore->deciThrustPercent);
 	}
 
+	measureCriticalSensors();
+	
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
 
 	// Update quad motors
 	motorUpdateCommandQuad();
+
 
 	hundredHZpreviousTime = currentTime;
 }
@@ -246,31 +240,7 @@ void process50HzTask() {
 		reinitFlightModeParameters();
 	}
 
-
-	//-----------------------------------------------
-	// Define attitude desired to assure the mission
-	switch (flightMode) {
-	case FULL_MANUAL:
-		fullManual();
-		break;
-	case FULL_FLIGHT_GPS:
-		flightByGPS();
-		break;
-	case STABILIZE_ONLY:
-		stabilizeOnly();
-		break;
-	case GROUND_NAV:
-		groundNavDemo();
-		break;
-	case RTL:
-		rtlNav();
-		break;
-	default:
-		Logger.println("Unknow flight mode");
-		break;		
-	}
-
-
+	// TODO remove flight mode, use mission instead
 
 	// Update RF data down and up
 	//------------------------------------------------------------
@@ -297,7 +267,7 @@ void process20HzTask() {
 		double newAirspeedVms = updateAirspeed();
 		airspeed_ms_mean->addValue(newAirspeedVms, currentTime);
 	}
-
+	
 	if (AUTOSPEED_CONTROLLER == 1) {
 		switch (Firmware) {
 		case FIXED_WING:
@@ -309,7 +279,8 @@ void process20HzTask() {
 			}
 			break;
 		case QUADCOPTER:
-			UAVCore->deciThrustPercent = altitudeHoldController(altCF, UAVCore->deciThrustCmd, UAVCore->deciThrustPercent);
+			altitudeHoldController(climb_rate, altCF, UAVCore->deciThrustCmd);
+			UAVCore->deciThrustPercent = output_alt_controller; 
 			break;
 		case ROCKET:
 			break;
@@ -353,6 +324,7 @@ void process10HzTask() {
 /*******************************************************************
  * 5Hz task (200ms)
  ******************************************************************/
+
 void process5HzTask() {
 	// Add speed calculated by the GPS
 	if (USE_GPS_NAVIGUATION) {
@@ -362,7 +334,11 @@ void process5HzTask() {
 
 	// Update altimeter
 	//------------------------------------------------------------
-	updateAltimeter();
+	
+//	Logger.print("Climb_rate = ");
+//	Logger.println(climb_rate);
+	
+	updateAltimeter(acc_z_on_efz);
 
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
@@ -419,16 +395,21 @@ void process2HzTask() {
 	//	Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
 	//	Logger.print("roll = ");
 	//	Logger.println(UAVCore->currentAttitude->roll);
-	//	Logger.print("pitch = ");
-	//	Logger.println(UAVCore->currentAttitude->pitch);
-	
+	//		Logger.print("pitch = ");
+	//		Logger.println(UAVCore->currentAttitude->pitch);
 
-	Logger.print("thrust = ");
-	Logger.println(UAVCore->deciThrustPercent/10.0);
-	Logger.print("alt setpoint (cm) = ");
-	Logger.println(altSetPointCm);
-	Logger.print("cAlt (cm) = ");
-	Logger.println(altCF);
+
+//	Logger.print("acc_z hard = ");
+//	Logger.println(rel_accZ * (1.0 + abs(sin_pitch) * abs(sin_pitch)
+//			+ abs(sin_roll) * abs(sin_roll))); 
+	
+//	Logger.print("thrust = ");
+//	Logger.println(UAVCore->deciThrustPercent);
+//	Logger.print("Alt = ");
+//	Logger.println(altCF);
+//	Logger.print("alt set point (cm) = ");
+//	Logger.println(altSetPointCm);
+
 }
 
 

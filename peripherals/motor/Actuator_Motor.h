@@ -195,10 +195,10 @@ void motorUpdateCommandQuad()
 	Bound(thrustX3, ESC_MIN, ESC_MAX);
 	Bound(thrustX4, ESC_MIN, ESC_MAX);
 
-	OCR5C = ESC_MIN  << 1 ; // pin 44
-	OCR5B = ESC_MIN  << 1 ; // pin 45
-	OCR5A = ESC_MIN  << 1 ; // pin 46
-	OCR1C = ESC_MIN  << 1 ; // pin 13
+	OCR5C = thrustX1  << 1 ; // pin 44
+	OCR5B = thrustX2  << 1 ; // pin 45
+	OCR5A = thrustX3  << 1 ; // pin 46
+	OCR1C = thrustX4  << 1 ; // pin 13
 
 }
 

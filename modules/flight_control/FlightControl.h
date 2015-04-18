@@ -97,15 +97,6 @@ void stabilize2(double G_Dt, double errorRoll, double errorPitch, double yawDesi
 	double desiredRollRate = errorRoll * 4.5;
 	double desiredPitchRate = errorPitch * 4.5;
 
-//	Vector3f input_ef;
-//	input_ef.x = desiredRollRate;
-//	input_ef.y = desiredPitchRate;
-//	input_ef.z = yawDesired;
-//
-//	Vector3f input_bf;
-//	input_bf.x = input_ef.x - sin(toRad(curAtt->pitch)) * input_ef.z;
-//	input_bf.y = cos(toRad(curAtt->roll)) * input_ef.y + sin(toRad(curAtt->roll)) * cos(toRad(curAtt->pitch)) * input_ef.z;
-//	input_bf.z = -sin(toRad(curAtt->roll)) * input_ef.y + cos(toRad(curAtt->pitch)) * cos(toRad(curAtt->roll)) * input_ef.z;
 
 	double rateRollError = (desiredRollRate - gyroXrate * ATTITUDE_CONTROL_DEG);
 	double ratePitchError = (desiredPitchRate + gyroYrate * ATTITUDE_CONTROL_DEG);

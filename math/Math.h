@@ -18,6 +18,9 @@
 
 // Already defined in Arduino.h  #define PI     3.14159265f
 
+// Earth gravity (m/s^2)
+#define G_MASS 9.81
+
 // Earth radius in meters near 45° nord
 #define R 6378100.0f
 #define GPS_AROUND_LATITUDE 2.1 // Latitude around we are flying in degrees
@@ -287,6 +290,20 @@ typedef struct T_VECTOR3 {
 float approx(float v) {
 	float k = 100.0;
 	return roundf(v * k) / k;
+}
+
+Vector3f rot_ef_bf(Vector3f ef_vector, Attitude *att) {
+	Vector3f output;
+	float cos_p = cos(-toRad(att->pitch));
+	float cos_r = cos(toRad(att->roll));
+	float sin_p = sin(-toRad(att->pitch));
+	float sin_r = sin(toRad(att->roll));
+
+	 output.x = ef_vector.x - sin_p * ef_vector.z;
+	 output.y = cos_r  * ef_vector.y + sin_r * cos_p * ef_vector.z;
+	 output.z = -sin_r * ef_vector.y + cos_p * cos_r * ef_vector.z;
+
+	return output;
 }
 
 #endif /* MATH_H_ */

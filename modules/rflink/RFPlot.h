@@ -45,9 +45,9 @@ void updateLowFreqRFPlot() {
 
 		sprintf(buf, "%s|%d|%d|%d",
 				buf,
-				datas[sendingIdx].x,
-				datas[sendingIdx].y,
-				datas[sendingIdx].z);
+				toCenti(datas[sendingIdx].x),
+				toCenti(datas[sendingIdx].y),
+				toCenti(datas[sendingIdx].z));
 
 		// TODO define cbyte with data inserted
 		int cByte = 5*3+3;
