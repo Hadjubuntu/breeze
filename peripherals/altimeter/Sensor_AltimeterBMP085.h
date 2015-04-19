@@ -115,6 +115,7 @@ public:
 	bool _pressure_updated;
 	long _dt_us;
 private:
+	int _iter_temp;
 
 	int ac1,ac2,ac3,b1,b2,mb,mc,md;               // cal data  
 	unsigned int ac4,ac5,ac6;                     // cal data
@@ -162,6 +163,9 @@ BMP085::BMP085() {
 	_Pa_Offset = 0;               // 1hPa = 100Pa = 1mbar
 
 	oldEMA = 0;
+
+	// Increment until 20 (because call true pressure at 20Hz) to update temp at 1 Hz
+	_iter_temp = 0;
 }
 
 void BMP085::init() {
@@ -314,6 +318,13 @@ void BMP085::calTruPressureState1() {
 }
 
 void BMP085::calcTruePressure() {
+	if (_iter_temp >= 20) {
+		calcTrueTemperature();
+		_iter_temp = 0;
+	}
+	else {
+		_iter_temp ++;
+	}
 
 	//read Raw Pressure
 	if (_chip_state == 0) {

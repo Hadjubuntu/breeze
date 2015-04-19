@@ -102,6 +102,7 @@ void updateRFRadioFutaba() {
 			UAVCore->deciThrustPercent = 0;
 			UAVCore->deciThrustCmd = 0;
 			UAVCore->autopilot = false;
+			AUTOSPEED_CONTROLLER = 0;
 		}
 		else {
 			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
@@ -266,10 +267,33 @@ void process50HzTask() {
 	}
 }
 
+
+void updateClimbRate() {
+	//----------------------------------------------
+	// Update acceleration on z-axis in earth-frame
+	Vector3f vect_acc_bf;
+	vect_acc_bf.x = rel_accX;
+	vect_acc_bf.y = rel_accY;
+	vect_acc_bf.z = rel_accZ;
+	Vector3f vect_acc_ef = rot_bf_ef(vect_acc_bf, UAVCore->currentAttitude);
+
+	if (acc_z_initialized == false) {
+		initial_acc_z_bias = (vect_acc_ef.z-1.0);
+		acc_z_initialized = true;
+	}
+
+	acc_z_on_efz = vect_acc_ef.z - initial_acc_z_bias;
+
+	// Integrate as a Riemann serie
+	acc_filter->addValue( G_MASS *(acc_z_on_efz-1.0), currentTime);
+}
+
 /*******************************************************************
  * 20Hz task (50ms)
  ******************************************************************/
 void process20HzTask() {
+	updateClimbRate();
+
 	if (USE_AIRSPEED_SENSOR) {
 		double newAirspeedVms = updateAirspeed();
 		airspeed_ms_mean->addValue(newAirspeedVms, currentTime);
@@ -287,8 +311,8 @@ void process20HzTask() {
 			break;
 		case QUADCOPTER:
 			// Update climb rate
-			climb_rate = acc_filter->getFullstackIntegral(0.01);
-			
+			climb_rate = acc_filter->getFullstackIntegral(0.05);
+
 			// Altitude controller
 			altitudeHoldController(climb_rate, altCF, UAVCore->deciThrustCmd);
 			UAVCore->deciThrustPercent = output_alt_controller; 
@@ -312,6 +336,7 @@ void process10HzTask() {
 	// Update low priority rf com
 	//------------------------------------------------------------
 	updateLowPriorityRFLink();
+
 
 	// Update compass data (doesn't work)
 	//------------------------------------------------------------
@@ -383,10 +408,10 @@ void process2HzTask() {
 
 	Logger.print("sbus[5] = ");
 		Logger.println(sBus.channels[5]); */
-//	Logger.print("Gyro pitch rate (deg) = ");
-//	Logger.println(- gyroYrate * ATTITUDE_CONTROL_DEG);
-//	Logger.print("setpoint pitch rate (deg) = ");
-//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 1.5);
+	//	Logger.print("Gyro pitch rate (deg) = ");
+	//	Logger.println(- gyroYrate * ATTITUDE_CONTROL_DEG);
+	//	Logger.print("setpoint pitch rate (deg) = ");
+	//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 1.5);
 	//	Logger.print("Out roll (cmd) = ");
 	//	Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
 
@@ -409,12 +434,6 @@ void process2HzTask() {
 	//	Logger.println(rel_accZ * (1.0 + abs(sin_pitch) * abs(sin_pitch)
 	//			+ abs(sin_roll) * abs(sin_roll))); 
 
-//		Logger.print("thrust = ");
-//		Logger.println(UAVCore->deciThrustPercent);
-//		Logger.print("Alt = ");
-//		Logger.println(altCF);
-//		Logger.print("alt set point (cm) = ");
-//		Logger.println(altSetPointCm);
 
 	//	Logger.print("pitch = ");
 	//	Logger.println(UAVCore->currentAttitude->pitch);
@@ -422,20 +441,22 @@ void process2HzTask() {
 	//	Logger.print("pitch cmd  = ");
 	//	Logger.println(UAVCore->attitudeCommanded->pitch);
 
-//	Logger.print("Gyro_z_rate = ");
-//	Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-//	Logger.print("Yaw desired = ");
-//	Logger.println(UAVCore->attitudeCommanded->yaw);
+	//	Logger.print("Gyro_z_rate = ");
+	//	Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
+	//	Logger.print("Yaw desired = ");
+	//	Logger.println(UAVCore->attitudeCommanded->yaw);
+
+	//	Vector3f t;
+	//	t.x = 1;
+	//	t.y = 0;
+	//	t.z = 1;
+	//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
+	//	Logger.println(t_bf.x);
+	//	Logger.print("Climb_rate = ");
+	//	Logger.println(climb_rate);
 	
-//	Vector3f t;
-//	t.x = 1;
-//	t.y = 0;
-//	t.z = 1;
-//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
-//	Logger.println(t_bf.x);
-//	Logger.print("Climb_rate = ");
-//	Logger.println(climb_rate);
-	
+
+
 }
 
 
@@ -444,11 +465,6 @@ void process2HzTask() {
  * 1Hz task 
  ******************************************************************/
 void process1HzTask() {
-
-	//---------------------------------------------------------
-	// Update barometer temperature for altitude eval
-	updateBaroTemperatureLowFreq();
-
 
 	//---------------------------------------------------------
 	// Send data to the ground station

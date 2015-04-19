@@ -27,7 +27,7 @@ void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrus
 
 	// Input
 	double Ki = 0.02;
-	int I_max = 20;
+	int I_max = 40;
 
 	// Truncate precision on error
 	float climb_rate_desired = (altSetPointCm - currentAltCm)*0.05; // Into cm (0.01), then Kp=5

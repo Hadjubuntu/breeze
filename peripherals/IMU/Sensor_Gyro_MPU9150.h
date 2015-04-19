@@ -355,33 +355,6 @@ void updateGyroData() {
 	gyroZangle += gyroZrate * dt;
 
 
-	//----------------------------------------------
-	// Update acceleration on z-axis in earth-frame
-	Vector3f vect_acc_bf;
-	vect_acc_bf.x = rel_accX;
-	vect_acc_bf.y = rel_accY;
-	vect_acc_bf.z = rel_accZ;
-	Attitude att;
-	att.roll = kalAngleX;
-	att.pitch = kalAngleY;
-	att.yaw = 0.0;
-	Vector3f vect_acc_ef = rot_bf_ef(vect_acc_bf, &att);
-
-	float prev_acc_z;
-	if (acc_z_initialized) {
-		prev_acc_z = acc_z_on_efz;
-	}
-	else {
-		prev_acc_z = 1.0;
-		initial_acc_z_bias = (vect_acc_ef.z-1.0);
-		acc_z_initialized = true;
-	}
-
-	acc_z_on_efz = vect_acc_ef.z - initial_acc_z_bias;
-
-	// Integrate as a Riemann serie
-	acc_filter->addValue( G_MASS *(acc_z_on_efz-1.0), currentTimeUs);
-
 
 #if MEASURE_VIBRATION
 	//-----------------------------------------------

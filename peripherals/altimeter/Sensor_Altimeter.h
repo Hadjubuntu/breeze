@@ -22,10 +22,6 @@ BMP085 dps = BMP085();
 FilterAverage *altitudeBarometer;
 long Temperature = 0, Pressure = 0, Altitude = 0, AltitudeOffset = 0;
 
-void updateBaroTemperatureLowFreq() {
-	dps.calcTrueTemperature();
-}
-
 
 void callUpdateAlt() {
 	dps.calcTruePressure();
@@ -44,7 +40,8 @@ void setupAltimeter() {
 	double offset = 0.0;
 	int nbMeasureOffset =  100;
 
-	updateBaroTemperatureLowFreq();
+	// Force temp update
+	dps.calcTrueTemperature();
 
 	int i = 0;
 	while (i < nbMeasureOffset) {
@@ -75,7 +72,7 @@ void setupAltimeter() {
 
 float previousAlt = 0, altCF = 0;
 
-void updateAltimeter(float rel_acc_z) {
+void updateAltimeter(float acc_z_bf) {
 
 	callUpdateAlt();
 	Altitude = dps.getAltitude();
@@ -86,10 +83,9 @@ void updateAltimeter(float rel_acc_z) {
 //	}
 	// Complementary filter
 	if (abs(Altitude) < 2000) {
-		rel_acc_z = ((int)(rel_acc_z*10))/10.0;
-		float alpha = abs(1.0-rel_acc_z);
+		float alpha = max(abs(1.0-acc_z_bf), 0.8);
 
-		altCF = altCF*(0.9-alpha) + (0.1+alpha)*Altitude;
+		altCF = altCF*(0.8-alpha) + (0.2+alpha)*Altitude;
 
 		previousAlt = Altitude;
 	}
