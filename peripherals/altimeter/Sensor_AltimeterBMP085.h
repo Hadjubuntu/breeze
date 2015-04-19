@@ -113,6 +113,7 @@ public:
 	void updateAltitudeCm();
 
 	bool _pressure_updated;
+	long _dt_us;
 private:
 
 	int ac1,ac2,ac3,b1,b2,mb,mc,md;               // cal data  
@@ -138,7 +139,6 @@ private:
 	long _last_write_cmd_us;
 
 	long _altitude_cm ;
-	long _dt_us;
 
 	long _true_pressure;
 
@@ -165,7 +165,7 @@ BMP085::BMP085() {
 }
 
 void BMP085::init() {
-	init(MODE_HIGHRES, 0, true);
+	init(MODE_ULTRA_HIGHRES, 0, true);
 }
 
 void BMP085::init(byte _BMPMode, int32_t _initVal, bool _Unitmeters){

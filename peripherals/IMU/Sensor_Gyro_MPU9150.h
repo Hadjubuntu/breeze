@@ -15,6 +15,7 @@
 #include "arch/AVR/wire/Wire.h"
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
+#include "math/FilterAverage.h"
 
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
@@ -49,6 +50,8 @@ double kalAngleX = 0.0, kalAngleY = 0.0;
 double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0, raw_gyro_zrate = 0.0;
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZrate = 0.0;
 double gyroZangle = 0.0, rel_accZ = 0.0;
+double rel_accX = 0.0;
+double rel_accY = 0.0;
 
 int Gyro_output[3], Accel_output[3], Mag_output[3];
 
@@ -56,7 +59,6 @@ float dt = 0.01;
 
 bool acc_z_initialized = false;
 float initial_acc_z_bias = 0.0;
-float raw_projected_acc_z_on_efz = 0.0;
 float acc_z_on_efz = 0.0;
 float climb_rate = 0.0;
 
@@ -65,8 +67,8 @@ float raw_accel_roll, raw_accel_pitch;
 
 // Complementary filter for raw data input
 //------------------------------
-double raw_filter_alpha = 0.9;
-double alphaGyroRate = 0.5;
+double raw_filter_alpha = 0.6;
+double alphaGyroRate = 0.3;
 
 //valeur initiales axe X (pitch)
 //------------------------------
@@ -82,8 +84,8 @@ float Predicted_roll = 0;
 
 //definition des bruits
 //---------------------
-float kalmanQ = 0.1; // 0.001   0.06 bruit de processus de covariance (default : 0.1)
-float kalmanR = 5; // 0.03  15 bruit de mesure (default: 5)
+float kalmanQ = 0.15; // 0.001   0.06 bruit de processus de covariance (default : 0.1)
+float kalmanR = 10; // 0.03  15 bruit de mesure (default: 5)
 
 //erreur de covariance
 //--------------------
@@ -266,7 +268,7 @@ Acc cal x; y; z : 34.00; 9.00; -243.00
 	Accel_cal_z = -243.00;
 #endif
 }
-
+FilterAverage *acc_filter = new FilterAverage(20, -30, 30, false);
 
 //-------------------------------------------------------------
 // Update AHRS (Attitude and Heading Reference System)
@@ -283,13 +285,16 @@ void updateGyroData() {
 	// Retrieve IMU data
 	getIMUReadings(Gyro_output, Accel_output);
 
-	rel_accZ = (Accel_output[2] - Accel_cal_z)/ACC_LSB_PER_G;
+	// Retrive raw gyro rate and acc acceleration
+	rel_accZ = (Accel_output[2] - Accel_cal_z) / ACC_LSB_PER_G;
+	rel_accX = (Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G;
+	rel_accY = (Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G;
+
 	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
 	raw_gyro_yrate = ((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt;
 	raw_gyro_zrate = ((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt;
 
-
-	raw_accel_pitch = fast_atan2((Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G, rel_accZ) * RAD2DEG;
+	raw_accel_pitch = fast_atan2(rel_accY, rel_accZ) * RAD2DEG;
 	Accel_pitch = (1.0-raw_filter_alpha) * Accel_pitch + raw_filter_alpha * raw_accel_pitch;
 
 	Gyro_pitch = Gyro_pitch + raw_gyro_xrate;
@@ -303,7 +308,7 @@ void updateGyroData() {
 	//---------------------------------------------
 	Predicted_pitch = Predicted_pitch + raw_gyro_xrate;
 
-	raw_accel_roll = fast_atan2((Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G, rel_accZ) * RAD2DEG;
+	raw_accel_roll = fast_atan2(rel_accX, rel_accZ) * RAD2DEG;
 	Accel_roll = (1.0-raw_filter_alpha) * Accel_roll + raw_filter_alpha * raw_accel_roll;
 
 	Gyro_roll = Gyro_roll + raw_gyro_yrate;
@@ -352,10 +357,15 @@ void updateGyroData() {
 
 	//----------------------------------------------
 	// Update acceleration on z-axis in earth-frame
-	float sin_roll = sin(toRad(kalAngleX));
-	float sin_pitch = sin(toRad(kalAngleY));
-	// Projection of the acceleration on the earth-frame z axis
-	float raw_projected_acc_z_on_efz = rel_accZ * (1.0 + 1.1*abs(sin_pitch) * abs(sin_pitch) + 1.1*abs(sin_roll) * abs(sin_roll));
+	Vector3f vect_acc_bf;
+	vect_acc_bf.x = rel_accX;
+	vect_acc_bf.y = rel_accY;
+	vect_acc_bf.z = rel_accZ;
+	Attitude att;
+	att.roll = kalAngleX;
+	att.pitch = kalAngleY;
+	att.yaw = 0.0;
+	Vector3f vect_acc_ef = rot_bf_ef(vect_acc_bf, &att);
 
 	float prev_acc_z;
 	if (acc_z_initialized) {
@@ -363,14 +373,14 @@ void updateGyroData() {
 	}
 	else {
 		prev_acc_z = 1.0;
-		initial_acc_z_bias = (raw_projected_acc_z_on_efz-1.0);
+		initial_acc_z_bias = (vect_acc_ef.z-1.0);
 		acc_z_initialized = true;
 	}
 
-	acc_z_on_efz = raw_projected_acc_z_on_efz - initial_acc_z_bias;
+	acc_z_on_efz = vect_acc_ef.z - initial_acc_z_bias;
 
 	// Integrate as a Riemann serie
-	climb_rate =  0.98*climb_rate +  (dt * G_MASS *(acc_z_on_efz - 1.0)) ;
+	acc_filter->addValue( G_MASS *(acc_z_on_efz-1.0), currentTimeUs);
 
 
 #if MEASURE_VIBRATION

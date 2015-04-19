@@ -27,18 +27,19 @@ void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrus
 
 	// Input
 	double Ki = 0.02;
-	int I_max = 40;
+	int I_max = 20;
 
 	// Truncate precision on error
 	float climb_rate_desired = (altSetPointCm - currentAltCm)*0.05; // Into cm (0.01), then Kp=5
 	BoundAbs(climb_rate_desired, 1.5); // Bound to +/- 2m/s
 
 	float errorClimbRateCm = climb_rate_desired - climb_rate_ms;
+
 	sumErrorAlt = sumErrorAlt + errorClimbRateCm;
 	Bound(sumErrorAlt, -I_max, I_max);
 
 	output_alt_controller =  output_alt_controller + 10.0*(Ki * sumErrorAlt);
-	Bound(output_alt_controller, 0, 290);
+	Bound(output_alt_controller, 0, 330);
 
 }
 

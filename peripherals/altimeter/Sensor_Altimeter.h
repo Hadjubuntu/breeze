@@ -84,7 +84,6 @@ void updateAltimeter(float rel_acc_z) {
 //		altitudeBarometer->addValue(Altitude, timeUs());
 //		previousAlt = Altitude;
 //	}
-
 	// Complementary filter
 	if (abs(Altitude) < 2000) {
 		rel_acc_z = ((int)(rel_acc_z*10))/10.0;
@@ -95,6 +94,8 @@ void updateAltimeter(float rel_acc_z) {
 		previousAlt = Altitude;
 	}
 	Bound(altCF, 0, 10000);
+
+
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

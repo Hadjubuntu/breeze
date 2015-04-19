@@ -134,6 +134,36 @@ public:
 		return average / nSum;
 	}
 
+	double getFullstackIntegral(double defaultDtSeconds) {
+		double output = 0.0;
+		double dt = defaultDtSeconds;
+		long t_max = 0;
+		long t_min = 0;
+
+		for (int i=0; i < NB_SAMPLING; i ++) {
+			if (i > 0) {
+				dt = (timeUpdate[i]-timeUpdate[i-1]) / S_TO_US;
+			}
+
+			if (t_max == 0 || t_max < timeUpdate[i]) {
+				t_max = timeUpdate[i];
+			}
+			if (t_min == 0 || t_min > timeUpdate[i]) {
+				t_min = timeUpdate[i];
+			}
+
+			output = output + dt * values[i];
+		}
+
+
+		double duration_seconds = (t_max - t_min) / S_TO_US;
+		if (duration_seconds > 0) {
+			output = output / duration_seconds;
+		}
+
+		return output;
+	}
+
 	/**
 	 * Get derivative value of the filter
 	 */

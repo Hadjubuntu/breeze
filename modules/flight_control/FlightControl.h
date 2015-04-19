@@ -80,43 +80,53 @@ float getSpeedScaler(int deciThrustPercent)
 }
 
 double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
-double MAX_I = 15;
+double MAX_I = 5.0;
+
+double sumErrorYaw = 0.0;
+double P_YAW = 0.5, I_YAW = 0.05;
+double MAX_I_YAW = 3.5;
 
 #define ATTITUDE_CONTROL_DEG 57.29578f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
-void stabilize2(double G_Dt, double errorRoll, double errorPitch, double yawDesired,
+void stabilize2(double G_Dt, Attitude *att, double errorRoll, double errorPitch, double yawDesired,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
 
 #if Firmware == QUADCOPTER
 
-	// TODO transform roll rate desired from earth-frame to body-frame
-	double desiredRollRate = errorRoll * 4.5;
-	double desiredPitchRate = errorPitch * 4.5;
+	Vector3f desired_rate_ef;
+	desired_rate_ef.x = errorRoll * 6;
+	desired_rate_ef.y = errorPitch * 6;
+	desired_rate_ef.z = yawDesired * 7;
+
+	Vector3f desired_rate_bf = rot_ef_bf(desired_rate_ef, att);
 
 
-	double rateRollError = (desiredRollRate - gyroXrate * ATTITUDE_CONTROL_DEG);
-	double ratePitchError = (desiredPitchRate + gyroYrate * ATTITUDE_CONTROL_DEG);
-	double rateYawError = (yawDesired*4.5 + gyroZrate * ATTITUDE_CONTROL_DEG);
+	double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
+	double ratePitchError = (desired_rate_bf.y + gyroYrate * ATTITUDE_CONTROL_DEG);
+	double rateYawError = (desired_rate_bf.z + gyroZrate * ATTITUDE_CONTROL_DEG);
 
 	if (deciThrustPercent > 300) {
 		sumErrorRoll += rateRollError * G_Dt;
 		sumErrorPitch += ratePitchError * G_Dt;
+		sumErrorYaw += rateYawError * G_Dt;
 
 		BoundAbs(sumErrorRoll, MAX_I);
 		BoundAbs(sumErrorPitch, MAX_I);
+		BoundAbs(sumErrorYaw, MAX_I_YAW);
 	}
 	else if (deciThrustPercent < 150) {
 		sumErrorRoll = 0.0;
 		sumErrorPitch = 0.0;
+		sumErrorYaw = 0.0;
 	}
 
 	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL] + sumErrorRoll * param[ID_G_I_ROLL];
 	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH] + sumErrorPitch * param[ID_G_I_PITCH];
-	double outputYawCmd = rateYawError * param[ID_G_P_PITCH];
+	double outputYawCmd = rateYawError * P_YAW + sumErrorYaw * I_YAW;
 
 
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);

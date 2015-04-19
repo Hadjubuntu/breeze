@@ -16,6 +16,13 @@
  * First succesful flight : 03/12/2014
  */
 
+/**
+ * Curent bias on roll, pitch yaw to be fixed
+ * roll bias = -1.53
+ * pitch bias = 4.30
+ * yaw bias = -6.87
+ */
+
 #include "Breeze.h"
 #include "modules/scheduler/Scheduler.h"
 #include "modules/scenario/Scenario.h"
@@ -138,9 +145,10 @@ void updateRFRadoFutabaLowFreq() {
 			// UAVCore->autopilot = true;
 			AUTOSPEED_CONTROLLER = 1;
 		}
-		
+
 		if (AUTOSPEED_CONTROLLER != old_state) {
 			output_alt_controller = 0.0;
+			altSetPointCm = altCF + 30.0; // current altitude + 80 cm over
 		}
 
 		// PID tuning
@@ -156,12 +164,12 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_I_PITCH] = Ki;
 
 		if (sBus.channels[7] > 1300) {
-			Ki += 0.02;
-			Bound(Ki, 0.0, 1.0);
+			Ki += 0.01;
+			Bound(Ki, 0.0, 0.09);
 		}
 		else if (sBus.channels[7] < 600) {
-			Ki -= 0.02;
-			Bound(Ki, 0.0, 1.0);
+			Ki -= 0.01;
+			Bound(Ki, 0.0, 0.09);
 		}
 
 
@@ -194,14 +202,14 @@ void process100HzTask() {
 	// Update attitude from gyro
 	updateAttitude() ;
 
-	measureCriticalSensors();
-	
+
 	// If UAV in auto mode
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
 	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) {
 		stabilize2(
-				G_Dt, UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll, 
+				G_Dt, UAVCore->currentAttitude, 
+				UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll, 
 				UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch,
 				UAVCore->attitudeCommanded->yaw,
 				&aileronCmd, &gouvernCmd, &rubberCmd,
@@ -209,8 +217,7 @@ void process100HzTask() {
 				UAVCore->deciThrustPercent);
 	}
 
-	measureCriticalSensors();
-	
+
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
@@ -267,7 +274,7 @@ void process20HzTask() {
 		double newAirspeedVms = updateAirspeed();
 		airspeed_ms_mean->addValue(newAirspeedVms, currentTime);
 	}
-	
+
 	if (AUTOSPEED_CONTROLLER == 1) {
 		switch (Firmware) {
 		case FIXED_WING:
@@ -279,6 +286,10 @@ void process20HzTask() {
 			}
 			break;
 		case QUADCOPTER:
+			// Update climb rate
+			climb_rate = acc_filter->getFullstackIntegral(0.01);
+			
+			// Altitude controller
 			altitudeHoldController(climb_rate, altCF, UAVCore->deciThrustCmd);
 			UAVCore->deciThrustPercent = output_alt_controller; 
 			break;
@@ -286,6 +297,10 @@ void process20HzTask() {
 			break;
 		}
 	}
+
+	//-------------------------------------------
+	// Update altimeter
+	updateAltimeter(acc_z_on_efz);
 }
 
 
@@ -318,7 +333,6 @@ void process10HzTask() {
 	Logger.print(" | Gdt(0) (ms) = ");
 	Logger.println(G_Dt*1000.0);
 #endif
-
 }
 
 /*******************************************************************
@@ -331,14 +345,6 @@ void process5HzTask() {
 		UAVCore->v_ms = lastVms;
 		v_ms_mean->addValue(UAVCore->v_ms, currentTime);
 	}
-
-	// Update altimeter
-	//------------------------------------------------------------
-	
-//	Logger.print("Climb_rate = ");
-//	Logger.println(climb_rate);
-	
-	updateAltimeter(acc_z_on_efz);
 
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
@@ -377,10 +383,10 @@ void process2HzTask() {
 
 	Logger.print("sbus[5] = ");
 		Logger.println(sBus.channels[5]); */
-	//	Logger.print("pitch rate (deg) = ");
-	//	Logger.println(-gyroYrate * ATTITUDE_CONTROL_DEG);
-	//	Logger.print("setpoint pitch rate (deg) = ");
-	//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 4.5);
+//	Logger.print("Gyro pitch rate (deg) = ");
+//	Logger.println(- gyroYrate * ATTITUDE_CONTROL_DEG);
+//	Logger.print("setpoint pitch rate (deg) = ");
+//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 1.5);
 	//	Logger.print("Out roll (cmd) = ");
 	//	Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
 
@@ -399,17 +405,37 @@ void process2HzTask() {
 	//		Logger.println(UAVCore->currentAttitude->pitch);
 
 
-//	Logger.print("acc_z hard = ");
-//	Logger.println(rel_accZ * (1.0 + abs(sin_pitch) * abs(sin_pitch)
-//			+ abs(sin_roll) * abs(sin_roll))); 
-	
-//	Logger.print("thrust = ");
-//	Logger.println(UAVCore->deciThrustPercent);
-//	Logger.print("Alt = ");
-//	Logger.println(altCF);
-//	Logger.print("alt set point (cm) = ");
-//	Logger.println(altSetPointCm);
+	//	Logger.print("acc_z hard = ");
+	//	Logger.println(rel_accZ * (1.0 + abs(sin_pitch) * abs(sin_pitch)
+	//			+ abs(sin_roll) * abs(sin_roll))); 
 
+//		Logger.print("thrust = ");
+//		Logger.println(UAVCore->deciThrustPercent);
+//		Logger.print("Alt = ");
+//		Logger.println(altCF);
+//		Logger.print("alt set point (cm) = ");
+//		Logger.println(altSetPointCm);
+
+	//	Logger.print("pitch = ");
+	//	Logger.println(UAVCore->currentAttitude->pitch);
+	//
+	//	Logger.print("pitch cmd  = ");
+	//	Logger.println(UAVCore->attitudeCommanded->pitch);
+
+//	Logger.print("Gyro_z_rate = ");
+//	Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
+//	Logger.print("Yaw desired = ");
+//	Logger.println(UAVCore->attitudeCommanded->yaw);
+	
+//	Vector3f t;
+//	t.x = 1;
+//	t.y = 0;
+//	t.z = 1;
+//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
+//	Logger.println(t_bf.x);
+//	Logger.print("Climb_rate = ");
+//	Logger.println(climb_rate);
+	
 }
 
 

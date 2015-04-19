@@ -292,16 +292,46 @@ float approx(float v) {
 	return roundf(v * k) / k;
 }
 
-Vector3f rot_ef_bf(Vector3f ef_vector, Attitude *att) {
-	Vector3f output;
-	float cos_p = cos(-toRad(att->pitch));
-	float cos_r = cos(toRad(att->roll));
-	float sin_p = sin(-toRad(att->pitch));
-	float sin_r = sin(toRad(att->roll));
+// Skeleton rotation frame function (internal sub-routine)
+Vector3f _rot_frame_efbf_bfef(bool ef_bf, Vector3f frame_vector, Attitude *att);
 
-	 output.x = ef_vector.x - sin_p * ef_vector.z;
-	 output.y = cos_r  * ef_vector.y + sin_r * cos_p * ef_vector.z;
-	 output.z = -sin_r * ef_vector.y + cos_p * cos_r * ef_vector.z;
+/**
+ * Transforms vector in earth-frame into body-frame vector
+ * Angles are inversed to make the rotation inverse.
+ *
+ * See right-rule : https://www.evl.uic.edu/ralph/508S98/coordinates.html
+ */
+Vector3f rot_ef_bf(Vector3f ef_vector, Attitude *att) {
+	Vector3f output = _rot_frame_efbf_bfef(true, ef_vector, att);
+	return output;
+}
+
+Vector3f rot_bf_ef(Vector3f bf_vector, Attitude *att) {
+	Vector3f output = _rot_frame_efbf_bfef(false, bf_vector, att);
+	return output;
+}
+
+Vector3f _rot_frame_efbf_bfef(bool ef_bf, Vector3f frame_vector, Attitude *att) {
+	Vector3f output;
+
+	// Earth-frame to body-frame, rotation normal, otherwise
+	// inversed rotation
+	int sign = 1;
+	if (ef_bf) {
+		sign = 1;
+	}
+	else {
+		sign = -1;
+	}
+
+	float cos_p = cos(sign * toRad(att->pitch));
+	float cos_r = cos(sign * (-toRad(att->roll)));
+	float sin_p = sin(sign * toRad(att->pitch));
+	float sin_r = sin(sign * (-toRad(att->roll)));
+
+	output.x = cos_p * frame_vector.x + sin_p * sin_r * frame_vector.y + cos_r*sin_p * frame_vector.z;
+	output.y = cos_r  * frame_vector.y - sin_r * frame_vector.z;
+	output.z = -sin_p * frame_vector.x + cos_p * sin_r * frame_vector.y + cos_p * cos_r * frame_vector.z;
 
 	return output;
 }
