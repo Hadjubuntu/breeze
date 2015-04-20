@@ -16,12 +16,6 @@
  * First succesful flight : 03/12/2014
  */
 
-/**
- * Curent bias on roll, pitch yaw to be fixed
- * roll bias = -1.53
- * pitch bias = 4.30
- * yaw bias = -6.87
- */
 
 #include "Breeze.h"
 #include "modules/scheduler/Scheduler.h"
@@ -136,7 +130,7 @@ void updateRFRadoFutabaLowFreq() {
 		// LOW means manual
 		UAVCore->autopilot = false;
 		int old_state = AUTOSPEED_CONTROLLER;
-		if (sBus.channels[4] < 1000) {
+		if (sBus.channels[SBUS_AUTO_CHANNEL] < 1000) {
 			// TODO remettre autopilot, test
 			// UAVCore->autopilot = false;
 			AUTOSPEED_CONTROLLER = 0;
@@ -155,7 +149,7 @@ void updateRFRadoFutabaLowFreq() {
 		// PID tuning
 		//------------------------------------------
 
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 2.0;
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 1.2;
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 		param[ID_G_I_ROLL] = Ki;
@@ -165,12 +159,13 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_I_PITCH] = Ki;
 
 		if (sBus.channels[7] > 1300) {
-			Ki += 0.01;
-			Bound(Ki, 0.0, 0.09);
+			Ki = 0.1;
 		}
-		else if (sBus.channels[7] < 600) {
-			Ki -= 0.01;
-			Bound(Ki, 0.0, 0.09);
+		else if (sBus.channels[7] > 400) {
+			Ki = 0.05;
+		}
+		else {
+			Ki = 0.0;
 		}
 
 
@@ -210,9 +205,7 @@ void process100HzTask() {
 	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) {
 		stabilize2(
 				G_Dt, UAVCore->currentAttitude, 
-				UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll, 
-				UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch,
-				UAVCore->attitudeCommanded->yaw,
+				UAVCore->attitudeCommanded,
 				&aileronCmd, &gouvernCmd, &rubberCmd,
 				UAVCore->gyroXrate, UAVCore->gyroYrate,
 				UAVCore->deciThrustPercent);
@@ -222,10 +215,6 @@ void process100HzTask() {
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
-
-	// Update quad motors
-	motorUpdateCommandQuad();
-
 
 	hundredHZpreviousTime = currentTime;
 }
@@ -260,10 +249,28 @@ void process50HzTask() {
 	// Motor update
 	// Command motor at % thrust
 	//------------------------------------------------------------
-	motorUpdateCommandDeciPercent(UAVCore->deciThrustPercent);
+	double boost = 1.0;
+	if (Firmware == QUADCOPTER) {
+		double abs_cos_roll = abs(fast_cos(toRad(UAVCore->currentAttitude->roll)));
+		double abs_cos_pitch = abs(fast_cos(toRad(UAVCore->currentAttitude->pitch)));
+		if (abs_cos_pitch > 0.6 && abs_cos_pitch > 0.6) {
+			boost = 1.0 / ( (abs_cos_roll) * (abs_cos_pitch) );
+		}
+		Bound(boost, 1.0, 1.4);
+	}
+	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
 
-	if (Firmware == FIXED_WING) {
+
+	switch (Firmware) {
+	case FIXED_WING:
 		motorUpdateCommandFixedWing();
+		break;
+	case QUADCOPTER:
+		motorUpdateCommandQuad();
+		break;
+	default:
+		// Do nothing
+		break;
 	}
 }
 
@@ -339,11 +346,12 @@ void process10HzTask() {
 
 
 	// Update compass data (doesn't work)
+	// TODO find ASA calib by calling magnometer for ADC precision
 	//------------------------------------------------------------
-	//	updateCompassData();
-	//	double heading = getCompassHeading(UAVCore->currentAttitude);
-	//	Logger.print("heading (deg) = ");
-	//	Logger.println(heading);
+//		updateCompassData();
+//		double heading = getCompassHeading(UAVCore->currentAttitude);
+//		Logger.print("heading (deg) = ");
+//		Logger.println(heading);
 
 #if MEASURE_VIBRATION
 	Logger.print("Acc noise vibration = ");
@@ -454,7 +462,6 @@ void process2HzTask() {
 	//	Logger.println(t_bf.x);
 	//	Logger.print("Climb_rate = ");
 	//	Logger.println(climb_rate);
-	
 
 
 }
@@ -616,7 +623,10 @@ void setup() {
 	}
 
 	if (USE_RADIO_FUTABA) {
-		setupRadioFutaba();
+		radio_linked_checked = setupRadioFutaba();
+	}
+	else {
+		radio_linked_checked = true;
 	}
 
 	setupRFLink(&(UAVCore->autopilot), &(UAVCore->deciThrustPercent),
@@ -649,10 +659,12 @@ void setup() {
  * Main loop funtions
  ******************************************************************/
 void loop () {
+	if (radio_linked_checked) {
 
-	currentTime = timeUs();
-	deltaTime = currentTime - previousTime;
+		currentTime = timeUs();
+		deltaTime = currentTime - previousTime;
 
-	measureCriticalSensors();
-	schedulerRun();
+		measureCriticalSensors();
+		schedulerRun();
+	}
 }

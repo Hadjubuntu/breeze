@@ -57,7 +57,6 @@ enum FlightState {
 	LANDING,
 };
 
-
 //---------------------------------------
 // Configuration
 #define START_IN_AUTOPILOT 0
@@ -115,6 +114,8 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 #define T_GYRO_MPU9150 3
 #define GYRO_TYPE T_GYRO_MPU9150
 
+
+bool radio_linked_checked;
 
 // Common structures
 typedef struct T_ATTITUDE {

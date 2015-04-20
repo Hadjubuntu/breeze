@@ -20,6 +20,7 @@
 #define SBUS_SIGNAL_OK          0x00
 #define SBUS_SIGNAL_LOST        0x01
 #define SBUS_SIGNAL_FAILSAFE    0x03
+#define SBUS_AUTO_CHANNEL 		4
 #define BAUDRATE 100000
 #define port Serial3
 //#define ALL_CHANNELS
@@ -322,7 +323,7 @@ void updateCriticalRadio() {
 	}
 }
 
-void setupRadioFutaba() {
+bool setupRadioFutaba() {
 	Logger.println("Setup Futaba radio");
 	sBus.begin();
 
@@ -334,6 +335,15 @@ void setupRadioFutaba() {
 
 	for (int i = 0; i < 7; i ++) {
 		sBus.channelsCalib[i] = sBus.channels[i];
+	}
+
+	// Tells as output whether is the auto-mode is activated at start
+	// Don't go to automode directly due to risk with human operating the UAV
+	if (sBus.channels[SBUS_AUTO_CHANNEL] > 1000) {
+		return false;
+	}
+	else {
+		return true;
 	}
 }
 

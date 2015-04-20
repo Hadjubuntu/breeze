@@ -336,4 +336,24 @@ Vector3f _rot_frame_efbf_bfef(bool ef_bf, Vector3f frame_vector, Attitude *att) 
 	return output;
 }
 
+/**
+ * Fast sinus function
+ */
+float fast_sin(float x) {
+	const float B = 4/PI;
+	const float C = -4/(PI*PI);
+
+	float y = B * x + C * x * abs(x);
+
+	const float P = 0.225;
+
+	y = P * (y * abs(y) - y) + y;   // Q * y + P * y * abs(y)
+
+	return y;
+}
+
+float fast_cos(float x) {
+	return fast_sin(x + PI/2.0);
+}
+
 #endif /* MATH_H_ */

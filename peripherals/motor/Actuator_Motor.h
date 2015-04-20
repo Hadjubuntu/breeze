@@ -14,7 +14,7 @@
 
 
 #define THRUST_SLEW_RATE_ACTIVATED 1
-#define DECITHRUST_SLEW_RATE 40 // Max of decithrust difference each 50ms
+#define DECITHRUST_SLEW_RATE 60 // Max of decithrust difference each 50ms
 int currentDeciThrustPercent;
 
 /**
@@ -30,7 +30,7 @@ int currentDeciThrustPercent;
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
 int motorMatrix[4][3];
-
+float boost_motors = 1.0;
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
 #define ESC_MAX_PROTECTION 2000
@@ -45,7 +45,7 @@ int motorMatrix[4][3];
 #define PWM_COUNTER_PERIOD (F_CPU/PWM_PRESCALER/PWM_FREQUENCY)
 
 // Core functions
-void motorUpdateCommandDeciPercent(int);
+void motorUpdateCommandDeciPercent(float, int);
 void initMotor();
 void motorUpdateCommandQuad();
 void motorUpdateCommandFixedWing();
@@ -168,7 +168,7 @@ void setupMotors() {
 }
 
 void initMotor() {
-	motorUpdateCommandDeciPercent(0);
+	motorUpdateCommandDeciPercent(1.0, 0);
 
 	switch (Firmware) {
 	case FIXED_WING:
@@ -213,10 +213,15 @@ void motorUpdateCommandFixedWing() {
 }
 
 // Update motor thrust using deci percent (deci for precision)
-void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
+void motorUpdateCommandDeciPercent(float pBoost_motors, int deciThrustPercentNewCmd) {
 
+	// Set input
+	boost_motors = pBoost_motors;
+
+	// Diff between thrust demanded and current thrust
 	int dDeciThrust = deciThrustPercentNewCmd - currentDeciThrustPercent;
 
+	// Adapt thrust using slew rate
 	if (THRUST_SLEW_RATE_ACTIVATED == 0 || abs(dDeciThrust) < DECITHRUST_SLEW_RATE) {
 		currentDeciThrustPercent = deciThrustPercentNewCmd ;
 	}
@@ -230,6 +235,8 @@ void motorUpdateCommandDeciPercent(int deciThrustPercentNewCmd) {
 double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
+	// Minimum for the quad to hover
+	int min_hover_decithrust = 370;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 10) {
@@ -243,17 +250,19 @@ void updateMotorRepartition() {
 		gouvernOut = gouvernCmd / 100.0;
 		yawOut = rubberCmd / 100.0;
 
-		thrustX1 = ESC_MIN + 350 + currentDeciThrustPercent + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
-		thrustX2 = ESC_MIN + 350 + currentDeciThrustPercent + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
-		thrustX3 = ESC_MIN + 350 + currentDeciThrustPercent + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
-		thrustX4 = ESC_MIN + 350 + currentDeciThrustPercent + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
+		int deciThrustBoosted = (int)(boost_motors * (min_hover_decithrust + currentDeciThrustPercent));
+
+		thrustX1 = ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
+		thrustX2 = ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
+		thrustX3 = ESC_MIN + deciThrustBoosted + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
+		thrustX4 = ESC_MIN + deciThrustBoosted + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
 	}
 }
 
 void testMotor() {
 	int iter = 0;
 	while (iter < 5) {
-		motorUpdateCommandDeciPercent(100);
+		motorUpdateCommandDeciPercent(1.0, 100);
 
 		delay(1000);
 		iter ++;

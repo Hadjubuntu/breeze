@@ -72,31 +72,32 @@ double alphaGyroRate = 0.3;
 
 //valeur initiales axe X (pitch)
 //------------------------------
-float Gyro_pitch = 0;
 float Accel_pitch = 0;
 float Predicted_pitch = 0;
 
 //valeur initiales axe Y (roll)
 //-----------------------------
-float Gyro_roll = 0;
 float Accel_roll = 0;
 float Predicted_roll = 0;
 
 //definition des bruits
-//---------------------
+//--------------------------
 float kalmanQ = 0.15; // 0.001   0.06 bruit de processus de covariance (default : 0.1)
 float kalmanR = 10; // 0.03  15 bruit de mesure (default: 5)
 
 //erreur de covariance
-//--------------------
+//--------------------------
 float P00 = 0.1;
 float P11 = 0.1;
 float P01 = 0.1;
 
 //gains de Kalman
-//---------------
+//--------------------------
 float Kk0, Kk1;
 
+// New algorithm Madgiwck
+//--------------------------
+float ahrs_roll = 0.0, ahrs_pitch = 0.0, ahrs_yaw = 0.0;
 
 // read IMU data - datasheet ITG3200
 //-------------------------------------
@@ -131,17 +132,25 @@ void updateCompassData() {
 }
 
 double compassHeading = 0.0;
+
 double getCompassHeading(Attitude *curAtt) {
 
-	if (abs(curAtt->roll) < 3 && abs(curAtt->pitch) < 3) {
-		double rawFieldX = (double) Mag_output[0]*0.3;
-		double rawFieldY = (double) Mag_output[1]*0.3;
-		double rawFieldZ = (double) Mag_output[2]*0.3;
+	double rawFieldX = (double) Mag_output[0] * 0.3;
+	double rawFieldY = (double) Mag_output[1] * 0.3;
+	double rawFieldZ = (double) Mag_output[2] * 0.3;
 
-		compassHeading = fast_atan2(-rawFieldY, rawFieldX) * RAD2DEG;
-		while (compassHeading < 0.0) compassHeading += 360;
-		while (compassHeading > 360) compassHeading -= 360;
-	}
+	Vector3f mag_bf;
+	mag_bf.x = rawFieldX;
+	mag_bf.y = rawFieldY;
+	mag_bf.z = rawFieldZ;
+
+
+	Vector3f mag_ef = rot_bf_ef(mag_bf, curAtt);
+
+	compassHeading = fast_atan2(-mag_ef.y, mag_ef.x) * RAD2DEG;
+	while (compassHeading < 0.0) compassHeading += 360;
+	while (compassHeading > 360) compassHeading -= 360;
+
 
 	return compassHeading;
 }
@@ -297,12 +306,6 @@ void updateGyroData() {
 	raw_accel_pitch = fast_atan2(rel_accY, rel_accZ) * RAD2DEG;
 	Accel_pitch = (1.0-raw_filter_alpha) * Accel_pitch + raw_filter_alpha * raw_accel_pitch;
 
-	Gyro_pitch = Gyro_pitch + raw_gyro_xrate;
-
-	//conserver l'echelle +/-180° pour l'axe X du gyroscope
-	//-----------------------------------------------------
-	if(Gyro_pitch < 180) Gyro_pitch += 360;
-	if(Gyro_pitch >= 180) Gyro_pitch -= 360;
 
 	//sortie du filtre de Kalman pour les X (roll)
 	//---------------------------------------------
@@ -311,12 +314,6 @@ void updateGyroData() {
 	raw_accel_roll = fast_atan2(rel_accX, rel_accZ) * RAD2DEG;
 	Accel_roll = (1.0-raw_filter_alpha) * Accel_roll + raw_filter_alpha * raw_accel_roll;
 
-	Gyro_roll = Gyro_roll + raw_gyro_yrate;
-
-	//conserver l'echelle +/-180° pour l'axe Y du gyroscope
-	//-----------------------------------------------------
-	if(Gyro_roll < 180) Gyro_roll += 360;
-	if(Gyro_roll >= 180) Gyro_roll -= 360;
 
 	//sortie du filtre de Kalman pour les Y (pitch)
 	//--------------------------------------------
@@ -352,9 +349,9 @@ void updateGyroData() {
 
 	kalAngleX = Predicted_pitch; // ok this is shitty : pitch goes to roll, because variables definition problem TODO
 	kalAngleY = Predicted_roll;
+
+
 	gyroZangle += gyroZrate * dt;
-
-
 
 #if MEASURE_VIBRATION
 	//-----------------------------------------------
