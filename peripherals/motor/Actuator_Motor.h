@@ -236,10 +236,10 @@ double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
 	// Minimum for the quad to hover
-	int min_hover_decithrust = 370;
+	int min_hover_decithrust = 360;
 
 	// Protection to shutdown all motors
-	if (currentDeciThrustPercent < 10) {
+	if (currentDeciThrustPercent < 20) {
 		thrustX1 = ESC_MIN;
 		thrustX2 = ESC_MIN;
 		thrustX3 = ESC_MIN;

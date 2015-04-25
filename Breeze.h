@@ -8,15 +8,13 @@
 #ifndef BREEZE_H_
 #define BREEZE_H_
 
-
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "Common.h"
 #include "peripherals/servo/Sensor_Servo.h"
 
-#if GYRO_TYPE == T_GYRO_MPU6050
-#include "peripherals/IMU/Sensor_Gyro.h"
-#elif GYRO_TYPE == T_GYRO_ITG3200
+#if GYRO_TYPE == T_GYRO_ITG3200
 #include "peripherals/IMU/Sensor_Gyro_10DOF.h"
 #elif GYRO_TYPE == T_GYRO_MPU9150
 #include "peripherals/IMU/Sensor_Gyro_MPU9150.h"
@@ -99,7 +97,7 @@ Uav *UAVCore = new Uav() ;
 void initializeUAVStructure(Uav *uav) {
 
 	// UAVCore->altitudeSonar = new  FilterAverage(15, 0, 300, true);
-	UAVCore->autopilot = START_IN_AUTOPILOT ? true : false;
+	UAVCore->autopilot = false;
 	UAVCore->deciThrustPercent = 0 ;
 
 	UAVCore->currentAttitude = new Attitude() ;

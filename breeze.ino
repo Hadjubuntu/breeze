@@ -37,8 +37,8 @@ void updateAttitude() {
 	updateGyroData();
 
 	// Set new current attitude
-	UAVCore->currentAttitude->roll = kalAngleX;
-	UAVCore->currentAttitude->pitch = kalAngleY;
+	UAVCore->currentAttitude->roll = kalX.getOutput();
+	UAVCore->currentAttitude->pitch = kalY.getOutput();
 
 	// Update heading with GPS data
 	if (USE_GPS_NAVIGUATION) {
@@ -143,13 +143,13 @@ void updateRFRadoFutabaLowFreq() {
 
 		if (AUTOSPEED_CONTROLLER != old_state) {
 			output_alt_controller = 0.0;
-			altSetPointCm = altCF + 30.0; // current altitude + 80 cm over
+			altSetPointCm = altCF + 50.0; // current altitude + 80 cm over
 		}
 
 		// PID tuning
 		//------------------------------------------
 
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 1.2;
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 1.0;
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 		param[ID_G_I_ROLL] = Ki;

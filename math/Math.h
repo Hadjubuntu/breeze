@@ -292,6 +292,16 @@ float approx(float v) {
 	return roundf(v * k) / k;
 }
 
+Vector3f vectAbsBounded(Vector3f inputVector, float max_x, float max_y, float max_z) {
+	Vector3f output;
+
+	output.x = constrain(inputVector.x, -max_x, max_x);
+	output.y = constrain(inputVector.y, -max_y, max_y);
+	output.z = constrain(inputVector.z, -max_z, max_z);
+
+	return output;
+}
+
 // Skeleton rotation frame function (internal sub-routine)
 Vector3f _rot_frame_efbf_bfef(bool ef_bf, Vector3f frame_vector, Attitude *att);
 

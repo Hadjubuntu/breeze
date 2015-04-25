@@ -59,7 +59,6 @@ enum FlightState {
 
 //---------------------------------------
 // Configuration
-#define START_IN_AUTOPILOT 0
 #define USE_GPS_NAVIGUATION 0
 #define USE_RADIO_FUTABA 1
 #define USE_AIRSPEED_SENSOR 0
@@ -109,9 +108,8 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 #define THROTTLE_CRUISE 50
 #define MAX_V_MS_PLANE 30
 
-#define T_GYRO_MPU6050 1
-#define T_GYRO_ITG3200 2
-#define T_GYRO_MPU9150 3
+#define T_GYRO_ITG3200 1
+#define T_GYRO_MPU9150 2
 #define GYRO_TYPE T_GYRO_MPU9150
 
 

@@ -6,9 +6,9 @@ BOARD := mega2560
 
 # default arduino software directory, check software exists
 ifndef ARDUINODIR
-ARDUINODIR := /home/hadjsalah/Software/arduino-1.6.3
+ARDUINODIR := /usr/share/arduino
 endif
-ifeq "$(wildcard $(ARDUINODIR)/hardware/arduino/avr/boards.txt)" ""
+ifeq "$(wildcard $(ARDUINODIR)/hardware/arduino/boards.txt)" ""
 $(error ARDUINODIR is not set correctly; arduino software not found)
 endif
 
@@ -40,7 +40,7 @@ endif
 endif
 
 # obtain board parameters from the arduino boards.txt file
-BOARDSFILE := $(ARDUINODIR)/hardware/arduino/avr/boards.txt
+BOARDSFILE := $(ARDUINODIR)/hardware/arduino/boards.txt
 readboardsparam = $(shell sed -ne "s/$(BOARD).$(1)=\(.*\)/\1/p" $(BOARDSFILE))
 BOARD_BUILD_MCU := atmega2560
 BOARD_BUILD_FCPU := 16000000L
@@ -105,7 +105,7 @@ AVRDUDE := $(call findsoftware,avrdude)
 AVRSIZE := $(call findsoftware,avr-size)
 
 # directories
-ARDUINOCOREDIR := $(ARDUINODIR)/hardware/arduino/avr/cores/arduino
+ARDUINOCOREDIR := $(ARDUINODIR)/hardware/arduino/cores/arduino
 LIBRARYDIRS := $(foreach lib, $(LIBRARIES), \
 	$(firstword $(wildcard $(addsuffix /$(lib), $(LIBRARYPATH)))))
 LIBRARYDIRS += $(addsuffix /utility, $(LIBRARYDIRS))
@@ -118,13 +118,13 @@ ARDUINOLIB := $(ARDUINODIR)/hardware/libraries # TODO HERE
 ARDUINOLIBOBJS := $(foreach dir, $(ARDUINOCOREDIR) $(LIBRARYDIRS), \
 	$(patsubst %, .lib/%.o, $(wildcard $(addprefix $(dir)/, *.c *.cpp))))
 BOOTLOADERHEX := $(addprefix \
-	$(ARDUINODIR)/hardware/arduino/avr/bootloaders/$(BOARD_BOOTLOADER_PATH)/, \
+	$(ARDUINODIR)/hardware/arduino/bootloaders/$(BOARD_BOOTLOADER_PATH)/, \
 	$(BOARD_BOOTLOADER_FILE))
 
 # avrdude confifuration
 ifeq "$(AVRDUDECONF)" ""
 ifeq "$(AVRDUDE)" "$(ARDUINODIR)/hardware/tools/avr/bin/avrdude"
-AVRDUDECONF := $(ARDUINODIR)/hardware/tools/avr/etc/avrdude.conf
+AVRDUDECONF := $(ARDUINODIR)/hardware/tools/avrdude.conf
 else
 AVRDUDECONF := $(wildcard $(AVRDUDE).conf)
 endif
@@ -137,7 +137,7 @@ CPPFLAGS += -mmcu=$(BOARD_BUILD_MCU)
 CPPFLAGS += -DF_CPU=$(BOARD_BUILD_FCPU) -DARDUINO=$(ARDUINOCONST)
 # CPPFLAGS += -DUSB_VID=$(BOARD_USB_VID) -DUSB_PID=$(BOARD_USB_PID)
 CPPFLAGS += -I. -Iutil -Iutility -I $(ARDUINOCOREDIR)
-CPPFLAGS += -I $(ARDUINODIR)/hardware/arduino/avr/variants/$(BOARD_BUILD_VARIANT)/
+CPPFLAGS += -I $(ARDUINODIR)/hardware/arduino/variants/$(BOARD_BUILD_VARIANT)/
 CPPFLAGS += $(addprefix -I , $(LIBRARYDIRS))
 CPPDEPFLAGS = -MMD -MP -MF .dep/$<.dep
 CPPINOFLAGS := -x c++ -include $(ARDUINOCOREDIR)/Arduino.h

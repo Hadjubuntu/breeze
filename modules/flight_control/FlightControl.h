@@ -13,9 +13,9 @@
 
 
 // Internal trim data
-double roll_trim = 5.25;
-double pitch_trim = -1.14;
-double yaw_trim = -3.44;
+double roll_trim = 0.0;
+double pitch_trim = 0.0;
+double yaw_trim = 0.0;
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
@@ -85,13 +85,16 @@ float getSpeedScaler(int deciThrustPercent)
 }
 
 double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
-double MAX_I = 5.0;
+double MAX_I = 10.0;
 
 double sumErrorYaw = 0.0;
-double P_YAW = 0.6, I_YAW = 0.05;
-double MAX_I_YAW = 3.5;
+double P_YAW = 0.2, I_YAW = 0.02;
+double MAX_I_YAW = 10.0;
 
 #define ATTITUDE_CONTROL_DEG 57.29578f
+#define MAX_ROLL_RATE_DEG 90.0f
+#define MAX_PITCH_RATE_DEG 90.0f
+#define MAX_YAW_RATE_DEG 180.0f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
@@ -105,19 +108,24 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 
 #if Firmware == QUADCOPTER
 
+	// Converts error into desired rate
 	Vector3f desired_rate_ef;
-	desired_rate_ef.x = errorRoll * 6;
-	desired_rate_ef.y = errorPitch * 6;
-	desired_rate_ef.z = yawDesired * 7.0;
+	desired_rate_ef.x = errorRoll * 4.5;
+	desired_rate_ef.y = errorPitch * 4.5;
+	desired_rate_ef.z = yawDesired * 6.0;
 
-	Vector3f desired_rate_bf = rot_ef_bf(desired_rate_ef, att);
+	// Contrain vector of desired rate in earth-frame
+	Vector3f desired_rate_ef_bounded = vectAbsBounded(desired_rate_ef, MAX_ROLL_RATE_DEG, MAX_PITCH_RATE_DEG, MAX_YAW_RATE_DEG);
 
+	// Converts earth frame desired angle rate into body-frame rate
+	Vector3f desired_rate_bf = rot_ef_bf(desired_rate_ef_bounded, att);
 
+	// Compute angle rate errors
 	double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
 	double ratePitchError = (desired_rate_bf.y + gyroYrate * ATTITUDE_CONTROL_DEG);
 	double rateYawError = (desired_rate_bf.z + gyroZrate * ATTITUDE_CONTROL_DEG);
 
-	if (deciThrustPercent > 300) {
+	if (deciThrustPercent > 50) {
 		sumErrorRoll += rateRollError * G_Dt;
 		sumErrorPitch += ratePitchError * G_Dt;
 		sumErrorYaw += rateYawError * G_Dt;
