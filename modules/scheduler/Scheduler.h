@@ -47,33 +47,13 @@ long getTaskAverageDurationUs(int pIndex) {
  * This function takes around 23ms
  * Example taken :
  *
- * Using RFLink2.h
-Task #0 duration 3106 us | slot time taken : 31%
-Task #1 duration 1203 us | slot time taken : 6%
-Task #2 duration 196 us | slot time taken : 0%
-Task #3 duration 21872 us | slot time taken : 21%
-Task #4 duration 5 us | slot time taken : 0%
-Task #5 duration 23124 us | slot time taken : 4%
-Task #6 duration 3065 us | slot time taken : 0%
-
-Usign RFLink1
-Task #0 duration 3095 us | slot time taken : 30%
-Task #1 duration 1273 us | slot time taken : 6%
-Task #2 duration 197 us | slot time taken : 0%
-Task #3 duration 21903 us | slot time taken : 21%
-Task #4 duration 4 us | slot time taken : 0%
-Task #5 duration 23126 us | slot time taken : 4%
-Task #6 duration 3023 us | slot time taken : 0%
-
-
-New BMP085
-Task #0 duration 2622 us | slot time taken : 26%
-Task #1 duration 932 us | slot time taken : 4%
-Task #2 duration 521 us | slot time taken : 1%
-Task #3 duration 8 us | slot time taken : 0%
-Task #4 duration 382 us | slot time taken : 0%
-Task #5 duration 4 us | slot time taken : 0%
-Task #6 duration 32931 us | slot time taken : 3%
+Task #0 duration 4419 us | slot time taken : 44%
+Task #1 duration 488 us | slot time taken : 2%
+Task #2 duration 1289 us | slot time taken : 2%
+Task #3 duration 9 us | slot time taken : 0%
+Task #4 duration 74 us | slot time taken : 0%
+Task #5 duration 27463 us | slot time taken : 5%
+Task #6 duration 1610 us | slot time taken : 0%
 
 
  *

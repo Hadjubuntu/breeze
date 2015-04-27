@@ -14,10 +14,10 @@ public:
 	Kalman() {
 
 		// Parameters of the filter
-		// Q = Q_meas * dt (
-		Q_sensor1 = 0.001;
-		Q_sensor2 = 0.003;
-		R_measure = 0.03; // Variance
+		// Q = Q_meas * dt 0.001, 0.003, 0.03
+		Q_sensor1 = 0.15;
+		Q_sensor2 = 0.15;
+		R_measure = 10.0; // Variance
 
 		output = 0; // Reset the angle
 		bias = 0; // Reset bias
@@ -26,10 +26,10 @@ public:
 		y = 0;
 
 		// TODO calibration matrix from measurement
-		P[0][0] = 0.0;
-		P[0][1] = 0.0;
+		P[0][0] = 0.1;
+		P[0][1] = 0.1;
 		P[1][0] = 0.0;
-		P[1][1] = 0.0;
+		P[1][1] = 0.1;
 	};
 
 	/**

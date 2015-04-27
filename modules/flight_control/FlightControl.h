@@ -92,9 +92,9 @@ double P_YAW = 0.2, I_YAW = 0.02;
 double MAX_I_YAW = 10.0;
 
 #define ATTITUDE_CONTROL_DEG 57.29578f
-#define MAX_ROLL_RATE_DEG 90.0f
-#define MAX_PITCH_RATE_DEG 90.0f
-#define MAX_YAW_RATE_DEG 180.0f
+#define MAX_ROLL_RATE_DEG 180.0f
+#define MAX_PITCH_RATE_DEG 180.0f
+#define MAX_YAW_RATE_DEG 270.0f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
@@ -102,16 +102,16 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 		int *aileronCmd, int *gouvernCmd, int *rubberCmd,
 		double gyroXrate, double gyroYrate, int deciThrustPercent) {
 
-	double errorRoll = att_cmd->roll + roll_trim - att->roll;
-	double errorPitch = att_cmd->pitch + pitch_trim - att->pitch;
+	double errorRoll = att_cmd->roll - att->roll + roll_trim;
+	double errorPitch = att_cmd->pitch - att->pitch + pitch_trim;
 	double yawDesired = att_cmd->yaw + yaw_trim;
 
 #if Firmware == QUADCOPTER
 
 	// Converts error into desired rate
 	Vector3f desired_rate_ef;
-	desired_rate_ef.x = errorRoll * 4.5;
-	desired_rate_ef.y = errorPitch * 4.5;
+	desired_rate_ef.x = errorRoll * 5.0;
+	desired_rate_ef.y = errorPitch * 5.0;
 	desired_rate_ef.z = yawDesired * 6.0;
 
 	// Contrain vector of desired rate in earth-frame
@@ -122,10 +122,11 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 
 	// Compute angle rate errors
 	double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
-	double ratePitchError = (desired_rate_bf.y + gyroYrate * ATTITUDE_CONTROL_DEG);
-	double rateYawError = (desired_rate_bf.z + gyroZrate * ATTITUDE_CONTROL_DEG);
+	double ratePitchError = (desired_rate_bf.y - gyroYrate * ATTITUDE_CONTROL_DEG);
+	double rateYawError = (desired_rate_bf.z - gyroZrate * ATTITUDE_CONTROL_DEG);
 
-	if (deciThrustPercent > 50) {
+
+	if (deciThrustPercent > 100) {
 		sumErrorRoll += rateRollError * G_Dt;
 		sumErrorPitch += ratePitchError * G_Dt;
 		sumErrorYaw += rateYawError * G_Dt;
@@ -134,7 +135,7 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 		BoundAbs(sumErrorPitch, MAX_I);
 		BoundAbs(sumErrorYaw, MAX_I_YAW);
 	}
-	else if (deciThrustPercent < 150) {
+	else if (deciThrustPercent < 100) {
 		sumErrorRoll = 0.0;
 		sumErrorPitch = 0.0;
 		sumErrorYaw = 0.0;

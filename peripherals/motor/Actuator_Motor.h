@@ -13,7 +13,7 @@
 #include "Common.h"
 
 
-#define THRUST_SLEW_RATE_ACTIVATED 1
+#define THRUST_SLEW_RATE_ACTIVATED 0
 #define DECITHRUST_SLEW_RATE 60 // Max of decithrust difference each 50ms
 int currentDeciThrustPercent;
 
@@ -236,10 +236,10 @@ double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
 	// Minimum for the quad to hover
-	int min_hover_decithrust = 360;
+	int min_hover_decithrust = 370;
 
 	// Protection to shutdown all motors
-	if (currentDeciThrustPercent < 20) {
+	if (currentDeciThrustPercent < 15) {
 		thrustX1 = ESC_MIN;
 		thrustX2 = ESC_MIN;
 		thrustX3 = ESC_MIN;

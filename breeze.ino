@@ -29,14 +29,13 @@
 void measureCriticalSensors();
 
 /*******************************************************************
- * Update IMU data
+ * Update attitude (angle and angle rate)
  ******************************************************************/
-// Read sensors and update data
 void updateAttitude() {  
-	// Update gyro data
+	// Update IMU data
 	updateGyroData();
 
-	// Set new current attitude
+	// Set new current attitude filtered by Kalman
 	UAVCore->currentAttitude->roll = kalX.getOutput();
 	UAVCore->currentAttitude->pitch = kalY.getOutput();
 
@@ -47,6 +46,7 @@ void updateAttitude() {
 
 	UAVCore->currentAttitude->yaw = 0.0;
 
+	// Update angle rate
 	UAVCore->gyroXrate = gyroXrate;
 	UAVCore->gyroYrate = gyroYrate;
 }
@@ -112,9 +112,9 @@ void updateRFRadioFutaba() {
 
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
-				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.45;
-				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.45;
-				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.45;
+				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.43; // 0.45
+				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.43;
+				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.43;
 			}
 		}
 	}
@@ -250,14 +250,16 @@ void process50HzTask() {
 	// Command motor at % thrust
 	//------------------------------------------------------------
 	double boost = 1.0;
-	if (Firmware == QUADCOPTER) {
-		double abs_cos_roll = abs(fast_cos(toRad(UAVCore->currentAttitude->roll)));
-		double abs_cos_pitch = abs(fast_cos(toRad(UAVCore->currentAttitude->pitch)));
-		if (abs_cos_pitch > 0.6 && abs_cos_pitch > 0.6) {
-			boost = 1.0 / ( (abs_cos_roll) * (abs_cos_pitch) );
-		}
-		Bound(boost, 1.0, 1.4);
-	}
+// TODO resolved boost
+	//	if (Firmware == QUADCOPTER) {
+//		double abs_cos_roll = abs(fast_cos(toRad(UAVCore->currentAttitude->roll)));
+//		double abs_cos_pitch = abs(fast_cos(toRad(UAVCore->currentAttitude->pitch)));
+//		
+//		if (abs_cos_pitch > 0.1 && abs_cos_pitch > 0.1) {
+//			boost = 1.0 / ( (abs_cos_roll) * (abs_cos_pitch) );
+//		}
+//		Bound(boost, 1.0, 1.4);
+//	}
 	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
 
 
@@ -344,7 +346,6 @@ void process10HzTask() {
 	//------------------------------------------------------------
 	updateLowPriorityRFLink();
 
-
 	// Update compass data (doesn't work)
 	// TODO find ASA calib by calling magnometer for ADC precision
 	//------------------------------------------------------------
@@ -352,20 +353,6 @@ void process10HzTask() {
 //		double heading = getCompassHeading(UAVCore->currentAttitude);
 //		Logger.print("heading (deg) = ");
 //		Logger.println(heading);
-
-#if MEASURE_VIBRATION
-	Logger.print("Acc noise vibration = ");
-	Logger.print(accNoise);
-	Logger.print(" | roll = ");
-	Logger.print(UAVCore->currentAttitude->roll);
-	Logger.print(" | pitch = ");
-	Logger.print(UAVCore->currentAttitude->pitch);
-	Logger.print(" | Acc X = ");
-	Logger.print((Accel_output[0] - Accel_cal_x)/ACC_LSB_PER_G);
-
-	Logger.print(" | Gdt(0) (ms) = ");
-	Logger.println(G_Dt*1000.0);
-#endif
 }
 
 /*******************************************************************
@@ -382,6 +369,11 @@ void process5HzTask() {
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
+	
+	Logger.print("Acc_noise= ");
+	Logger.print(accNoise);
+	Logger.print(" | roll= ");
+	Logger.println(UAVCore->currentAttitude->roll);
 }
 
 
@@ -390,7 +382,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-
+		
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -401,16 +393,17 @@ void process2HzTask() {
 	 */
 
 	//	schedulerStats(); 
-	/**	Logger.println("--------------------------");
-	Logger.print("X1 = ");
-	Logger.println(thrustX1);
-	Logger.print("X2 = ");
-	Logger.println(thrustX2);
-	Logger.print("X3 = ");
-	Logger.println(thrustX3);
-	Logger.print("X4 = ");
-	Logger.println(thrustX4); 
-
+//	Logger.println("--------------------------");
+//	Logger.print("X1 = ");
+//	Logger.println(thrustX1);
+//	Logger.print("X2 = ");
+//	Logger.println(thrustX2);
+//	Logger.print("X3 = ");
+//	Logger.println(thrustX3);
+//	Logger.print("X4 = ");
+//	Logger.println(thrustX4); 
+	
+	/**
 	Logger.print("sbus[4] = ");
 	Logger.println(sBus.channels[4]); 
 
@@ -420,8 +413,8 @@ void process2HzTask() {
 	//	Logger.println(- gyroYrate * ATTITUDE_CONTROL_DEG);
 	//	Logger.print("setpoint pitch rate (deg) = ");
 	//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 1.5);
-	//	Logger.print("Out roll (cmd) = ");
-	//	Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
+//		Logger.print("Out roll (cmd) = ");
+//		Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
 
 	//		Logger.print("sum error roll = ");
 	//	Logger.println(sumErrorRoll);	
@@ -430,12 +423,16 @@ void process2HzTask() {
 
 	//	Logger.println(Ki);
 
-	//	Logger.print("x_rate = ");
-	//	Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-	//	Logger.print("roll = ");
-	//	Logger.println(UAVCore->currentAttitude->roll);
-	//		Logger.print("pitch = ");
-	//		Logger.println(UAVCore->currentAttitude->pitch);
+//		Logger.print("x_rate = ");
+//		Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
+//		Logger.print("roll = ");
+//		Logger.println(UAVCore->currentAttitude->roll);
+//	
+
+//			Logger.print("y_rate = ");
+//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
+//			Logger.print("pitch = ");
+//			Logger.println(UAVCore->currentAttitude->pitch);
 
 
 	//	Logger.print("acc_z hard = ");
@@ -443,16 +440,16 @@ void process2HzTask() {
 	//			+ abs(sin_roll) * abs(sin_roll))); 
 
 
-	//	Logger.print("pitch = ");
-	//	Logger.println(UAVCore->currentAttitude->pitch);
-	//
-	//	Logger.print("pitch cmd  = ");
-	//	Logger.println(UAVCore->attitudeCommanded->pitch);
+//		Logger.print("pitch = ");
+//		Logger.println(UAVCore->currentAttitude->pitch);
+//	
+//		Logger.print("pitch cmd  = ");
+//		Logger.println(UAVCore->attitudeCommanded->pitch);
 
-	//	Logger.print("Gyro_z_rate = ");
-	//	Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-	//	Logger.print("Yaw desired = ");
-	//	Logger.println(UAVCore->attitudeCommanded->yaw);
+//		Logger.print("Gyro_z_rate = ");
+//		Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
+//		Logger.print("Yaw desired = ");
+//		Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;
@@ -462,8 +459,6 @@ void process2HzTask() {
 	//	Logger.println(t_bf.x);
 	//	Logger.print("Climb_rate = ");
 	//	Logger.println(climb_rate);
-
-
 }
 
 
@@ -476,11 +471,14 @@ void process1HzTask() {
 	//---------------------------------------------------------
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
-	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
+/** 	
+ *  TEMPORARY REMOVED
+ *  
+ * updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
 			(int)(UAVCore->headingCap),
 			(int)(altitudeBarometer->getAverage()), toCenti(airspeed_ms_mean->getAverage()),
 			currentPosition.lat, currentPosition.lon,
-			(int)angleDiff, UAVCore->autopilot, currentWP);
+			(int)angleDiff, UAVCore->autopilot, currentWP); */
 
 	//---------------------------------------------------------
 	// Print some data to the user
@@ -659,12 +657,14 @@ void setup() {
  * Main loop funtions
  ******************************************************************/
 void loop () {
-	if (radio_linked_checked) {
-
+	if (radio_linked_checked == false) {
+		AUTOSPEED_CONTROLLER = 0;
+		UAVCore->autopilot = false;
+	}
 		currentTime = timeUs();
 		deltaTime = currentTime - previousTime;
 
 		measureCriticalSensors();
 		schedulerRun();
-	}
+	
 }
