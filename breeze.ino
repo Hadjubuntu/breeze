@@ -23,6 +23,7 @@
 #include "arch/AVR/wire/Wire.h"
 #include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
+#include "modules/AHRS/AHRS_Kalman.h"
 
 
 // Skeleton functions
@@ -34,6 +35,9 @@ void measureCriticalSensors();
 void updateAttitude() {  
 	// Update IMU data
 	updateGyroData();
+	
+	// Update AHRS
+	updateAHRS(Accel_roll, gyroXrate, Accel_pitch, gyroYrate);
 
 	// Set new current attitude filtered by Kalman
 	UAVCore->currentAttitude->roll = kalX.getOutput();
@@ -596,6 +600,7 @@ void setup() {
 
 	// Initialize components
 	setupGyro() ;
+	initAHRS(init_roll, init_pitch);
 	Logger.println("Gyro armed");
 
 	setupAltimeter();

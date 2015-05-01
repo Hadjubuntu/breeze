@@ -15,9 +15,9 @@ public:
 
 		// Parameters of the filter
 		// Q = Q_meas * dt 0.001, 0.003, 0.03
-		Q_sensor1 = 0.15;
-		Q_sensor2 = 0.15;
-		R_measure = 10.0; // Variance
+		Q_sensor1 = 0.02; // 0.001  0.15;
+		Q_sensor2 = 0.02; // 0.003    0.15;
+		R_measure = 0.1; // 0.03    10.0; // Variance
 
 		output = 0; // Reset the angle
 		bias = 0; // Reset bias
@@ -27,7 +27,7 @@ public:
 
 		// TODO calibration matrix from measurement
 		P[0][0] = 0.1;
-		P[0][1] = 0.1;
+		P[0][1] = 0.0;
 		P[1][0] = 0.0;
 		P[1][1] = 0.1;
 	};
@@ -95,6 +95,8 @@ public:
 	double getRmeasure() { return R_measure; };
 
 	double getOutput() { return output; }
+
+	double getBias() { return bias; }
 
 private:
 	/* Kalman filter variables */

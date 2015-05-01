@@ -13,7 +13,6 @@
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
 #include "math/FilterAverage.h"
-#include "math/Kalman.h"
 
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
@@ -38,6 +37,9 @@ double accNoise = 0.0; // Noise accelerometer measure in G (means output steady 
 
 // Variables
 long lastUpdateAHRS_Us = 0;
+
+// Initial values from accelerometer
+float init_roll = 0.0, init_pitch = 0.0;
 
 double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0, raw_gyro_zrate = 0.0;
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZrate = 0.0;
@@ -67,9 +69,6 @@ double alphaGyroRate = 0.3;
 float Accel_pitch = 0;
 float Accel_roll = 0;
 
-// Kalman filters
-//-----------------------------
-Kalman kalX, kalY;
 
 
 // read IMU data - datasheet ITG3200
@@ -200,8 +199,8 @@ void setupGyro() {
 	Logger.println(Accel_cal_z);
 	Logger.println("------------------------------");
 
-	kalX.setOutput(RAD2DEG * rawAccToRoll(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
-	kalY.setOutput(RAD2DEG * rawAccToPitch(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
+	init_roll = (RAD2DEG * rawAccToRoll(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
+	init_pitch = (RAD2DEG * rawAccToPitch(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
 
 
 	// To be tested : desactivating the initial bias since it always wrong ..
@@ -281,12 +280,6 @@ void updateGyroData() {
 
 	// Integrate gyro z rate to have approx yaw
 	gyroZangle += gyroZrate * dt;
-
-
-	// Update kalman prediction and state
-	//-----------------------------------------------
-	kalX.update(Accel_roll, gyroXrate * RAD2DEG, dt);
-	kalY.update(Accel_pitch, gyroYrate * RAD2DEG, dt);
 
 #if MEASURE_VIBRATION
 	//-----------------------------------------------
