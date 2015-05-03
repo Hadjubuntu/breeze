@@ -292,6 +292,15 @@ float approx(float v) {
 	return roundf(v * k) / k;
 }
 
+Vector3f vect3fInstance(float x, float y, float z) {
+	Vector3f res;
+	res.x = x;
+	res.y = y;
+	res.z = z;
+
+	return res;
+}
+
 Vector3f vectAbsBounded(Vector3f inputVector, float max_x, float max_y, float max_z) {
 	Vector3f output;
 

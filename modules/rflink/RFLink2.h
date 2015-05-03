@@ -242,7 +242,9 @@ void updateRFLink50Hz() {
  * such as attitude, speed and location
  * Takes around 1 ms
  *****************************************************************************/
-void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airspeedCentiMs, long latPow6, long lonPow6, int angleDiffToTarget, bool autopilot, int currentWP) {
+void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airspeedCentiMs,
+		long latPow6, long lonPow6, int angleDiffToTarget, bool autopilot,
+		int deciAccNoise) {
 	char buf[250];
 	int autopilotInt = 0;
 	if (autopilot == true) {
@@ -253,7 +255,7 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 			rollCenti, pitchCenti, cap,
 			altCm, airspeedCentiMs,
 			latPow6, lonPow6,
-			angleDiffToTarget, autopilotInt, currentWP);
+			angleDiffToTarget, autopilotInt, deciAccNoise);
 
 	RFSerial.write(buf);
 }

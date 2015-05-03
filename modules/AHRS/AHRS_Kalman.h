@@ -28,7 +28,7 @@ void initAHRS(float initRoll, float initPitch) {
 /**
  * Update system prediction and state
  */
-void updateAHRS(float pAccRoll, float pGyroXrateRad, float pAccPitch, float pGyroYrateRad)
+void updateAHRS(float pAccRoll, float pGyroXrateRad, float pAccPitch, float pGyroYrateRad, float dt)
 {
 	// Update kalman prediction and state
 	//-----------------------------------------------

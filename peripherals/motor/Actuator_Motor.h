@@ -143,19 +143,19 @@ void setupMotors() {
 		else if (QuadType == X) {
 			motorMatrix[0][0] = 1; // roll
 			motorMatrix[0][1] = 1; // pitch
-			motorMatrix[0][2] = -1; // yaw
+			motorMatrix[0][2] = 1; // yaw
 
 			motorMatrix[1][0] = -1;
 			motorMatrix[1][1] = 1;
-			motorMatrix[1][2] = 1; // yaw
+			motorMatrix[1][2] = -1; // yaw
 
 			motorMatrix[2][0] = 1;
 			motorMatrix[2][1] = -1;
-			motorMatrix[2][2] = 1; // yaw
+			motorMatrix[2][2] = -1; // yaw
 
 			motorMatrix[3][0] = -1;
 			motorMatrix[3][1] = -1;
-			motorMatrix[3][2] = -1; // yaw
+			motorMatrix[3][2] = 1; // yaw
 		}
 	}
 
@@ -236,10 +236,10 @@ double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
 	// Minimum for the quad to hover
-	int min_hover_decithrust = 370;
+	int min_hover_decithrust = 360;
 
 	// Protection to shutdown all motors
-	if (currentDeciThrustPercent < 15) {
+	if (currentDeciThrustPercent < 30) {
 		thrustX1 = ESC_MIN;
 		thrustX2 = ESC_MIN;
 		thrustX3 = ESC_MIN;

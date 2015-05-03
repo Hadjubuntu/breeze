@@ -12,17 +12,19 @@
 #include "arch/AVR/wire/Wire.h"
 #include "Common.h"
 #include "arch/AVR/I2C/I2C.h"
-#include "math/FilterAverage.h"
+#include "math/LowPassFilter.h"
 
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
-#define MEASURE_VIBRATION 1
+#define MEASURE_VIBRATION 0
 #define ENABLE_IMU_CALIBRATION 1
 
 #define ENABLE_COMPASS 0
 void MPU9150_setupCompass();
 
-
+// Low pass filters
+//-------------------------------------------
+LowPassFilter2pVector3f accel_filter;
 
 // Parameter of the IMU
 // Thoses values change when config sent to the IMU is changed
@@ -30,10 +32,8 @@ void MPU9150_setupCompass();
 #define GYRO_LSB_PER_G 131.0f // FS_SEL 0 131.0
 
 // Enable vibration measurement
-#if MEASURE_VIBRATION
-#include "../../math/Math.h"
-double accNoise = 0.0; // Noise accelerometer measure in G (means output steady equals 1 due to gravity)
-#endif
+
+double accNoise = 0.0; // Noise accelerometer measure in G (means output steady equals 1 due to gravity
 
 // Variables
 long lastUpdateAHRS_Us = 0;
@@ -49,7 +49,7 @@ double rel_accY = 0.0;
 
 int Gyro_output[3], Accel_output[3], Mag_output[3];
 
-float dt = 0.01;
+float dt_IMU = 0.01;
 
 bool acc_z_initialized = false;
 float initial_acc_z_bias = 0.0;
@@ -61,7 +61,7 @@ float raw_accel_roll, raw_accel_pitch;
 
 // Complementary filter for raw data input
 //------------------------------
-double alphaAccelRate = 0.5;
+double alphaAccelRate = 0.8;
 double alphaGyroRate = 0.3;
 
 // Acceleration CF filtered
@@ -93,19 +93,26 @@ void getIMUReadings(int Gyro_out[], int Accel_out[])
 // TODO Use fast_atan2 if not enough fast for CPU ?
 
 // Fast raw acceleration to roll conversion
-float rawAccToRoll(float rawAccX, float rawAccY, float rawAccZ) {
-	return atan2(rawAccY, rawAccZ);
+float rawAccToRoll(Vector3f acc3f) {
+	return atan2(acc3f.y, acc3f.z);
 }
 
 // Fast raw pitch to roll conversion
-float rawAccToPitch(float rawAccX, float rawAccY, float rawAccZ) {
-	return atan2(rawAccX, rawAccZ); // TODO instead of z pythagorous2(rawAccZ, rawAccY)
+float rawAccToPitch(Vector3f acc3f) {
+	return atan2(acc3f.x, pythagorous2(acc3f.z, acc3f.y));
 }
 
 //-------------------------------------------
 // Initialize IMU with calibration values
 void setupGyro() {
 
+	// Prepare filters
+	//-------------------------------------------------------
+	accel_filter.set_cutoff_frequency(800, 20);
+
+
+	// Initialize IMU
+	//-------------------------------------------------------
 	delay(5);
 	Wire.begin();
 
@@ -199,17 +206,9 @@ void setupGyro() {
 	Logger.println(Accel_cal_z);
 	Logger.println("------------------------------");
 
-	init_roll = (RAD2DEG * rawAccToRoll(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
-	init_pitch = (RAD2DEG * rawAccToPitch(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G));
+	init_roll = (RAD2DEG * rawAccToRoll(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
+	init_pitch = (RAD2DEG * rawAccToPitch(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
 
-
-	// To be tested : desactivating the initial bias since it always wrong ..
-//	Gyro_cal_x = 0.0;
-//	Gyro_cal_y = 0.0;
-//	Gyro_cal_z = 0.0;
-//	Accel_cal_x = 0.0;
-//	Accel_cal_y = 0.0;
-//	Accel_cal_z = 0.0;
 
 #else
 	Logger.println("------------------------------");
@@ -233,7 +232,6 @@ Acc cal x; y; z : 34.00; 9.00; -243.00
 	Accel_cal_z = -243.00;
 #endif
 }
-FilterAverage *acc_filter = new FilterAverage(20, -30, 30, false);
 
 //-------------------------------------------------------------
 // Update AHRS (Attitude and Heading Reference System)
@@ -243,9 +241,9 @@ FilterAverage *acc_filter = new FilterAverage(20, -30, 30, false);
 // or http://theccontinuum.com/2012/09/24/arduino-imu-pitch-roll-from-accelerometer/
 void updateGyroData() {
 	long currentTimeUs = micros() ;
-	dt = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
+	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
 	if (lastUpdateAHRS_Us == 0) {
-		dt = 0.01; // Initially, dt equals 10 ms
+		dt_IMU = 0.01; // Initially, dt equals 10 ms
 	}
 
 	lastUpdateAHRS_Us = currentTimeUs;
@@ -254,38 +252,38 @@ void updateGyroData() {
 	//-----------------------------------------------
 	getIMUReadings(Gyro_output, Accel_output);
 
-	// Retrive raw gyro rate and acc acceleration
-	rel_accX = (Accel_output[0] - Accel_cal_x) / ACC_LSB_PER_G;
-	rel_accY = (Accel_output[1] - Accel_cal_y) / ACC_LSB_PER_G;
-	rel_accZ = (Accel_output[2] - Accel_cal_z) / ACC_LSB_PER_G;
 
-	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt;
-	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt; // Tilt positive when going nose goes high
-	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt;
+	// Accelerometer data and filters
+	//-----------------------------------------------
+	rel_accX = (Accel_output[0]) / ACC_LSB_PER_G;
+	rel_accY = (Accel_output[1]) / ACC_LSB_PER_G;
+	rel_accZ = (Accel_output[2]) / ACC_LSB_PER_G;
 
 
-	raw_accel_pitch = rawAccToPitch(Accel_output[0] / ACC_LSB_PER_G, Accel_output[1] / ACC_LSB_PER_G, Accel_output[2] / ACC_LSB_PER_G) * RAD2DEG;
+	// Low pass filter accelerometer
+    Vector3f accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+
+	raw_accel_pitch = rawAccToPitch(accelFiltered) * RAD2DEG;
 	Accel_pitch = (1.0-alphaAccelRate) * Accel_pitch + alphaAccelRate * raw_accel_pitch;
 
 
-	raw_accel_roll = rawAccToRoll(Accel_output[0] / ACC_LSB_PER_G, Accel_output[1] / ACC_LSB_PER_G, Accel_output[2] / ACC_LSB_PER_G) * RAD2DEG;
+	raw_accel_roll = rawAccToRoll(accelFiltered) * RAD2DEG;
 	Accel_roll = (1.0-alphaAccelRate) * Accel_roll + alphaAccelRate * raw_accel_roll;
 
 
-	// Output update
+	// Gyro data and filters
 	//-----------------------------------------------
+	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ GYRO_LSB_PER_G) * dt_IMU;
+	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt_IMU; // Tilt positive when going nose goes high
+	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
+
+	// Complementary filter
 	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
 	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
 	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
 
 	// Integrate gyro z rate to have approx yaw
-	gyroZangle += gyroZrate * dt;
-
-#if MEASURE_VIBRATION
-	//-----------------------------------------------
-	// If needed, measure vibration
-	accNoise = sqrt(pow2(Accel_output[0] - Accel_cal_x) + pow2(Accel_output[1] - Accel_cal_y) + pow2(Accel_output[2] - Accel_cal_z)) / ACC_LSB_PER_G;
-#endif
+	gyroZangle += gyroZrate * dt_IMU;
 }
 
 

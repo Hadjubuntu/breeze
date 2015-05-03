@@ -14,10 +14,11 @@ public:
 	Kalman() {
 
 		// Parameters of the filter
-		// Q = Q_meas * dt 0.001, 0.003, 0.03
-		Q_sensor1 = 0.02; // 0.001  0.15;
-		Q_sensor2 = 0.02; // 0.003    0.15;
-		R_measure = 0.1; // 0.03    10.0; // Variance
+		// Q = Q_meas * dt 0.001, 0.003, 0.03 (Relative trust from accelerometer relative to the gyro)
+		Q_sensor1 = 0.1; // 0.001  0.15;
+		Q_sensor2 = 0.15; // 0.003    0.15;
+		// R noise (accelerometer jitter in deg)
+		R_measure = 5.0; // 0.3    10.0; // Variance
 
 		output = 0; // Reset the angle
 		bias = 0; // Reset bias
@@ -26,10 +27,10 @@ public:
 		y = 0;
 
 		// TODO calibration matrix from measurement
-		P[0][0] = 0.1;
+		P[0][0] = 0.2;
 		P[0][1] = 0.0;
 		P[1][0] = 0.0;
-		P[1][1] = 0.1;
+		P[1][1] = 0.3;
 	};
 
 	/**
@@ -97,6 +98,9 @@ public:
 	double getOutput() { return output; }
 
 	double getBias() { return bias; }
+
+	double getP00() { return P[0][0]; }
+	double getP11() { return P[1][1]; }
 
 private:
 	/* Kalman filter variables */

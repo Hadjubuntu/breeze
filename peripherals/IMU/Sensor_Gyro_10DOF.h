@@ -33,7 +33,7 @@ float rel_accZ;
 
 int Gyro_output[2],Accel_output[3];
 
-float dt = 0.01;
+float dt_IMU = 0.01;
 
 float Gyro_cal_x,Gyro_cal_y,Accel_cal_x,Accel_cal_y,Accel_cal_z;
 float raw_accel_roll, raw_accel_pitch;
@@ -183,9 +183,9 @@ Pilatus calib :
 void updateGyroData() {
 
 	long currentTimeUs = micros() ;
-	dt = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
+	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
 	if (lastUpdateAHRS_Us == 0) {
-		dt = 0.01; // Initially, dt equals 10 ms
+		dt_IMU = 0.01; // Initially, dt equals 10 ms
 	}
 
 	lastUpdateAHRS_Us = currentTimeUs;
@@ -196,8 +196,8 @@ void updateGyroData() {
 
 	// Declare variables
 	rel_accZ = (Accel_output[2] - Accel_cal_z)/256;
-	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt;
-	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt;
+	gyroXrate = ((Gyro_output[0] - Gyro_cal_x)/14.375) * dt_IMU;
+	gyroYrate = ((Gyro_output[1] - Gyro_cal_y)/14.375) * dt_IMU;
 
 
 	// Eval
@@ -229,10 +229,10 @@ void updateGyroData() {
 	//--------------------------------------------
 	Predicted_roll = Predicted_roll - gyroYrate;
 
-	P00 += dt * (2 * P01 + dt * P11);
-	P01 += dt * P11;
-	P00 += dt * kalmanQ;
-	P11 += dt * kalmanQ;
+	P00 += dt_IMU * (2 * P01 + dt_IMU * P11);
+	P01 += dt_IMU * P11;
+	P00 += dt_IMU * kalmanQ;
+	P11 += dt_IMU * kalmanQ;
 
 	//mise a jour des gains de Kalman
 	//-------------------------------
