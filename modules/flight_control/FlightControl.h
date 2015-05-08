@@ -11,8 +11,11 @@
 #include "Common.h"
 
 // Internal trim data
-double roll_trim = 0.14;
-double pitch_trim = -0.60;
+//double roll_trim = -2.7;
+//double pitch_trim = 3.72;
+//double yaw_trim = 6.8;
+double roll_trim = 0.0;
+double pitch_trim = 0.0;
 double yaw_trim = 0.0;
 
 #define MAX_DURATION_BURST_S 3

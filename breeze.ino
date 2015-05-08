@@ -117,8 +117,8 @@ void updateRFRadioFutaba() {
 
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
-				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.43; // 0.45
-				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.43;
+				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.42; // 0.45
+				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.42;
 				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.45;
 			}
 		}
@@ -154,7 +154,7 @@ void updateRFRadoFutabaLowFreq() {
 		// PID tuning
 		//------------------------------------------
 
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 1.0;
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // quad : 1.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 		param[ID_G_I_ROLL] = Ki;
@@ -382,22 +382,22 @@ void process5HzTask() {
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
-	
-	
-#if MEASURE_VIBRATION
-	Logger.print("Acc_noise= ");
-	Logger.print(accNoise);
-	Logger.print(" | roll= ");
-	Logger.print(UAVCore->currentAttitude->roll);
-	Logger.print(" | accel_roll = ");
-	Logger.print(Accel_roll);
-	Logger.print(" | error = ");
-	Logger.println(UAVCore->currentAttitude->roll - Accel_roll);
-	Logger.print("P = ");
-	Logger.print(kalX.getP00());
-	Logger.print(" | ");
-	Logger.println(kalX.getP11());
-#endif
+
+
+	//#if MEASURE_VIBRATION
+	//	Logger.print("Acc_noise= ");
+	//	Logger.print(accNoise);
+	//	Logger.print(" | roll= ");
+	//	Logger.print(UAVCore->currentAttitude->roll);
+	//	Logger.print(" | accel_roll = ");
+	//	Logger.print(Accel_roll);
+	//	Logger.print(" | error = ");
+	//	Logger.println(UAVCore->currentAttitude->roll - Accel_roll);
+	//	Logger.print("P = ");
+	//	Logger.print(kalX.getP00());
+	//	Logger.print(" | ");
+	//	Logger.println(kalX.getP11());
+	//#endif
 }
 
 
@@ -416,13 +416,13 @@ void process2HzTask() {
 	 */
 
 	//	schedulerStats(); 
-	//	Logger.println("--------------------------");
-	//	Logger.print("X1 = ");
-	//	Logger.println(thrustX1);
-	//	Logger.print("X2 = ");
-	//	Logger.println(thrustX2);
-	//	Logger.print("X3 = ");
-	//	Logger.println(thrustX3);
+//		Logger.println("--------------------------");
+//		Logger.print("X1 = ");
+//		Logger.println(thrustX1);
+//		Logger.print("X2 = ");
+//		Logger.println(thrustX2);
+//		Logger.print("X3 = ");
+//		Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
@@ -454,8 +454,8 @@ void process2HzTask() {
 
 	//			Logger.print("y_rate = ");
 	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
-	//			Logger.print("pitch = ");
-	//			Logger.println(UAVCore->currentAttitude->pitch);
+//				Logger.print("pitch = ");
+//				Logger.println(UAVCore->currentAttitude->pitch);
 
 
 	//	Logger.print("acc_z hard = ");
@@ -465,14 +465,18 @@ void process2HzTask() {
 	//
 	//		Logger.print("pitch = ");
 	//		Logger.println(UAVCore->currentAttitude->pitch);
-	//	
-	//		Logger.print("pitch cmd  = ");
-	//		Logger.println(UAVCore->attitudeCommanded->pitch);
+
+
+//	Logger.print("roll cmd  = ");
+//	Logger.println(UAVCore->attitudeCommanded->roll);
+//
+//	Logger.print("pitch cmd  = ");
+//	Logger.println(UAVCore->attitudeCommanded->pitch);
 
 	//			Logger.print("Gyro_z_rate = ");
 	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-	//			Logger.print("Yaw desired = ");
-	//			Logger.println(UAVCore->attitudeCommanded->yaw);
+//	Logger.print("Yaw desired = ");
+//	Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;

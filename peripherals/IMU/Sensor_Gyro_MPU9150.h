@@ -16,7 +16,7 @@
 
 #define MPU9150_CHIP_ADDRESS 0x68
 #define AK8975_MAG_ADDRESS 0x0C
-#define MEASURE_VIBRATION 0
+#define MEASURE_VIBRATION 1
 #define ENABLE_IMU_CALIBRATION 1
 
 #define ENABLE_COMPASS 0
@@ -29,7 +29,7 @@ LowPassFilter2pVector3f accel_filter;
 // Parameter of the IMU
 // Thoses values change when config sent to the IMU is changed
 #define ACC_LSB_PER_G 16384.0f // 16384.0f/9.81f // 256.0f // 16384.0f
-#define GYRO_LSB_PER_G 131.0f // FS_SEL 0 131.0
+#define GYRO_LSB_PER_G 16.4f // FS_SEL 0 131.0
 
 // Enable vibration measurement
 
@@ -61,8 +61,8 @@ float raw_accel_roll, raw_accel_pitch;
 
 // Complementary filter for raw data input
 //------------------------------
-double alphaAccelRate = 0.8;
-double alphaGyroRate = 0.3;
+double alphaAccelRate = 0.7;
+double alphaGyroRate = 0.7;
 
 // Acceleration CF filtered
 //------------------------------
@@ -127,12 +127,30 @@ void setupGyro() {
 
 	// Gyro and accelerometer configuration
 	//----------------------------------------
-	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
-	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
-	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
-	i2cData[3] = 0x00; // Set Accelerometer Full Scale Range to ±2g
-	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, true)); // Write to all four registers at once
+//	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
+//	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
+//	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
+//	i2cData[3] = 0x00; // Set Accelerometer Full Scale Range to ±2g
+//	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, true)); // Write to all four registers at once
 
+	// 2000° range gyro
+	uint8_t data = 3 << 3;
+	i2cWrite(MPU9150_CHIP_ADDRESS, 0x1B, data, true);
+	delay(10);
+
+	// Acc +/- 2g
+	data = 0 << 3;
+	i2cWrite(MPU9150_CHIP_ADDRESS, 0x1C, data, true);
+	delay(10);
+
+	// 800 Hz filtering
+	 data = 1000 / 800 - 1;
+	i2cWrite(MPU9150_CHIP_ADDRESS, 0x19, data, true);
+	delay(10);
+
+	// 256Hz filtering
+	i2cWrite(MPU9150_CHIP_ADDRESS, 0x1A, 0x00, true);
+	delay(100);
 
 	Logger.println("IMU configured");
 

@@ -19,17 +19,17 @@ int currentDeciThrustPercent;
 
 /**
  * Quadcopter configuration
- * X1       X2			pin6     pin7
+ * X1       X2
  *   .     .
  *     .  .
  *      Q
  *     .  .
  *   .     .
- * X3       X4         pin8     pin5
+ * X3       X4
  *
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
-int motorMatrix[4][3];
+double motorMatrix[4][3];
 float boost_motors = 1.0;
 
 // In test mode : Limit motor power to x% (Real flight full thrust)
@@ -143,19 +143,37 @@ void setupMotors() {
 		else if (QuadType == X) {
 			motorMatrix[0][0] = 1; // roll
 			motorMatrix[0][1] = 1; // pitch
-			motorMatrix[0][2] = 1; // yaw
+			motorMatrix[0][2] = -1; // yaw
 
 			motorMatrix[1][0] = -1;
 			motorMatrix[1][1] = 1;
-			motorMatrix[1][2] = -1; // yaw
+			motorMatrix[1][2] = 1; // yaw
 
 			motorMatrix[2][0] = 1;
 			motorMatrix[2][1] = -1;
-			motorMatrix[2][2] = -1; // yaw
+			motorMatrix[2][2] = 1; // yaw
 
 			motorMatrix[3][0] = -1;
 			motorMatrix[3][1] = -1;
-			motorMatrix[3][2] = 1; // yaw
+			motorMatrix[3][2] = -1; // yaw
+		}
+		else if (QuadType == Y) {
+
+			motorMatrix[0][0] = 1; // roll
+			motorMatrix[0][1] = 2/3; // pitch
+			motorMatrix[0][2] = 0; // yaw
+
+			motorMatrix[1][0] = -1;
+			motorMatrix[1][1] = 2/3;
+			motorMatrix[1][2] = 0; // yaw
+
+			motorMatrix[2][0] = 0;
+			motorMatrix[2][1] = -4/3;
+			motorMatrix[2][2] = 0; // yaw
+
+			motorMatrix[3][0] = 0;
+			motorMatrix[3][1] = 0;
+			motorMatrix[3][2] = 0; // yaw
 		}
 	}
 
@@ -198,7 +216,11 @@ void motorUpdateCommandQuad()
 	OCR5C = thrustX1  << 1 ; // pin 44
 	OCR5B = thrustX2  << 1 ; // pin 45
 	OCR5A = thrustX3  << 1 ; // pin 46
-	OCR1C = thrustX4  << 1 ; // pin 13
+
+
+	if (QuadType != Y) {
+		OCR1C = thrustX4  << 1 ; // pin 13
+	}
 
 }
 
@@ -236,7 +258,7 @@ double aileronOut, gouvernOut, yawOut;
 
 void updateMotorRepartition() {
 	// Minimum for the quad to hover
-	int min_hover_decithrust = 360;
+	int min_hover_decithrust = 50;
 
 	// Protection to shutdown all motors
 	if (currentDeciThrustPercent < 30) {
@@ -252,10 +274,14 @@ void updateMotorRepartition() {
 
 		int deciThrustBoosted = (int)(boost_motors * (min_hover_decithrust + currentDeciThrustPercent));
 
-		thrustX1 = ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut) ;
-		thrustX2 = ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut) ;
-		thrustX3 = ESC_MIN + deciThrustBoosted + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut);
-		thrustX4 = ESC_MIN + deciThrustBoosted + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut) ;
+
+		thrustX1 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut)) ;
+		thrustX2 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut)) ;
+		thrustX3 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
+
+		if (QuadType != Y) {
+			thrustX4 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut)) ;
+		}
 	}
 }
 

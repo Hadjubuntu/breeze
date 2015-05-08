@@ -30,9 +30,10 @@ FIRMWARE Firmware = QUADCOPTER;
 
 enum QUAD_TYPE {
 	PLUS,
-	X
+	X,
+	Y,
 };
-QUAD_TYPE QuadType = X;
+QUAD_TYPE QuadType = Y;
 #endif
 
 enum FlightMode {
