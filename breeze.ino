@@ -117,8 +117,8 @@ void updateRFRadioFutaba() {
 
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
-				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.42; // 0.45
-				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.42;
+				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.43; // 0.45
+				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.43;
 				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.45;
 			}
 		}
@@ -148,7 +148,7 @@ void updateRFRadoFutabaLowFreq() {
 
 		if (AUTOSPEED_CONTROLLER != old_state) {
 			output_alt_controller = 0.0;
-			altSetPointCm = altCF + 100.0; // current altitude + 100 cm over
+			altSetPointCm = altCF + 80.0; // current altitude + 100 cm over
 		}
 
 		// PID tuning
@@ -164,10 +164,10 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_I_PITCH] = Ki;
 
 		if (sBus.channels[7] > 1300) {
-			Ki = 0.1;
+			Ki = 0.1; // 0.1
 		}
 		else if (sBus.channels[7] > 400) {
-			Ki = 0.05;
+			Ki = 0.05; // 0.05
 		}
 		else {
 			Ki = 0.0;
@@ -257,14 +257,15 @@ void process50HzTask() {
 	double boost = 1.0;
 
 	if (Firmware == QUADCOPTER) {
-		float cos_roll = fast_cos(toRad(UAVCore->currentAttitude->roll));
-		float cos_pitch = fast_cos(toRad(UAVCore->currentAttitude->pitch));
-		float cos_tilt = cos_roll * cos_pitch;
-		float inverted_factor = 2.0f * cos_tilt;
-		Bound(inverted_factor, 0.0f, 1.0f);
+		if (abs(UAVCore->currentAttitude->roll) < 45.0
+				&& abs(UAVCore->currentAttitude->pitch < 45.0)) {
+			float cos_roll = fast_cos(toRad(UAVCore->currentAttitude->roll));
+			float cos_pitch = fast_cos(toRad(UAVCore->currentAttitude->pitch));
+			float cos_tilt = cos_roll * cos_pitch;
 
-		boost = 1.0f / cos_tilt * inverted_factor;
-		Bound(boost, 1.0, 1.8);
+			boost = 1.0f / cos_tilt;
+			Bound(boost, 1.0, 1.6);
+		}
 	}
 	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
 
@@ -416,13 +417,13 @@ void process2HzTask() {
 	 */
 
 	//	schedulerStats(); 
-//		Logger.println("--------------------------");
-//		Logger.print("X1 = ");
-//		Logger.println(thrustX1);
-//		Logger.print("X2 = ");
-//		Logger.println(thrustX2);
-//		Logger.print("X3 = ");
-//		Logger.println(thrustX3);
+	//		Logger.println("--------------------------");
+	//		Logger.print("X1 = ");
+	//		Logger.println(thrustX1);
+	//		Logger.print("X2 = ");
+	//		Logger.println(thrustX2);
+	//		Logger.print("X3 = ");
+	//		Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
@@ -454,8 +455,8 @@ void process2HzTask() {
 
 	//			Logger.print("y_rate = ");
 	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
-//				Logger.print("pitch = ");
-//				Logger.println(UAVCore->currentAttitude->pitch);
+	//				Logger.print("pitch = ");
+	//				Logger.println(UAVCore->currentAttitude->pitch);
 
 
 	//	Logger.print("acc_z hard = ");
@@ -467,16 +468,16 @@ void process2HzTask() {
 	//		Logger.println(UAVCore->currentAttitude->pitch);
 
 
-//	Logger.print("roll cmd  = ");
-//	Logger.println(UAVCore->attitudeCommanded->roll);
-//
-//	Logger.print("pitch cmd  = ");
-//	Logger.println(UAVCore->attitudeCommanded->pitch);
+	//	Logger.print("roll cmd  = ");
+	//	Logger.println(UAVCore->attitudeCommanded->roll);
+	//
+	//	Logger.print("pitch cmd  = ");
+	//	Logger.println(UAVCore->attitudeCommanded->pitch);
 
 	//			Logger.print("Gyro_z_rate = ");
 	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-//	Logger.print("Yaw desired = ");
-//	Logger.println(UAVCore->attitudeCommanded->yaw);
+	//	Logger.print("Yaw desired = ");
+	//	Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;

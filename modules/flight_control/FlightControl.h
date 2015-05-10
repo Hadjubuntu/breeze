@@ -14,9 +14,9 @@
 //double roll_trim = -2.7;
 //double pitch_trim = 3.72;
 //double yaw_trim = 6.8;
-double roll_trim = 0.0;
-double pitch_trim = 0.0;
-double yaw_trim = 0.0;
+double roll_trim = -0.3;
+double pitch_trim = -5.0; // -5.0
+double yaw_trim = -10.0;
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
@@ -89,7 +89,7 @@ double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
 double MAX_I = 10.0;
 
 double sumErrorYaw = 0.0;
-double P_YAW = 1.0f;
+double P_YAW = 0.6f;
 double I_YAW = 0.00; // TODO reactivate Integral yaw
 double MAX_I_YAW = 10.0;
 
@@ -114,7 +114,7 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	Vector3f desired_rate_ef;
 	desired_rate_ef.x = errorRoll * 5.0;
 	desired_rate_ef.y = errorPitch * 5.0;
-	desired_rate_ef.z = yawDesired * 7.0;
+	desired_rate_ef.z = yawDesired * 5.0;
 
 	// Contrain vector of desired rate in earth-frame
 	Vector3f desired_rate_ef_bounded = vectAbsBounded(desired_rate_ef, MAX_ROLL_RATE_DEG, MAX_PITCH_RATE_DEG, MAX_YAW_RATE_DEG);

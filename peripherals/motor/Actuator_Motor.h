@@ -29,6 +29,7 @@ int currentDeciThrustPercent;
  *
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
+float quadY_yaw_us = 1000;
 double motorMatrix[4][3];
 float boost_motors = 1.0;
 
@@ -73,6 +74,26 @@ void set_freq(uint16_t freq_hz) {
 	if (Firmware == QUADCOPTER) {
 		set_freq_ICR5(icr);
 	}
+}
+
+void setupServoYaw() {
+	// Pins on timer 3
+	pinMode(6, OUTPUT); // OC4A
+	pinMode(7, OUTPUT); // OC4B
+	pinMode(8, OUTPUT); // OC4C
+
+	// Timer 3
+	TCCR4A =((1<<WGM41));
+	TCCR4B = (1<<WGM43)|(1<<WGM42)|(1<<CS41);
+	OCR4A = 0xFFFF; // Init OCR registers to nil output signal
+	OCR4B = 0xFFFF;
+	OCR4C = 0xFFFF;
+
+	ICR4 = 40000; // 0.5us tick => 50hz freq
+
+	TCCR4A |= (1<<COM4A1);
+	TCCR4A |= (1<<COM4B1);
+	TCCR4A |= (1<<COM4C1);
 }
 
 
@@ -159,6 +180,8 @@ void setupMotors() {
 		}
 		else if (QuadType == Y) {
 
+			setupServoYaw();
+
 			motorMatrix[0][0] = 1; // roll
 			motorMatrix[0][1] = 2/3; // pitch
 			motorMatrix[0][2] = 0; // yaw
@@ -218,7 +241,10 @@ void motorUpdateCommandQuad()
 	OCR5A = thrustX3  << 1 ; // pin 46
 
 
-	if (QuadType != Y) {
+	if (QuadType == Y) {
+		servoAPM_write(6, quadY_yaw_us);
+	}
+	else {
 		OCR1C = thrustX4  << 1 ; // pin 13
 	}
 
@@ -272,14 +298,17 @@ void updateMotorRepartition() {
 		gouvernOut = gouvernCmd / 100.0;
 		yawOut = rubberCmd / 100.0;
 
+		// 1.09 on thrustX3 (?)
 		int deciThrustBoosted = (int)(boost_motors * (min_hover_decithrust + currentDeciThrustPercent));
-
 
 		thrustX1 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut)) ;
 		thrustX2 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut)) ;
-		thrustX3 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
+		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.05 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
 
-		if (QuadType != Y) {
+		if (QuadType == Y) {
+			quadY_yaw_us = 1000 + yawOut * 3.0;
+		}
+		else {
 			thrustX4 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut)) ;
 		}
 	}

@@ -115,12 +115,7 @@ ISR(TIMER5_CAPT_vect)
 
 
 void servoAPM_write(int pin, int period_us) {
-	if (period_us < MIN_SERVO_US) {
-		period_us = MIN_SERVO_US;
-	}
-	else if (period_us > MAX_SERVO_US) {
-		period_us = MAX_SERVO_US;
-	}
+	Bound(period_us, MIN_SERVO_US, MAX_SERVO_US);
 
 	uint16_t pwm = period_us << 1;
 	switch (pin) {
@@ -144,6 +139,17 @@ void servoAPM_write(int pin, int period_us) {
 		break;
 	case 3:
 		OCR3C = pwm;
+		break;
+
+		// Timer 4
+	case 6:
+		OCR4A = pwm;
+		break;
+	case 7:
+		OCR4B = pwm;
+		break;
+	case 8:
+		OCR4C = pwm;
 		break;
 
 
