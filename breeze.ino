@@ -257,14 +257,17 @@ void process50HzTask() {
 	double boost = 1.0;
 
 	if (Firmware == QUADCOPTER) {
-		if (abs(UAVCore->currentAttitude->roll) < 45.0
+		// If angle are not so aggressive and thrust over a minimum of 25%
+		// then define boost to motors tilt compensation
+		if (UAVCore->deciThrustPercent > 250
+				&& abs(UAVCore->currentAttitude->roll) < 45.0
 				&& abs(UAVCore->currentAttitude->pitch < 45.0)) {
 			float cos_roll = fast_cos(toRad(UAVCore->currentAttitude->roll));
 			float cos_pitch = fast_cos(toRad(UAVCore->currentAttitude->pitch));
 			float cos_tilt = cos_roll * cos_pitch;
 
 			boost = 1.0f / cos_tilt;
-			Bound(boost, 1.0, 1.6);
+			Bound(boost, 1.0, 1.35);
 		}
 	}
 	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
