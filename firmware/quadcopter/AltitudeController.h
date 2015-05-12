@@ -18,14 +18,14 @@ int climbrateToDeciThrottle(float climbrate_ms) {
 void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrustCmd) {
 
 	// Output
-	int _throttle_hover = 750;
+	int _throttle_hover = 500;
 	int p = 0;
 	int d = 0;
 
 	// Input
 	float K_climbrate = 1.0;
-	float Ki = 0.01;
-	int I_max = 100;
+	float Ki = 0.02;
+	int I_max = 200;
 
 	int errorDecimeter = (int) ((altSetPointCm - currentAltCm)/10.0);
 	float error_meters = errorDecimeter / 10.0;
@@ -39,7 +39,7 @@ void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrus
 	BoundAbs(i, I_max);
 
 	output_alt_controller = _throttle_hover + p + i + d;
-	Bound(output_alt_controller, 0, 900);
+	Bound(output_alt_controller, 0, 750);
 
 }
 

@@ -22,6 +22,7 @@
 #define SBUS_SIGNAL_FAILSAFE    0x03
 #define SBUS_AUTO_CHANNEL 		4
 #define BAUDRATE 100000
+#define SBUS_SIGNAL_LOST_DELAY_US 200000L
 #define port Serial3
 //#define ALL_CHANNELS
 

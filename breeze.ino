@@ -96,7 +96,8 @@ void reinitFlightModeParameters() {
 void updateRFRadioFutaba() {
 	if (USE_RADIO_FUTABA == 1) {
 		// Connexion lost with 
-		if (timeUs() - sBus.lastUpdateUs > S_TO_US) {
+		if (timeUs() - sBus.lastUpdateUs > SBUS_SIGNAL_LOST_DELAY_US ||
+				sBus.failsafe_status != SBUS_SIGNAL_OK) {
 			// failsafe
 			UAVCore->deciThrustPercent = 0;
 			UAVCore->deciThrustCmd = 0;
@@ -130,25 +131,30 @@ double Ki = 0.0;
 void updateRFRadoFutabaLowFreq() {
 	if (USE_RADIO_FUTABA == 1) {
 
-		// Autopilot switch
-		//------------------------------------------
-		// LOW means manual
-		UAVCore->autopilot = false;
-		int old_state = AUTOSPEED_CONTROLLER;
-		if (sBus.channels[SBUS_AUTO_CHANNEL] < 1000) {
-			// TODO remettre autopilot, test
-			// UAVCore->autopilot = false;
+		if (sBus.failsafe_status != SBUS_SIGNAL_OK) {
 			AUTOSPEED_CONTROLLER = 0;
 		}
-		// HIGH means auto
 		else {
-			// UAVCore->autopilot = true;
-			AUTOSPEED_CONTROLLER = 1;
-		}
+			// Autopilot switch
+			//------------------------------------------
+			// LOW means manual
+			UAVCore->autopilot = false;
+			int old_state = AUTOSPEED_CONTROLLER;
+			if (sBus.channels[SBUS_AUTO_CHANNEL] < 1000) {
+				// TODO remettre autopilot, test
+				// UAVCore->autopilot = false;
+				AUTOSPEED_CONTROLLER = 0;
+			}
+			// HIGH means auto
+			else {
+				// UAVCore->autopilot = true;
+				AUTOSPEED_CONTROLLER = 1;
+			}
 
-		if (AUTOSPEED_CONTROLLER != old_state) {
-			output_alt_controller = 0.0;
-			altSetPointCm = altCF + 80.0; // current altitude + 100 cm over
+			if (AUTOSPEED_CONTROLLER != old_state) {
+				output_alt_controller = 0.0;
+				altSetPointCm = altCF + 80.0; // current altitude + 100 cm over
+			}
 		}
 
 		// PID tuning
@@ -370,6 +376,7 @@ void process10HzTask() {
 	//		double heading = getCompassHeading(UAVCore->currentAttitude);
 	//		Logger.print("heading (deg) = ");
 	//		Logger.println(heading);
+
 }
 
 /*******************************************************************
@@ -401,7 +408,7 @@ void process5HzTask() {
 	//	Logger.print(kalX.getP00());
 	//	Logger.print(" | ");
 	//	Logger.println(kalX.getP11());
-	//#endif
+	//#endif	
 }
 
 
@@ -421,12 +428,12 @@ void process2HzTask() {
 
 	//	schedulerStats(); 
 	//		Logger.println("--------------------------");
-	//		Logger.print("X1 = ");
-	//		Logger.println(thrustX1);
-	//		Logger.print("X2 = ");
-	//		Logger.println(thrustX2);
-	//		Logger.print("X3 = ");
-	//		Logger.println(thrustX3);
+	//			Logger.print("X1 = ");
+	//			Logger.println(thrustX1);
+	//			Logger.print("X2 = ");
+	//			Logger.println(thrustX2);
+	//			Logger.print("X3 = ");
+	//			Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
