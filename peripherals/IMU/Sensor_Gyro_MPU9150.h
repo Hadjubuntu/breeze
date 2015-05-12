@@ -25,8 +25,10 @@ void MPU9150_setupCompass();
 // Low pass filters
 //-------------------------------------------
 LowPassFilter2pVector3f accel_filter;
+LowPassFilter2pVector3f gyro_filter;
 
 // Parameter of the IMU
+//-------------------------------------------
 // Thoses values change when config sent to the IMU is changed
 #define ACC_LSB_PER_G 16384.0f // 16384.0f/9.81f // 256.0f // 16384.0f
 #define GYRO_LSB_PER_G 16.4f // FS_SEL 0 131.0
@@ -57,12 +59,6 @@ float acc_z_on_efz = 0.0;
 float climb_rate = 0.0;
 
 float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
-float raw_accel_roll, raw_accel_pitch;
-
-// Complementary filter for raw data input
-//------------------------------
-double alphaAccelRate = 0.7;
-double alphaGyroRate = 0.7;
 
 // Acceleration CF filtered
 //------------------------------
@@ -92,13 +88,13 @@ void getIMUReadings(int Gyro_out[], int Accel_out[])
 
 // TODO Use fast_atan2 if not enough fast for CPU ?
 
-// Fast raw acceleration to roll conversion
-float rawAccToRoll(Vector3f acc3f) {
+// Fast vector acceleration to roll conversion
+float vectAccelToRoll(Vector3f acc3f) {
 	return atan2(acc3f.y, acc3f.z);
 }
 
-// Fast raw pitch to roll conversion
-float rawAccToPitch(Vector3f acc3f) {
+// Fast vector acceleration to pitch conversion
+float vectAccelToPitch(Vector3f acc3f) {
 	return atan2(acc3f.x, pythagorous2(acc3f.z, acc3f.y));
 }
 
@@ -108,7 +104,8 @@ void setupGyro() {
 
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 20);
+	accel_filter.set_cutoff_frequency(800, 15);
+	gyro_filter.set_cutoff_frequency(800, 15);
 
 
 	// Initialize IMU
@@ -127,11 +124,11 @@ void setupGyro() {
 
 	// Gyro and accelerometer configuration
 	//----------------------------------------
-//	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
-//	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
-//	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
-//	i2cData[3] = 0x00; // Set Accelerometer Full Scale Range to ±2g
-//	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, true)); // Write to all four registers at once
+	//	i2cData[0] = 7; // Set the sample rate to 1000Hz - 8kHz/(7+1) = 1000Hz
+	//	i2cData[1] = 0x00; // Disable FSYNC and set 1kHz Acc filtering, 1kHz Gyro filtering, 8 KHz sampling
+	//	i2cData[2] = 0x00; // Set Gyro Full Scale Range to ±250deg/s
+	//	i2cData[3] = 0x00; // Set Accelerometer Full Scale Range to ±2g
+	//	while (i2cWriteArray(MPU9150_CHIP_ADDRESS, 0x19, i2cData, 4, true)); // Write to all four registers at once
 
 	// 2000° range gyro
 	uint8_t data = 3 << 3;
@@ -144,7 +141,7 @@ void setupGyro() {
 	delay(10);
 
 	// 800 Hz filtering
-	 data = 1000 / 800 - 1;
+	data = 1000 / 800 - 1;
 	i2cWrite(MPU9150_CHIP_ADDRESS, 0x19, data, true);
 	delay(10);
 
@@ -224,8 +221,8 @@ void setupGyro() {
 	Logger.println(Accel_cal_z);
 	Logger.println("------------------------------");
 
-	init_roll = (RAD2DEG * rawAccToRoll(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
-	init_pitch = (RAD2DEG * rawAccToPitch(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
+	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
+	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / ACC_LSB_PER_G, Accel_cal_y / ACC_LSB_PER_G, Accel_cal_z / ACC_LSB_PER_G)));
 
 
 #else
@@ -279,15 +276,10 @@ void updateGyroData() {
 
 
 	// Low pass filter accelerometer
-    Vector3f accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+	Vector3f accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
 
-	raw_accel_pitch = rawAccToPitch(accelFiltered) * RAD2DEG;
-	Accel_pitch = (1.0-alphaAccelRate) * Accel_pitch + alphaAccelRate * raw_accel_pitch;
-
-
-	raw_accel_roll = rawAccToRoll(accelFiltered) * RAD2DEG;
-	Accel_roll = (1.0-alphaAccelRate) * Accel_roll + alphaAccelRate * raw_accel_roll;
-
+	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
+	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;
 
 	// Gyro data and filters
 	//-----------------------------------------------
@@ -295,13 +287,15 @@ void updateGyroData() {
 	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt_IMU; // Tilt positive when going nose goes high
 	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
 
-	// Complementary filter
-	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
-	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
-	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
+	// Low pass filter on gyro
+	Vector3f gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+
+	gyroXrate = gyroFiltered.x;
+	gyroYrate = gyroFiltered.y;
+	gyroZrate = gyroFiltered.z;
 
 	// Integrate gyro z rate to have approx yaw
-	gyroZangle += gyroZrate * dt_IMU;
+	gyroZangle = gyroZangle + gyroFiltered.z * dt_IMU;
 }
 
 

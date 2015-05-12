@@ -14,7 +14,6 @@
  * 7 -> ..
  */
 
-#include <Arduino.h>
 #include "arch/AVR/MCU/MCU.h"
 
 #define SBUS_SIGNAL_OK          0x00

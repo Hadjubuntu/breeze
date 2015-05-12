@@ -4,14 +4,6 @@
  * Breeze is an open-source autopilot for UAV.
  * ---------------------------------------------------------
  * 2014 (c) Adrien HADJ-SALAH
- *
- * - Airspeed on analog pin 1
- * - Gyro on SDA/SCL pin mega 20 21
- * - Serial1 for RF link on 18 19 Rx Tx (Xbee)
- * 
- ***********************************************************
- * Serial3 (Rx pin 15 mega) for SBUS Futaba,
- * Serial2 (Hardware Rx Pin 17 mega) for GPS
  * 
  * First succesful flight : 03/12/2014
  */
@@ -497,6 +489,9 @@ void process2HzTask() {
 	//	Logger.println(t_bf.x);
 	//		Logger.print("Climb_rate (cm/s) = ");
 	//		Logger.println(climb_rate*100.0);
+	
+//	Logger.print("gyroZangle = ");
+//	Logger.println(toDeg(gyroZangle));
 }
 
 
