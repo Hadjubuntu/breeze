@@ -27,10 +27,10 @@ public:
 		y = 0;
 
 		// TODO calibration matrix from measurement
-		P[0][0] = 0.2;
+		P[0][0] = 0.1;
 		P[0][1] = 0.0;
 		P[1][0] = 0.0;
-		P[1][1] = 0.3;
+		P[1][1] = 0.1;
 	};
 
 	/**

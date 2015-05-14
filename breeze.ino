@@ -41,7 +41,7 @@ void updateAttitude() {
 		UAVCore->headingCap = currentHeading;
 	}
 
-	UAVCore->currentAttitude->yaw = 0.0;
+	UAVCore->currentAttitude->yaw = toDeg(gyroZangle);
 
 	// Update angle rate
 	UAVCore->gyroXrate = gyroXrate;
@@ -257,7 +257,7 @@ void process50HzTask() {
 	if (Firmware == QUADCOPTER) {
 		// If angle are not so aggressive and thrust over a minimum of 25%
 		// then define boost to motors tilt compensation
-		if (UAVCore->deciThrustPercent > 250
+		if (UAVCore->deciThrustPercent > 100
 				&& abs(UAVCore->currentAttitude->roll) < 45.0
 				&& abs(UAVCore->currentAttitude->pitch < 45.0)) {
 			float cos_roll = fast_cos(toRad(UAVCore->currentAttitude->roll));
@@ -265,7 +265,7 @@ void process50HzTask() {
 			float cos_tilt = cos_roll * cos_pitch;
 
 			boost = 1.0f / cos_tilt;
-			Bound(boost, 1.0, 1.35);
+			Bound(boost, 1.0, 1.3);
 		}
 	}
 	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
@@ -368,7 +368,6 @@ void process10HzTask() {
 	//		double heading = getCompassHeading(UAVCore->currentAttitude);
 	//		Logger.print("heading (deg) = ");
 	//		Logger.println(heading);
-
 }
 
 /*******************************************************************
@@ -420,12 +419,12 @@ void process2HzTask() {
 
 	//	schedulerStats(); 
 	//		Logger.println("--------------------------");
-	//			Logger.print("X1 = ");
-	//			Logger.println(thrustX1);
-	//			Logger.print("X2 = ");
-	//			Logger.println(thrustX2);
-	//			Logger.print("X3 = ");
-	//			Logger.println(thrustX3);
+//				Logger.print("X1 = ");
+//				Logger.println(thrustX1);
+//				Logger.print("X2 = ");
+//				Logger.println(thrustX2);
+//				Logger.print("X3 = ");
+//				Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
@@ -448,17 +447,17 @@ void process2HzTask() {
 	//	Logger.println(sumErrorPitch);
 
 	//	Logger.println(Ki);
-
-	//		Logger.print("x_rate = ");
-	//		Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-	//		Logger.print("roll = ");
-	//		Logger.println(UAVCore->currentAttitude->roll);
+//
+//			Logger.print("x_rate = ");
+//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
+//			Logger.print("roll = ");
+//			Logger.println(UAVCore->currentAttitude->roll);
 	//	
 
 	//			Logger.print("y_rate = ");
-	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
-	//				Logger.print("pitch = ");
-	//				Logger.println(UAVCore->currentAttitude->pitch);
+//	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
+//					Logger.print("pitch = ");
+//					Logger.println(UAVCore->currentAttitude->pitch);
 
 
 	//	Logger.print("acc_z hard = ");
@@ -466,9 +465,7 @@ void process2HzTask() {
 	//			+ abs(sin_roll) * abs(sin_roll))); 
 
 	//
-	//		Logger.print("pitch = ");
-	//		Logger.println(UAVCore->currentAttitude->pitch);
-
+	
 
 	//	Logger.print("roll cmd  = ");
 	//	Logger.println(UAVCore->attitudeCommanded->roll);
@@ -490,8 +487,8 @@ void process2HzTask() {
 	//		Logger.print("Climb_rate (cm/s) = ");
 	//		Logger.println(climb_rate*100.0);
 	
-//	Logger.print("gyroZangle = ");
-//	Logger.println(toDeg(gyroZangle));
+	Logger.print("inertial yaw = ");
+	Logger.println(ins_yaw);
 }
 
 

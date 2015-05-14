@@ -104,8 +104,8 @@ void setupGyro() {
 
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 15);
-	gyro_filter.set_cutoff_frequency(800, 15);
+	accel_filter.set_cutoff_frequency(800, 20);
+	gyro_filter.set_cutoff_frequency(800, 20);
 
 
 	// Initialize IMU
@@ -140,7 +140,7 @@ void setupGyro() {
 	i2cWrite(MPU9150_CHIP_ADDRESS, 0x1C, data, true);
 	delay(10);
 
-	// 800 Hz filtering
+	// 800 Hz sample rate
 	data = 1000 / 800 - 1;
 	i2cWrite(MPU9150_CHIP_ADDRESS, 0x19, data, true);
 	delay(10);
@@ -287,15 +287,21 @@ void updateGyroData() {
 	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt_IMU; // Tilt positive when going nose goes high
 	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
 
-	// Low pass filter on gyro
-	Vector3f gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+//	// Low pass filter on gyro
+//	Vector3f gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+//
+//	gyroXrate = gyroFiltered.x;
+//	gyroYrate = gyroFiltered.y;
+//	gyroZrate = gyroFiltered.z;
 
-	gyroXrate = gyroFiltered.x;
-	gyroYrate = gyroFiltered.y;
-	gyroZrate = gyroFiltered.z;
+	double alphaGyroRate = 0.7;
+	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
+	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
+	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
 
-	// Integrate gyro z rate to have approx yaw
-	gyroZangle = gyroZangle + gyroFiltered.z * dt_IMU;
+	// Integrate gyro z rate to have approx yaw based on inertial data
+	gyroZangle = gyroZangle + gyroZrate * dt_IMU;
+	NormRadAngle(gyroZangle);
 }
 
 
