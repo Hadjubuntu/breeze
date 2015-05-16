@@ -13,33 +13,53 @@
 
 #include "math/Math.h"
 
+// Global variables
+//---------------------------------------
 #define DATA_BUFFER_SIZE 50
 #define NB_BYTES_PER_PACKET 85
 
 int dataIdx = 0;
-
-
+int sendingIdx = 0;
 Vector3f datas[DATA_BUFFER_SIZE];
 
-void addData(double pX, double pY, double pZ) {
-	if (dataIdx < DATA_BUFFER_SIZE) {
+
+
+/****************************************************
+ * Add data to vector3f until the stack is full
+ ****************************************************/
+void addDataToVector3f(Vector3f vector[], int *i, double pX, double pY, double pZ) {
+	if ((*i) < DATA_BUFFER_SIZE) {
 		Vector3f el;
 		el.x = (int) (pX * 10);
 		el.y = (int) (pY * 10);
 		el.z = (int) (pZ * 10);
 
-		datas[dataIdx] = el;
-		dataIdx ++;
+		vector[(*i)] = el;
+		(*i) ++;
 	}
 	// Otherwise throw error buffer overflow
 }
 
-// Try to send data in buffer
+void addDataPlot(double pX, double pY, double pZ) {
+	addDataToVector3f(datas, &dataIdx, pX, pY, pZ);
+}
+
+/****************************************************
+ * Send buffer of those data until packet is full
+ ****************************************************/
 void updateLowFreqRFPlot() {
+
+	// Prepare variables
+	//---------------------------------------
 	int nbBytes = 0;
-	int sendingIdx = 0;
 	char buf[NB_BYTES_PER_PACKET];
 
+	// Packet header
+	//---------------------------------------
+	sprintf(buf, "%s", "plot");
+
+	// While the packet is not too big add some data
+	//---------------------------------------
 	while (nbBytes < NB_BYTES_PER_PACKET
 			&& sendingIdx < dataIdx) {
 
@@ -50,18 +70,35 @@ void updateLowFreqRFPlot() {
 				toCenti(datas[sendingIdx].z));
 
 		// TODO define cbyte with data inserted
-		int cByte = 5*3+3;
+		int cByte = 5*3 + 3;
 		nbBytes += cByte;
 		sendingIdx ++;
 	}
 
 	sprintf(buf, "%s|\n", buf);
 
+	// Write on UART 1
+	Serial1.write(buf);
+
+
 	// TEST this function
 	// SEND those data to GCS via RFLink2
 	// UPDATE data FIFO updateFifo = sublist(sendingIdx, to the end)
-}
 
+	// Copy rest of the data at the beginning of the FIFO
+	//---------------------------------------
+	int j = 0;
+
+	for (int i = sendingIdx; i < dataIdx; i ++) {
+		datas[i] = vect3fInstance(datas[i].x, datas[i].y, datas[i].z);
+		j ++;
+	}
+	dataIdx = j;
+
+	if (j == 0) {
+		sendingIdx = 0;
+	}
+}
 
 
 #endif /* MODULES_RFLINK_RFPLOT_H_ */

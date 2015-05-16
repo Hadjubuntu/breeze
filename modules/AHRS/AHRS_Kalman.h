@@ -19,8 +19,6 @@
 //-------------------------------------------
 Kalman kalX, kalY;
 
-// Internial yaw
-float ins_yaw = 0.0;
 
 void initAHRS(float initRoll, float initPitch) {
 	kalX.setOutput(initRoll);

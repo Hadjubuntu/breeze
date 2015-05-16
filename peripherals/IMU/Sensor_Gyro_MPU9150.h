@@ -26,6 +26,7 @@ void MPU9150_setupCompass();
 //-------------------------------------------
 LowPassFilter2pVector3f accel_filter;
 LowPassFilter2pVector3f gyro_filter;
+Vector3f gyroFiltered;
 
 // Parameter of the IMU
 //-------------------------------------------
@@ -104,8 +105,8 @@ void setupGyro() {
 
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 20);
-	gyro_filter.set_cutoff_frequency(800, 20);
+	accel_filter.set_cutoff_frequency(800, 10);
+	gyro_filter.set_cutoff_frequency(800, 127);
 
 
 	// Initialize IMU
@@ -287,9 +288,9 @@ void updateGyroData() {
 	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ GYRO_LSB_PER_G) * dt_IMU; // Tilt positive when going nose goes high
 	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
 
-//	// Low pass filter on gyro
-//	Vector3f gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
-//
+	// Low pass filter on gyro (DESACTIVATED bad results)
+//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+
 //	gyroXrate = gyroFiltered.x;
 //	gyroYrate = gyroFiltered.y;
 //	gyroZrate = gyroFiltered.z;

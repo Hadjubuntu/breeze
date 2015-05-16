@@ -15,6 +15,8 @@
  */
 
 #include "arch/AVR/MCU/MCU.h"
+#include "Breeze.h"
+#include "Common.h"
 
 #define SBUS_SIGNAL_OK          0x00
 #define SBUS_SIGNAL_LOST        0x01
@@ -346,5 +348,6 @@ bool setupRadioFutaba() {
 		return true;
 	}
 }
+
 
 #endif

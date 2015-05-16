@@ -110,16 +110,18 @@ void updateRFRadioFutaba() {
 
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
-				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * 0.43; // 0.45
-				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * 0.43;
-				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * 0.45;
+				double factorSmooth = 0.35; // 0.43 is good
+				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * factorSmooth; 
+				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * factorSmooth;
+				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * factorSmooth;
 			}
 		}
 	}
 }
 
-double Ki = 0.0;
 
+// Update values with optionnal channels
+//------------------------------------------------
 void updateRFRadoFutabaLowFreq() {
 	if (USE_RADIO_FUTABA == 1) {
 
@@ -149,47 +151,60 @@ void updateRFRadoFutabaLowFreq() {
 			}
 		}
 
-		// PID tuning
+		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-
 		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // quad : 1.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
-		param[ID_G_I_ROLL] = Ki;
 
 		param[ID_G_P_PITCH] = factor;
 		param[ID_G_D_PITCH] = factor * 0.01 * 0.1;
-		param[ID_G_I_PITCH] = Ki;
 
 		if (sBus.channels[7] > 1300) {
-			Ki = 0.1; // 0.1
+			param[ID_G_I_ROLL] = 0.1;
+			param[ID_G_I_PITCH] = 0.1;
 		}
 		else if (sBus.channels[7] > 400) {
-			Ki = 0.05; // 0.05
+			param[ID_G_I_ROLL] = 0.05;
+			param[ID_G_I_PITCH] = 0.05;
 		}
 		else {
-			Ki = 0.0;
+			param[ID_G_I_ROLL] = 0.0;
+			param[ID_G_I_PITCH] = 0.0;
+		}
+		
+		if (sBus.channels[6] > 1000) {
+			YAW_HELPER = 1;
+		}
+		else {
+			YAW_HELPER = 0;
 		}
 
 
-		//		// Flaps
-		//		//------------------------------------------
-		//		switch (sBus.channels[7]) {
-		//		case 144:
-		//			flapsCmd = 0;
-		//			break;
-		//		case 1024:
-		//			flapsCmd = 50;
-		//			break;
-		//		case 1904:
-		//			flapsCmd = 90;
-		//			break;
-		//		default:
-		//			flapsCmd = 0;
-		//			break;
-		//		}
+		if (Firmware == FIXED_WING) {
+			// Flaps TODO find a channel for flaps
+			//------------------------------------------
+			switch (sBus.channels[8]) {
+			case 144:
+				flapsCmd = 0;
+				break;
+			case 1024:
+				flapsCmd = 50;
+				break;
+			case 1904:
+				flapsCmd = 90;
+				break;
+			default:
+				flapsCmd = 0;
+				break;
+			}
+		}
 	}
 }
+
+
+
+
 
 
 /*******************************************************************
@@ -255,7 +270,7 @@ void process50HzTask() {
 	double boost = 1.0;
 
 	if (Firmware == QUADCOPTER) {
-		// If angle are not so aggressive and thrust over a minimum of 25%
+		// If angle are not so aggressive and thrust over a minimum of 10%
 		// then define boost to motors tilt compensation
 		if (UAVCore->deciThrustPercent > 100
 				&& abs(UAVCore->currentAttitude->roll) < 45.0
@@ -484,11 +499,14 @@ void process2HzTask() {
 	//	t.z = 1;
 	//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
 	//	Logger.println(t_bf.x);
-	//		Logger.print("Climb_rate (cm/s) = ");
-	//		Logger.println(climb_rate*100.0);
-	
-	Logger.print("inertial yaw = ");
-	Logger.println(ins_yaw);
+//			Logger.print("Climb_rate (cm/s) = ");
+//			Logger.println(climb_rate*100.0);
+//	
+//	Logger.print("inertial yaw = ");
+//	Logger.println(UAVCore->currentAttitude->yaw);
+//	
+//	Logger.print("Gyro X error (filter vs mean) = ");
+//	Logger.println(gyroFiltered.x - gyroXrate);
 }
 
 

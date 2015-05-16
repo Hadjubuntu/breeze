@@ -16,7 +16,7 @@
 //double yaw_trim = 6.8;
 double roll_trim = 0.0;
 double pitch_trim = 0.0; // -5.0
-double yaw_trim = -10.0; // - 10
+double yaw_trim = 0.0; //-10.0; // - 10
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
@@ -89,9 +89,13 @@ double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
 double MAX_I = 10.0;
 
 double sumErrorYaw = 0.0;
-double P_YAW = 0.6f;
-double I_YAW = 0.00; // TODO reactivate Integral yaw
-double MAX_I_YAW = 10.0;
+double P_YAW = 6.0f;
+double D_YAW = 0.03f;
+double yawDTerm = 0.0;
+double previousYawRateError = 0.0;
+double I_YAW = 0.045f; // TODO reactivate Integral yaw
+double MAX_I_YAW = 5;
+int YAW_HELPER = 0; // Turns to 1 to have some yaw compensation
 
 #define ATTITUDE_CONTROL_DEG 57.29578f
 #define MAX_ROLL_RATE_DEG 180.0f
@@ -107,7 +111,7 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	// Compute error between attitude commanded and attitude measured
 	double errorRoll = att_cmd->roll - att->roll + roll_trim;
 	double errorPitch = att_cmd->pitch - att->pitch + pitch_trim;
-	double yawDesired = att_cmd->yaw + yaw_trim; // - att->yaw
+	double yawDesired = att_cmd->yaw - YAW_HELPER * att->yaw + yaw_trim;
 
 #if Firmware == QUADCOPTER
 
@@ -137,16 +141,25 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	BoundAbs(sumErrorPitch, MAX_I);
 	BoundAbs(sumErrorYaw, MAX_I_YAW);
 
+	// At low thrust, reinit yaw heading only
+	if (deciThrustPercent < 100) {
+		sumErrorYaw = 0;
+	}
+
+	yawDTerm = 0.4 * yawDTerm + 0.6 * (rateYawError - previousYawRateError) / G_Dt;
+
 	// Compute output on roll, pitch and yaw axis
 	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL] + sumErrorRoll * param[ID_G_I_ROLL];
 	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH] + sumErrorPitch * param[ID_G_I_PITCH];
-	double outputYawCmd = rateYawError * P_YAW + sumErrorYaw * I_YAW;
+	double outputYawCmd = rateYawError * P_YAW + sumErrorYaw * I_YAW + yawDTerm * D_YAW;
 
 	// Constrain output
 	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
 	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
 	(*rubberCmd) = (int) constrain(outputYawCmd * 100.0, -9000, 9000);
 
+
+	previousYawRateError = rateYawError;
 
 #elif Firmware == FIXED_WING
 
