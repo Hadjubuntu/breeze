@@ -301,7 +301,7 @@ void updateGyroData() {
 	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
 
 	// Integrate gyro z rate to have approx yaw based on inertial data
-	gyroZangle = gyroZangle + gyroZrate * dt_IMU;
+	gyroZangle = 0.99 * gyroZangle + gyroZrate * dt_IMU;
 	NormRadAngle(gyroZangle);
 }
 

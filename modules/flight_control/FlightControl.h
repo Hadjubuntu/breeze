@@ -89,8 +89,8 @@ double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
 double MAX_I = 10.0;
 
 double sumErrorYaw = 0.0;
-double P_YAW = 6.0f;
-double D_YAW = 0.03f;
+double P_YAW = 4.0f;
+double D_YAW = 0.02f;
 double yawDTerm = 0.0;
 double previousYawRateError = 0.0;
 double I_YAW = 0.045f; // TODO reactivate Integral yaw

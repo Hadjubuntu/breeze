@@ -99,7 +99,7 @@ void updateRFRadioFutaba() {
 		else {
 			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
 			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
-			UAVCore->attitudeCommanded->yaw = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
+			double yawRate = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
 
 			float sbus_throttle = max((sBus.channels[2]-365)/1.38, 0);
 			if (AUTOSPEED_CONTROLLER == 0) {
@@ -113,7 +113,15 @@ void updateRFRadioFutaba() {
 				double factorSmooth = 0.35; // 0.43 is good
 				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * factorSmooth; 
 				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * factorSmooth;
-				UAVCore->attitudeCommanded->yaw = UAVCore->attitudeCommanded->yaw * factorSmooth;
+				yawRate = yawRate * factorSmooth;
+				
+				if (abs(yawRate) < 1.0) {
+					yawRate = 0.0;
+				}
+				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.02;
+				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
+				NormRadAngle(yawCmdRad);
+				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
 			}
 		}
 	}
@@ -490,8 +498,8 @@ void process2HzTask() {
 
 	//			Logger.print("Gyro_z_rate = ");
 	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-	//	Logger.print("Yaw desired = ");
-	//	Logger.println(UAVCore->attitudeCommanded->yaw);
+		Logger.print("Yaw desired = ");
+		Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;
@@ -521,7 +529,7 @@ void process1HzTask() {
 	// Current position if GPS used : currentPosition
 
 	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
-			(int)(UAVCore->headingCap),
+			(int)(UAVCore->currentAttitude->yaw),
 			(int)(altitudeBarometer->getAverage()), toCenti(airspeed_ms_mean->getAverage()),
 			currentPosition.lat, currentPosition.lon,
 			(int)angleDiff, UAVCore->autopilot, toCenti(accNoise));
