@@ -26,6 +26,7 @@ void MPU9150_setupCompass();
 //-------------------------------------------
 LowPassFilter2pVector3f accel_filter;
 LowPassFilter2pVector3f gyro_filter;
+Vector3f accelFiltered;
 Vector3f gyroFiltered;
 
 // Parameter of the IMU
@@ -277,7 +278,7 @@ void updateGyroData() {
 
 
 	// Low pass filter accelerometer
-	Vector3f accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
 
 	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
 	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;

@@ -161,7 +161,7 @@ void updateRFRadoFutabaLowFreq() {
 
 		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // quad : 1.0
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // quad : 1.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 
@@ -314,11 +314,7 @@ void process50HzTask() {
 void updateClimbRate() {
 	//----------------------------------------------
 	// Update acceleration on z-axis in earth-frame
-	Vector3f vect_acc_bf;
-	vect_acc_bf.x = rel_accX;
-	vect_acc_bf.y = rel_accY;
-	vect_acc_bf.z = rel_accZ;
-	Vector3f vect_acc_ef = rot_bf_ef(vect_acc_bf, UAVCore->currentAttitude);
+	Vector3f vect_acc_ef = rot_bf_ef(accelFiltered, UAVCore->currentAttitude);
 
 	if (acc_z_initialized == false) {
 		initial_acc_z_bias = (vect_acc_ef.z-1.0);
@@ -379,6 +375,7 @@ void process20HzTask() {
 /*******************************************************************
  * 10Hz task (100ms)
  ******************************************************************/
+
 void process10HzTask() {
 	// Update low priority rf com
 	//------------------------------------------------------------
@@ -396,7 +393,6 @@ void process10HzTask() {
 /*******************************************************************
  * 5Hz task (200ms)
  ******************************************************************/
-
 void process5HzTask() {
 	// Add speed calculated by the GPS
 	if (USE_GPS_NAVIGUATION) {
@@ -422,7 +418,7 @@ void process5HzTask() {
 	//	Logger.print(kalX.getP00());
 	//	Logger.print(" | ");
 	//	Logger.println(kalX.getP11());
-	//#endif	
+	//#endif
 }
 
 
@@ -498,8 +494,8 @@ void process2HzTask() {
 
 	//			Logger.print("Gyro_z_rate = ");
 	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-		Logger.print("Yaw desired = ");
-		Logger.println(UAVCore->attitudeCommanded->yaw);
+//		Logger.print("Yaw desired = ");
+//		Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;
