@@ -161,7 +161,7 @@ void updateRFRadoFutabaLowFreq() {
 
 		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // quad : 1.0
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 
