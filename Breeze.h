@@ -23,11 +23,11 @@
 #include "Common.h"
 #include "peripherals/servo/Sensor_Servo.h"
 
-#if GYRO_TYPE == T_GYRO_ITG3200
-#include "peripherals/IMU/Sensor_Gyro_10DOF.h"
-#elif GYRO_TYPE == T_GYRO_MPU9150
-#include "peripherals/IMU/Sensor_Gyro_MPU9150.h"
-#endif
+//#if GYRO_TYPE == T_GYRO_ITG3200
+//#include "peripherals/IMU/Sensor_Gyro_10DOF.h"
+//#elif GYRO_TYPE == T_GYRO_MPU9150
+//#include "peripherals/IMU/Sensor_Gyro_MPU9150.h"
+//#endif
 
 #include "peripherals/range_detector/Sensor_RangeDetector.h"
 #include "peripherals/motor/Actuator_Motor.h"

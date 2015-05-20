@@ -375,4 +375,16 @@ float fast_cos(float x) {
 	return fast_sin(x + PI/2.0);
 }
 
+
+// TODO Use fast_atan2 if not enough fast for CPU ?
+// Fast vector acceleration to roll conversion
+float vectAccelToRoll(Vector3f acc3f) {
+	return atan2(acc3f.y, acc3f.z);
+}
+
+// Fast vector acceleration to pitch conversion
+float vectAccelToPitch(Vector3f acc3f) {
+	return atan2(acc3f.x, pythagorous2(acc3f.z, acc3f.y));
+}
+
 #endif /* MATH_H_ */

@@ -17,6 +17,8 @@
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 #include "modules/AHRS/AHRS_Kalman.h"
 
+#include "peripherals/IMU/Sensor_IMU.h"
+
 
 // Skeleton functions
 void measureCriticalSensors();
@@ -114,7 +116,7 @@ void updateRFRadioFutaba() {
 				UAVCore->attitudeCommanded->roll = UAVCore->attitudeCommanded->roll * factorSmooth; 
 				UAVCore->attitudeCommanded->pitch = UAVCore->attitudeCommanded->pitch * factorSmooth;
 				yawRate = yawRate * factorSmooth;
-				
+
 				if (abs(yawRate) < 1.0) {
 					yawRate = 0.0;
 				}
@@ -180,7 +182,7 @@ void updateRFRadoFutabaLowFreq() {
 			param[ID_G_I_ROLL] = 0.0;
 			param[ID_G_I_PITCH] = 0.0;
 		}
-		
+
 		if (sBus.channels[6] > 1000) {
 			YAW_HELPER = 1;
 		}
@@ -327,10 +329,10 @@ void updateClimbRate() {
 	// climb rate = K ( previous + new_acc * dt) with dt = 0.02
 	climb_rate = 0.9*(climb_rate + G_MASS *(acc_z_on_efz-1.0) * 0.02);
 
-#if MEASURE_VIBRATION
-	// Measure vibration
-	accNoise = sqrt(pow2(vect_acc_ef.x) + pow2(vect_acc_ef.y) + pow2(vect_acc_ef.z));
-#endif
+	if (imu.measureVibration()) {
+		// Measure vibration
+		accNoise = sqrt(pow2(vect_acc_ef.x) + pow2(vect_acc_ef.y) + pow2(vect_acc_ef.z));
+	}
 }
 
 /*******************************************************************
@@ -405,7 +407,7 @@ void process5HzTask() {
 	updateRFRadoFutabaLowFreq();
 
 
-	//#if MEASURE_VIBRATION
+	//if (imu.measureVibration()) {
 	//	Logger.print("Acc_noise= ");
 	//	Logger.print(accNoise);
 	//	Logger.print(" | roll= ");
@@ -418,7 +420,7 @@ void process5HzTask() {
 	//	Logger.print(kalX.getP00());
 	//	Logger.print(" | ");
 	//	Logger.println(kalX.getP11());
-	//#endif
+	//}
 }
 
 
@@ -438,12 +440,12 @@ void process2HzTask() {
 
 	//	schedulerStats(); 
 	//		Logger.println("--------------------------");
-//				Logger.print("X1 = ");
-//				Logger.println(thrustX1);
-//				Logger.print("X2 = ");
-//				Logger.println(thrustX2);
-//				Logger.print("X3 = ");
-//				Logger.println(thrustX3);
+	//				Logger.print("X1 = ");
+	//				Logger.println(thrustX1);
+	//				Logger.print("X2 = ");
+	//				Logger.println(thrustX2);
+	//				Logger.print("X3 = ");
+	//				Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
@@ -466,17 +468,17 @@ void process2HzTask() {
 	//	Logger.println(sumErrorPitch);
 
 	//	Logger.println(Ki);
-//
-//			Logger.print("x_rate = ");
-//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-//			Logger.print("roll = ");
-//			Logger.println(UAVCore->currentAttitude->roll);
+	//
+	//			Logger.print("x_rate = ");
+	//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
+				Logger.print("roll = ");
+				Logger.println(UAVCore->currentAttitude->roll);
 	//	
 
 	//			Logger.print("y_rate = ");
-//	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
-//					Logger.print("pitch = ");
-//					Logger.println(UAVCore->currentAttitude->pitch);
+	//	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
+	//					Logger.print("pitch = ");
+	//					Logger.println(UAVCore->currentAttitude->pitch);
 
 
 	//	Logger.print("acc_z hard = ");
@@ -484,7 +486,7 @@ void process2HzTask() {
 	//			+ abs(sin_roll) * abs(sin_roll))); 
 
 	//
-	
+
 
 	//	Logger.print("roll cmd  = ");
 	//	Logger.println(UAVCore->attitudeCommanded->roll);
@@ -494,8 +496,8 @@ void process2HzTask() {
 
 	//			Logger.print("Gyro_z_rate = ");
 	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-//		Logger.print("Yaw desired = ");
-//		Logger.println(UAVCore->attitudeCommanded->yaw);
+	//		Logger.print("Yaw desired = ");
+	//		Logger.println(UAVCore->attitudeCommanded->yaw);
 
 	//	Vector3f t;
 	//	t.x = 1;
@@ -503,14 +505,14 @@ void process2HzTask() {
 	//	t.z = 1;
 	//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
 	//	Logger.println(t_bf.x);
-//			Logger.print("Climb_rate (cm/s) = ");
-//			Logger.println(climb_rate*100.0);
-//	
-//	Logger.print("inertial yaw = ");
-//	Logger.println(UAVCore->currentAttitude->yaw);
-//	
-//	Logger.print("Gyro X error (filter vs mean) = ");
-//	Logger.println(gyroFiltered.x - gyroXrate);
+	//			Logger.print("Climb_rate (cm/s) = ");
+	//			Logger.println(climb_rate*100.0);
+	//	
+	//	Logger.print("inertial yaw = ");
+	//	Logger.println(UAVCore->currentAttitude->yaw);
+	//	
+	//	Logger.print("Gyro X error (filter vs mean) = ");
+	//	Logger.println(gyroFiltered.x - gyroXrate);
 }
 
 

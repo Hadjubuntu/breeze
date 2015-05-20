@@ -8,13 +8,10 @@
 #ifndef SENSOR_GYRO_MPU9150_H_
 #define SENSOR_GYRO_MPU9150_H_
 
-#include "arch/AVR/MCU/MCU.h"
-#include "arch/AVR/wire/Wire.h"
-#include "Common.h"
-#include "arch/AVR/I2C/I2C.h"
-#include "math/LowPassFilter.h"
+#include "IMUClass.h"
 
 #define MPU9150_CHIP_ADDRESS 0x68
+#define MPU9150_WHO_IM_AM_REG 0x75
 #define AK8975_MAG_ADDRESS 0x0C
 #define MEASURE_VIBRATION 1
 #define ENABLE_IMU_CALIBRATION 1
@@ -88,21 +85,10 @@ void getIMUReadings(int Gyro_out[], int Accel_out[])
 	// tempRaw = (i2cData[6] << 8) | i2cData[7];
 }
 
-// TODO Use fast_atan2 if not enough fast for CPU ?
-
-// Fast vector acceleration to roll conversion
-float vectAccelToRoll(Vector3f acc3f) {
-	return atan2(acc3f.y, acc3f.z);
-}
-
-// Fast vector acceleration to pitch conversion
-float vectAccelToPitch(Vector3f acc3f) {
-	return atan2(acc3f.x, pythagorous2(acc3f.z, acc3f.y));
-}
 
 //-------------------------------------------
 // Initialize IMU with calibration values
-void setupGyro() {
+void setupGyroC() {
 
 	// Prepare filters
 	//-------------------------------------------------------
@@ -256,7 +242,7 @@ Acc cal x; y; z : 34.00; 9.00; -243.00
 // To transform acceleromter data into roll, pitch :
 // See http://stackoverflow.com/questions/3755059/3d-accelerometer-calculate-the-orientation
 // or http://theccontinuum.com/2012/09/24/arduino-imu-pitch-roll-from-accelerometer/
-void updateGyroData() {
+void updateGyroDataC() {
 	long currentTimeUs = micros() ;
 	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
 	if (lastUpdateAHRS_Us == 0) {
@@ -290,11 +276,11 @@ void updateGyroData() {
 	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
 
 	// Low pass filter on gyro (DESACTIVATED bad results)
-//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+	//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
 
-//	gyroXrate = gyroFiltered.x;
-//	gyroYrate = gyroFiltered.y;
-//	gyroZrate = gyroFiltered.z;
+	//	gyroXrate = gyroFiltered.x;
+	//	gyroYrate = gyroFiltered.y;
+	//	gyroZrate = gyroFiltered.z;
 
 	double alphaGyroRate = 0.7;
 	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;

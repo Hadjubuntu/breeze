@@ -65,6 +65,10 @@ public:
 		print(a);
 		print("\n");
 	}
+	void println(byte a) {
+		print(a);
+		print("\n");
+	}
 	void println(float a) {
 		print(a);
 		print("\n");

@@ -20,7 +20,12 @@
 #include "math/LowPassFilter.h"
 
 
-#define MEASURE_VIBRATION 1
+#define ITG3200_CHIP_ADDRESS 0x68
+#define ITG3200_WHO_IM_AM_REG 0x0
+#define ADXL345_CHIP_ADDRESS 0x53
+
+
+#define MEASURE_VIBRATION 0
 #define ENABLE_IMU_CALIBRATION 1
 
 #define ENABLE_COMPASS 0
@@ -30,6 +35,7 @@ void MPU9150_setupCompass();
 //-------------------------------------------
 LowPassFilter2pVector3f accel_filter;
 LowPassFilter2pVector3f gyro_filter;
+Vector3f accelFiltered;
 Vector3f gyroFiltered;
 
 // Parameter of the IMU
@@ -76,7 +82,7 @@ float Accel_roll = 0;
 void getGyroscopeReadings(int Gyro_out[])
 {
 	byte buffer[6];
-	readFrom(0x68,0x1D,6,buffer);
+	readFrom(ITG3200_CHIP_ADDRESS,0x1D,6,buffer);
 
 	Gyro_out[0]=(((int)buffer[0]) << 8 ) | buffer[1];
 	Gyro_out[1]=(((int)buffer[2]) << 8 ) | buffer[3];
@@ -88,7 +94,7 @@ void getGyroscopeReadings(int Gyro_out[])
 void getAccelerometerReadings(int Accel_out[])
 {
 	byte buffer[6];
-	readFrom(0x53,0x32,6,buffer);
+	readFrom(ADXL345_CHIP_ADDRESS,0x32,6,buffer);
 
 	Accel_out[0]=(((int)buffer[1]) << 8 ) | buffer[0];
 	Accel_out[1]=(((int)buffer[3]) << 8 ) | buffer[2];
@@ -119,32 +125,32 @@ float vectAccelToPitch(Vector3f acc3f) {
 
 //-------------------------------------------
 // Initialize IMU with calibration values
-void setupGyro() {
+void setupGyroC() {
 
 	// Prepare filters
-	//-------------------------------------------------------
+	//---------------------------------------------
 	accel_filter.set_cutoff_frequency(800, 20);
 	gyro_filter.set_cutoff_frequency(800, 127);
 
 
-	//configuration gyroscope et accelerometre
-	//----------------------------------------
+	// Configure accelerometer and gyroscope
+	//---------------------------------------------
 
-	writeTo(0x53,0x2D,0x00); // power ctlr
+	writeTo(ADXL345_CHIP_ADDRESS,0x2D,0x00); // power ctlr
 	delay(5);
-	writeTo(0x53,0x2D,0xff); // power ctlr
+	writeTo(ADXL345_CHIP_ADDRESS,0x2D,0xff); // power ctlr
 	delay(5);
-	writeTo(0x53,0x2D,0x08); //accel en mode mesure
+	writeTo(ADXL345_CHIP_ADDRESS,0x2D,0x08); //accel en mode mesure
 	delay(5);
-	writeTo(0x53,0x31,0b00); //accel 11 bits - +/-2g
+	writeTo(ADXL345_CHIP_ADDRESS,0x31,0b00); //accel 11 bits - +/-2g
 	delay(5);
-	writeTo(0x53,0x2c,0x0d); // 800 hz output
+	writeTo(ADXL345_CHIP_ADDRESS,0x2c,0x0d); // 800 hz output
 	delay(5);
 
 
-	writeTo(0x68,0x16,0x1A); //gyro +/-2000 deg/s + passe-bas a 100Hz
+	writeTo(ITG3200_CHIP_ADDRESS,0x16,0x1A); //gyro +/-2000 deg/s + passe-bas a 100Hz
 	delay(5);
-	writeTo(0x68,0x15,0x09); //gyro echantillonage a 100Hz
+	writeTo(ITG3200_CHIP_ADDRESS,0x15,0x09); //gyro echantillonage a 100Hz
 
 	delay(200);
 
@@ -238,7 +244,7 @@ Acc cal x; y; z : 34.00; 9.00; -243.00
 // To transform acceleromter data into roll, pitch :
 // See http://stackoverflow.com/questions/3755059/3d-accelerometer-calculate-the-orientation
 // or http://theccontinuum.com/2012/09/24/arduino-imu-pitch-roll-from-accelerometer/
-void updateGyroData() {
+void updateGyroDataC() {
 	long currentTimeUs = micros() ;
 	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
 	if (lastUpdateAHRS_Us == 0) {
@@ -260,7 +266,7 @@ void updateGyroData() {
 
 
 	// Low pass filter accelerometer
-	Vector3f accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
 
 	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
 	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;
@@ -272,11 +278,11 @@ void updateGyroData() {
 	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ GYRO_LSB_PER_G) * dt_IMU;
 
 	// Low pass filter on gyro (DESACTIVATED bad results)
-	//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
+//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
 
-	//	gyroXrate = gyroFiltered.x;
-	//	gyroYrate = gyroFiltered.y;
-	//	gyroZrate = gyroFiltered.z;
+//	gyroXrate = gyroFiltered.x;
+//	gyroYrate = gyroFiltered.y;
+//	gyroZrate = gyroFiltered.z;
 
 	double alphaGyroRate = 0.7;
 	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
@@ -284,7 +290,7 @@ void updateGyroData() {
 	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
 
 	// Integrate gyro z rate to have approx yaw based on inertial data
-	gyroZangle = gyroZangle + gyroZrate * dt_IMU;
+	gyroZangle = 0.99 * gyroZangle + gyroZrate * dt_IMU;
 	NormRadAngle(gyroZangle);
 }
 

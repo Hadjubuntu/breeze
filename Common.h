@@ -109,10 +109,6 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 #define THROTTLE_CRUISE 50
 #define MAX_V_MS_PLANE 30
 
-#define T_GYRO_ITG3200 1
-#define T_GYRO_MPU9150 2
-#define GYRO_TYPE T_GYRO_MPU9150 // T_GYRO_MPU9150 for breeze board v1 | T_GYRO_ITG3200 for arduino mega board
-
 
 bool radio_linked_checked;
 

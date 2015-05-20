@@ -9,6 +9,7 @@
 #define FLIGHTCONTROL_H_
 
 #include "Common.h"
+#include "peripherals/IMU/IMUClass.h"
 
 // Internal trim data
 //double roll_trim = -2.7;

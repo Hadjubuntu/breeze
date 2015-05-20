@@ -15,8 +15,8 @@ public:
 
 		// Parameters of the filter
 		// Q = Q_meas * dt 0.001, 0.003, 0.03 (Relative trust from accelerometer relative to the gyro)
-		Q_sensor1 = 0.001; // 0.1; // 0.001  0.15;
-		Q_sensor2 = 0.003; // 0.15; // 0.003    0.15;
+		Q_sensor1 = 0.1; // 0.001; // 0.1; // 0.001  0.15;
+		Q_sensor2 = 0.001; //0.003; // 0.15; // 0.003    0.15;
 		// R noise (accelerometer jitter in deg)
 		R_measure = 0.5; // 5.0; // 0.3    10.0; // Variance
 
