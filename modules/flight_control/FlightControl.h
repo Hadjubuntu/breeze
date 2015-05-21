@@ -10,14 +10,12 @@
 
 #include "Common.h"
 #include "peripherals/IMU/IMUClass.h"
+#include "math/PID.h"
 
 // Internal trim data
-//double roll_trim = -2.7;
-//double pitch_trim = 3.72;
-//double yaw_trim = 6.8;
 double roll_trim = 0.0;
-double pitch_trim = 0.0; // -5.0
-double yaw_trim = 0.0; //-10.0; // - 10
+double pitch_trim = 0.0;
+double yaw_trim = 0.0;
 
 #define MAX_DURATION_BURST_S 3
 #define DELAY_BETWEEN_BURST_S 6
@@ -33,6 +31,18 @@ bool thrustBurstMode = false;
 FilterAverage *v_ms_mean, *airspeed_ms_mean;
 double previousVmsError = 0.0;
 
+// PIDs for roll/pitch and yaw
+PIDe PID_roll, PID_pitch, PID_yaw;
+double MAX_I = 10.0;
+double P_YAW = 4.0f;
+double D_YAW = 0.02f;
+double I_YAW = 0.045f;
+double MAX_I_YAW = 5;
+int YAW_HELPER = 0; // Turns to 1 to have some yaw compensation
+#define ATTITUDE_CONTROL_DEG 57.29578f
+#define MAX_ROLL_RATE_DEG 180.0f
+#define MAX_PITCH_RATE_DEG 180.0f
+#define MAX_YAW_RATE_DEG 360.0f
 
 //-------------------------------------------------------
 // Initialize flight controller
@@ -43,6 +53,12 @@ void initFlightControl() {
 	if (USE_AIRSPEED_SENSOR) {
 		airspeed_ms_mean = new FilterAverage(4, 0, MAX_V_MS_PLANE, true);
 	}
+
+
+	// Init PIDs controllers
+	PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I);
+	PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I);
+	PID_yaw.init(P_YAW, D_YAW, I_YAW, MAX_I_YAW);
 }
 
 
@@ -86,22 +102,7 @@ float getSpeedScaler(int deciThrustPercent)
 	return speed_scaler;
 }
 
-double sumErrorRoll = 0.0, sumErrorPitch = 0.0;
-double MAX_I = 10.0;
 
-double sumErrorYaw = 0.0;
-double P_YAW = 4.0f;
-double D_YAW = 0.02f;
-double yawDTerm = 0.0;
-double previousYawRateError = 0.0;
-double I_YAW = 0.045f; // TODO reactivate Integral yaw
-double MAX_I_YAW = 5;
-int YAW_HELPER = 0; // Turns to 1 to have some yaw compensation
-
-#define ATTITUDE_CONTROL_DEG 57.29578f
-#define MAX_ROLL_RATE_DEG 180.0f
-#define MAX_PITCH_RATE_DEG 180.0f
-#define MAX_YAW_RATE_DEG 360.0f
 //-------------------------------------------------------
 // Stabilize airplane with PID controller
 // Takes around 1 ms on Atmega2560
@@ -133,34 +134,22 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	double ratePitchError = (desired_rate_bf.y - gyroYrate * ATTITUDE_CONTROL_DEG);
 	double rateYawError = (desired_rate_bf.z - gyroZrate * ATTITUDE_CONTROL_DEG);
 
-	// Don't reinit I in flight ! (it brings so much trouble)
-	sumErrorRoll += rateRollError * G_Dt;
-	sumErrorPitch += ratePitchError * G_Dt;
-	sumErrorYaw += rateYawError * G_Dt;
 
-	BoundAbs(sumErrorRoll, MAX_I);
-	BoundAbs(sumErrorPitch, MAX_I);
-	BoundAbs(sumErrorYaw, MAX_I_YAW);
+	PID_roll.update(rateRollError, G_Dt);
+	PID_pitch.update(ratePitchError, G_Dt);
+	PID_yaw.update(rateYawError, G_Dt);
 
 	// At low thrust, reinit yaw heading only
 	if (deciThrustPercent < 100) {
-		sumErrorYaw = 0;
+		PID_yaw.reset();
 	}
 
-	yawDTerm = 0.4 * yawDTerm + 0.6 * (rateYawError - previousYawRateError) / G_Dt;
-
-	// Compute output on roll, pitch and yaw axis
-	double outputRollCmd = rateRollError  * param[ID_G_P_ROLL] + sumErrorRoll * param[ID_G_I_ROLL];
-	double outputPitchCmd = ratePitchError * param[ID_G_P_PITCH] + sumErrorPitch * param[ID_G_I_PITCH];
-	double outputYawCmd = rateYawError * P_YAW + sumErrorYaw * I_YAW + yawDTerm * D_YAW;
-
 	// Constrain output
-	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
-	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
-	(*rubberCmd) = (int) constrain(outputYawCmd * 100.0, -9000, 9000);
+	(*aileronCmd) = (int) constrain(PID_roll.getOutput() * 100.0, -9000, 9000);
+	(*gouvernCmd) = (int) constrain(PID_pitch.getOutput() * 100.0, -9000, 9000);
+	(*rubberCmd) = (int) constrain(PID_yaw.getOutput() * 100.0, -9000, 9000);
 
 
-	previousYawRateError = rateYawError;
 
 #elif Firmware == FIXED_WING
 

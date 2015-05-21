@@ -1,7 +1,7 @@
 /*
  * PID.h
  *
- * @deprecated Not used anymore (see FlightControl instead)
+ * Generic PID implementation simple non-linear model with a K(t) = Kp * Ke(t) depending on error
  *
  *  Created on: 9 august 2014
  *      Author: hadjmoody
@@ -10,68 +10,76 @@
 #ifndef PID_H_
 #define PID_H_
 
-// Input roll / pitch / yaw
-// Output aileron / gouvern / rudder command
+#include "Common.h"
 
-#define MAX_INTEGRAL 15
+// TODO create Kp(t) = K0*Ke(t) with right parameters
 
-typedef struct T_PID {
-	double integralValue ;
-	double previousError ;
-	double Kp, Ki, Kd ;
-} PID ;
+class PIDe {
+protected:
+	float Kp;
+	float Ki;
+	float Kd;
+	float maxI;
+	float i;
+	float d;
+	float alpha_d;
+	float prevError;
+	float output;
+public:
+	PIDe();
+	void init(float pKp, float pKi, float pKd, float pMaxI);
+	void update(float error, float dtSeconds);
+	float getOutput();
+	void reset();
+};
 
-void initializePID(PID *pid, double pKp, double pKi, double pKd) {
-	pid->integralValue = 0.0 ;
-	pid->previousError = 0.0 ;
-	pid->Kp = pKp ;
-	pid->Ki = pKi ;
-	pid->Kd = pKd ;
+PIDe::PIDe()
+{
+	init(1.0, 0.1, 0.01, 10);
 }
 
-
-
-double getDerivative(PID *pid, double error, double previousError, double dt) {
-	if (dt <= 0) {
-		return 0.0;
-	}
-	else {
-		return pid->Kd * (error - previousError ) / dt ;
-	}
+void PIDe::init(float pKp, float pKi, float pKd, float pMaxI) {
+	Kp = pKp;
+	Ki = pKi;
+	Kd = pKd;
+	maxI = pMaxI;
+	i = 0.0;
+	d = 0.0;
+	alpha_d = 0.6;
+	prevError = 0.0;
+	output = 0.0;
 }
 
-double getIntegral(PID *pid, double error, double previousError, double dt) {
-	if (dt <= 0) {
-		return pid->Ki * pid->integralValue ;
-	}
-	else {
-		// Add new error diff only if integral value belongs to interval (-max, max)
-		if ((pid->Ki * pid->integralValue < MAX_INTEGRAL)
-				|| (pid->Ki * pid->integralValue > -MAX_INTEGRAL)) {
-			pid->integralValue += (error-previousError) / dt ;
-		}
-
-		return pid->Ki * pid->integralValue;
-	}
+void PIDe::reset()
+{
+	i = 0.0;
+	d = 0.0;
+	prevError = 0.0;
 }
 
-double getOutput(PID *pid, double e, double dt) {    
-	return pid->Kp * e  + getDerivative(pid, e, pid->previousError, dt)  + getIntegral(pid, e, pid->previousError, dt);
+void PIDe::update(float e, float dtSeconds)
+{
+	// Evaluate differential
+	float dError = 0.0;
+	if (dtSeconds > 0.0) {
+		dError = (e - prevError) / dtSeconds;
+	}
+	prevError = e;
+
+	// Evaluate integral
+	i = i + e * dtSeconds;
+	BoundAbs(i, maxI);
+
+	d = (1.0 - alpha_d) * d + alpha_d * dError;
+
+	// Computes output
+	output = Kp * e + Ki * i + Kd * d;
 }
 
-// Centi-degree command
-int PID2ServoAngle(double value) {
-	int delta = (int) (value * 100.0f) ;
-	if (delta > 9000) {
-		delta = 9000 ;
-	}
-	else if (delta < -9000) {
-		delta =  -9000;
-	}
-
-	return delta ;
+float PIDe::getOutput()
+{
+	return output;
 }
-
 
 
 #endif /* PID_H_ */

@@ -19,7 +19,7 @@
 
 #define T_GYRO_ITG3200 1
 #define T_GYRO_MPU9150 2
-#define GYRO_TYPE T_GYRO_ITG3200 // T_GYRO_MPU9150 for breeze board v1 | T_GYRO_ITG3200 for arduino mega board
+#define GYRO_TYPE T_GYRO_MPU9150 // T_GYRO_MPU9150 for breeze board v1 | T_GYRO_ITG3200 for arduino mega board
 
 
 

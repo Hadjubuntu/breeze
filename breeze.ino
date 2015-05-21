@@ -471,8 +471,8 @@ void process2HzTask() {
 	//
 	//			Logger.print("x_rate = ");
 	//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-				Logger.print("roll = ");
-				Logger.println(UAVCore->currentAttitude->roll);
+//				Logger.print("roll = ");
+//				Logger.println(UAVCore->currentAttitude->roll);
 	//	
 
 	//			Logger.print("y_rate = ");

@@ -13,11 +13,12 @@ public:
 	 */
 	Kalman() {
 
-		// Parameters of the filter
+		// Qi represents the model noise
 		// Q = Q_meas * dt 0.001, 0.003, 0.03 (Relative trust from accelerometer relative to the gyro)
-		Q_sensor1 = 0.1; // 0.001; // 0.1; // 0.001  0.15;
-		Q_sensor2 = 0.001; //0.003; // 0.15; // 0.003    0.15;
-		// R noise (accelerometer jitter in deg)
+		Q_sensor1 = 0.01; // 0.001; // 0.1; // 0.001  0.15;
+		Q_sensor2 = 0.003; //0.003; // 0.15; // 0.003    0.15;
+
+		// R represents the measurement noise (accelerometer jitter in deg)
 		R_measure = 0.5; // 5.0; // 0.3    10.0; // Variance
 
 		output = 0; // Reset the angle
@@ -27,17 +28,17 @@ public:
 		y = 0;
 
 		// TODO calibration matrix from measurement
-		P[0][0] = 0.1;
+		P[0][0] = 0.01;
 		P[0][1] = 0.0;
 		P[1][0] = 0.0;
-		P[1][1] = 0.1;
+		P[1][1] = 0.01;
 	};
 
 	/**
 	 * Update and get output
 	 * ----------------------------------------------------------------	 *
-	 * RawInputSensor1 must be in degrees
-	 * RawInputSensor2 in degrees/sec
+	 * RawInputSensor1 must be in degrees from accelerometer
+	 * RawInputSensor2 in degrees/sec from gyroscope
 	 * and dt in seconds
 	 */
 	double update(double rawInputSensor1, double rawInputSensor2, double dt) {
