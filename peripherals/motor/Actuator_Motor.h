@@ -257,7 +257,11 @@ void motorUpdateCommandFixedWing() {
 		pw = ESC_MAX_PROTECTION;
 	}
 
-	OCR1C = pw  << 1 ;
+	OCR1C = pw << 1;
+
+	if (FixedWingType == DOUBLE_MOTOR) {
+		OCR1B = pw << 1;
+	}
 }
 
 // Update motor thrust using deci percent (deci for precision)
