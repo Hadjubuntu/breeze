@@ -32,7 +32,7 @@ IMU_MPU9150::IMU_MPU9150()
 void IMU_MPU9150::setupGyro() {
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 10);
+	accel_filter.set_cutoff_frequency(800, 20);
 	gyro_filter.set_cutoff_frequency(800, 127);
 
 
@@ -118,7 +118,7 @@ void IMU_MPU9150::setupGyro() {
 
 		Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
 		Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
-		Accel_cal_z = (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
+		Accel_cal_z = accLsbPerG - (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
 
 
 		Logger.println("------------------------------");
@@ -131,6 +131,7 @@ void IMU_MPU9150::setupGyro() {
 		Logger.print("; ");
 		Logger.print(Gyro_cal_z);
 		Logger.println(" ");
+		delay(100);
 		Logger.print("Acc cal x; y; z : ");
 		Logger.print(Accel_cal_x);
 		Logger.print("; ");
@@ -206,9 +207,9 @@ void IMU_MPU9150::updateGyroData() {
 
 	// Accelerometer data and filters
 	//-----------------------------------------------
-	rel_accX = (Accel_output[0]) / accLsbPerG;
-	rel_accY = (Accel_output[1]) / accLsbPerG;
-	rel_accZ = (Accel_output[2]) / accLsbPerG;
+	rel_accX = (Accel_output[0] - Accel_cal_x) / accLsbPerG;
+	rel_accY = (Accel_output[1] - Accel_cal_y) / accLsbPerG;
+	rel_accZ = (Accel_output[2] - Accel_cal_z) / accLsbPerG;
 
 
 	// Low pass filter accelerometer

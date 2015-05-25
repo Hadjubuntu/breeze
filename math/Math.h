@@ -67,6 +67,10 @@ float pythagorous2(float a, float b) {
 	return sqrt(pow2(a)+pow2(b));
 }
 
+float pythagorous3(float x, float y, float z) {
+	return sqrt(pow2(x) + pow2(y) + pow2(z));
+}
+
 
 double toDeg(double v) {
 	return (v * 180.0 / M_PI);

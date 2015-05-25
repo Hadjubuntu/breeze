@@ -163,7 +163,7 @@ void updateRFRadoFutabaLowFreq() {
 
 		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // New PID max 4.0
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 
@@ -189,7 +189,10 @@ void updateRFRadoFutabaLowFreq() {
 		else {
 			YAW_HELPER = 0;
 		}
-
+		
+		// Update PID parameters
+		PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I);
+		PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I);
 
 		if (Firmware == FIXED_WING) {
 			// Flaps TODO find a channel for flaps
@@ -405,13 +408,14 @@ void process5HzTask() {
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
-
+	
+	
+		Logger.print("roll= ");
+		Logger.println(UAVCore->currentAttitude->roll);
 
 	//if (imu.measureVibration()) {
 	//	Logger.print("Acc_noise= ");
 	//	Logger.print(accNoise);
-	//	Logger.print(" | roll= ");
-	//	Logger.print(UAVCore->currentAttitude->roll);
 	//	Logger.print(" | accel_roll = ");
 	//	Logger.print(Accel_roll);
 	//	Logger.print(" | error = ");
@@ -471,8 +475,8 @@ void process2HzTask() {
 	//
 	//			Logger.print("x_rate = ");
 	//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-//				Logger.print("roll = ");
-//				Logger.println(UAVCore->currentAttitude->roll);
+	//				Logger.print("roll = ");
+	//				Logger.println(UAVCore->currentAttitude->roll);
 	//	
 
 	//			Logger.print("y_rate = ");

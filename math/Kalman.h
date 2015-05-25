@@ -15,8 +15,8 @@ public:
 
 		// Qi represents the model noise
 		// Q = Q_meas * dt 0.001, 0.003, 0.03 (Relative trust from accelerometer relative to the gyro)
-		Q_sensor1 = 0.01; // 0.001; // 0.1; // 0.001  0.15;
-		Q_sensor2 = 0.003; //0.003; // 0.15; // 0.003    0.15;
+		Q_sensor1 = 0.005; // 0.001; // 0.1; // 0.001  0.15;
+		Q_sensor2 = 0.005; //0.003; // 0.15; // 0.003    0.15;
 
 		// R represents the measurement noise (accelerometer jitter in deg)
 		R_measure = 0.5; // 5.0; // 0.3    10.0; // Variance
@@ -27,11 +27,11 @@ public:
 		S = 0;
 		y = 0;
 
-		// TODO calibration matrix from measurement
-		P[0][0] = 0.01;
+		// Starts with really low covariance matrix because it increases with time until convergence
+		P[0][0] = 0.001;
 		P[0][1] = 0.0;
 		P[1][0] = 0.0;
-		P[1][1] = 0.01;
+		P[1][1] = 0.001;
 	};
 
 	/**
@@ -80,6 +80,10 @@ public:
 
 		return output;
 	};
+
+	float getCov_00() {
+		return P[0][0];
+	}
 
 	//----------------------------------------------------------------------
 	// Getter
