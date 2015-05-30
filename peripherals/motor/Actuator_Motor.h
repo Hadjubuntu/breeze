@@ -105,44 +105,44 @@ void setupMotors() {
 	PORTD |= _BV(2);
 	PORTH |= _BV(0);
 
-	// Pins on timer 1
-	pinMode(11, OUTPUT); // OC1A
-	pinMode(12, OUTPUT); // OC1B
-	pinMode(13, OUTPUT); // OC1C
+	// Pins on timer 5
+	pinMode(46, OUTPUT); // OC5A
+	pinMode(45, OUTPUT); // OC5B
+	pinMode(44, OUTPUT); // OC5C
 
-	// Timer 1
-	TCCR1A =((1<<WGM11));
-	TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
-	ICR1 = 40000; // 0.5us tick => 50hz freq
-	OCR1A = 0xFFFF; // Init OCR registers to nil output signal
-	OCR1B = 0xFFFF;
-	OCR1C = 0xFFFF;
+	// Timer 5
+	TCCR5A =((1<<WGM51));
+	TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
+	OCR5A = 0xFFFF; // Init OCR registers to nil output signal
+	OCR5B = 0xFFFF;
+	OCR5C = 0xFFFF;
+	ICR5 = 40000; // 0.5us tick => 50hz freq
 
-	TCCR1A |= (1<<COM1A1);
-	TCCR1A |= (1<<COM1B1);
-	TCCR1A |= (1<<COM1C1);
+
+	TCCR5A |= (1<<COM5A1);
+	TCCR5A |= (1<<COM5B1);
+	TCCR5A |= (1<<COM5C1);
 
 	// In QUADCOPTER firmware mode
 	// we need another timer for the fourth motor
 	if (Firmware == QUADCOPTER) {
 
-		// Pins on timer 5
-		pinMode(46, OUTPUT); // OC5A
-		pinMode(45, OUTPUT); // OC5B
-		pinMode(44, OUTPUT); // OC5C
+		// Pins on timer 1
+		pinMode(11, OUTPUT); // OC1A
+		pinMode(12, OUTPUT); // OC1B
+		pinMode(13, OUTPUT); // OC1C
 
-		// Timer 5
-		TCCR5A =((1<<WGM51));
-		TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
-		OCR5A = 0xFFFF; // Init OCR registers to nil output signal
-		OCR5B = 0xFFFF;
-		OCR5C = 0xFFFF;
-		ICR5 = 40000; // 0.5us tick => 50hz freq
+		// Timer 1
+		TCCR1A =((1<<WGM11));
+		TCCR1B = (1<<WGM13)|(1<<WGM12)|(1<<CS11);
+		ICR1 = 40000; // 0.5us tick => 50hz freq
+		OCR1A = 0xFFFF; // Init OCR registers to nil output signal
+		OCR1B = 0xFFFF;
+		OCR1C = 0xFFFF;
 
-
-		TCCR5A |= (1<<COM5A1);
-		TCCR5A |= (1<<COM5B1);
-		TCCR5A |= (1<<COM5C1);
+		TCCR1A |= (1<<COM1A1);
+		TCCR1A |= (1<<COM1B1);
+		TCCR1A |= (1<<COM1C1);
 
 		if (QuadType == PLUS) {
 			motorMatrix[0][0] = 0; // roll
@@ -244,6 +244,7 @@ void motorUpdateCommandQuad()
 	if (QuadType == Y) {
 		servoAPM_write(6, quadY_yaw_us);
 	}
+	// For quadType = X or +
 	else {
 		OCR1C = thrustX4  << 1 ; // pin 13
 	}
@@ -257,10 +258,10 @@ void motorUpdateCommandFixedWing() {
 		pw = ESC_MAX_PROTECTION;
 	}
 
-	OCR1C = pw << 1;
+	OCR5C = pw << 1; // Pin 44
 
 	if (FixedWingType == DOUBLE_MOTOR) {
-		OCR1B = pw << 1;
+		OCR5B = pw << 1; // Pin 45
 	}
 }
 

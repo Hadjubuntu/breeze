@@ -25,18 +25,18 @@ enum SurfaceControlMode SC_MODE = SC_THREE_AXIS_NORMAL;
 
 //--------------------------------------
 // Configuration (Same order as Pilatus pin number)
-#define PIN_SERVO_AILERON_LEFT 44 // Pilatus 1
+#define PIN_SERVO_AILERON_LEFT 5 // Pilatus 1
 #define PIN_SERVO_GOUVERN 2 // Pilatus 2
 
 #if (USE_RUBBER == 1)
 #define PIN_SERVO_RUBBER 3 // Pilatus 3 ..
 #endif
 
-#define PIN_SERVO_AILERON_RIGHT 5 // Pilatus 5
+#define PIN_SERVO_AILERON_RIGHT 6 // Pilatus 5
 
 #if (USE_FLAPS == 1)
-#define PIN_SERVO_FLAPS_LEFT 45 // Pilatus 6
-#define PIN_SERVO_FLAPS_RIGHT 46 // Pilatus 7
+#define PIN_SERVO_FLAPS_LEFT 7 // Pilatus 6
+#define PIN_SERVO_FLAPS_RIGHT 8 // Pilatus 7
 #endif
 
 

@@ -31,11 +31,11 @@ IMU_ITG3200::IMU_ITG3200()
 	// Init specific parameters
 	accLsbPerG = 256.0f; // 16384.0f/9.81f // 256.0f // 16384.0f
 	gyroLsbPerDegS = 14.375f; // FS_SEL 0 131.0
-	chip_address = 0x68;
+	chip_address = 0x68; // low : 0x68, high : 0X69
 	who_i_am_register = 0x0;
 
 	// Specific accelerometer combined with ITG3200 IMU
-	chip_adxl345_address = 0x53;
+	chip_adxl345_address = 0x53; // low : 0x53; high : 0x1D
 }
 
 void IMU_ITG3200::setupGyro()
@@ -45,6 +45,13 @@ void IMU_ITG3200::setupGyro()
 	accel_filter.set_cutoff_frequency(800, 20);
 	gyro_filter.set_cutoff_frequency(800, 127);
 
+	// Initialize IMU
+	//-------------------------------------------------------
+	delay(5);
+	Wire.begin();
+
+
+	Logger.println("start configuration IMU");
 
 	// Configure accelerometer and gyroscope
 	//---------------------------------------------
@@ -243,9 +250,9 @@ void IMU_ITG3200::updateGyroData()
 
 	// Accelerometer data and filters
 	//-----------------------------------------------
-	rel_accX = (Accel_output[0] - Accel_cal_x) / accLsbPerG;
-	rel_accY = (Accel_output[1] - Accel_cal_y) / accLsbPerG;
-	rel_accZ = (Accel_output[2] - Accel_cal_z) / accLsbPerG;
+	rel_accX = (Accel_output[0]) / accLsbPerG;
+	rel_accY = (Accel_output[1]) / accLsbPerG;
+	rel_accZ = (Accel_output[2]) / accLsbPerG;
 
 
 	// Low pass filter accelerometer

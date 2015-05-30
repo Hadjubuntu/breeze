@@ -16,7 +16,6 @@
 #include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 #include "modules/AHRS/AHRS_Kalman.h"
-
 #include "peripherals/IMU/Sensor_IMU.h"
 
 
@@ -163,7 +162,7 @@ void updateRFRadoFutabaLowFreq() {
 
 		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // New PID max 4.0
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
 
@@ -409,10 +408,13 @@ void process5HzTask() {
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
 	
+//	Logger.print("roll_cp = ");
+//	Logger.println(roll_cpfilter);
 	
-		Logger.print("roll= ");
-		Logger.println(UAVCore->currentAttitude->roll);
-
+	Logger.print("pitch = ");
+	Logger.println(UAVCore->currentAttitude->pitch);
+	
+	
 	//if (imu.measureVibration()) {
 	//	Logger.print("Acc_noise= ");
 	//	Logger.print(accNoise);

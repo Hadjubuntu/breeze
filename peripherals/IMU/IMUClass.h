@@ -82,6 +82,8 @@ public:
 
 	virtual void updateGyroData() = 0;
 
+	void calibrate();
+
 };
 
 
@@ -96,6 +98,77 @@ void IMU_Class::initParameters() {
 	gyroLsbPerDegS = 1.0;
 }
 
+
+void IMU_Class::calibrate()
+{
+	float Gyro_cal_x_sample = 0;
+	float Gyro_cal_y_sample = 0;
+	float Gyro_cal_z_sample = 0;
+
+	float Accel_cal_x_sample = 0;
+	float Accel_cal_y_sample = 0;
+	float Accel_cal_z_sample = 0;
+
+
+	int iterAverage = 1;
+	float gyroAvgX[iterAverage];
+	float gyroAvgY[iterAverage];
+	float gyroAvgZ[iterAverage];
+
+	int i;
+
+	int nbSampleCalib = 100; // 100 original
+	int sampleDurationMs = 5; // 50 original
+
+
+	for (i = 0; i < nbSampleCalib; i ++)
+	{
+		getIMUReadings(Gyro_output, Accel_output);
+
+		// Computes sum
+		Gyro_cal_x_sample += Gyro_output[0];
+		Gyro_cal_y_sample += Gyro_output[1];
+		Gyro_cal_z_sample += Gyro_output[2];
+
+		Accel_cal_x_sample += Accel_output[0];
+		Accel_cal_y_sample += Accel_output[1];
+		Accel_cal_z_sample += Accel_output[2];
+
+		delay(sampleDurationMs);
+	}
+
+	Gyro_cal_x = Gyro_cal_x_sample / nbSampleCalib;
+	Gyro_cal_y = Gyro_cal_y_sample / nbSampleCalib;
+	Gyro_cal_z = Gyro_cal_z_sample / nbSampleCalib;
+
+	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
+	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
+	Accel_cal_z = accLsbPerG - (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
+
+
+	Logger.println("------------------------------");
+	Logger.println("IMU Calibration Output");
+	Logger.println("------------------------------");
+	Logger.print("Gyro cal x; y; z : ");
+	Logger.print(Gyro_cal_x);
+	Logger.print("; ");
+	Logger.print(Gyro_cal_y);
+	Logger.print("; ");
+	Logger.print(Gyro_cal_z);
+	Logger.println(" ");
+	delay(100);
+	Logger.print("Acc cal x; y; z : ");
+	Logger.print(Accel_cal_x);
+	Logger.print("; ");
+	Logger.print(Accel_cal_y);
+	Logger.print("; ");
+	Logger.println(Accel_cal_z);
+	Logger.println("------------------------------");
+
+	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
+	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
+
+}
 
 
 

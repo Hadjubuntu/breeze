@@ -25,6 +25,11 @@ protected:
 	float alpha_d;
 	float prevError;
 	float output;
+
+	// See papers : http://downloads.deusm.com/designnews/1477-Elsevier06.pdf
+	bool useEnhancePID;
+	float Kboost;
+	float Kboost_max;
 public:
 	PIDe();
 	void init(float pKp, float pKi, float pKd, float pMaxI);
@@ -48,6 +53,9 @@ void PIDe::init(float pKp, float pKi, float pKd, float pMaxI) {
 	alpha_d = 0.6;
 	prevError = 0.0;
 	output = 0.0;
+	useEnhancePID = true;
+	Kboost = 0.125;
+	Kboost_max = 2.0;
 }
 
 void PIDe::reset()
@@ -72,8 +80,16 @@ void PIDe::update(float e, float dtSeconds)
 
 	d = (1.0 - alpha_d) * d + alpha_d * dError;
 
+
+	float Ke = 1.0;
+	if (useEnhancePID)
+	{
+		Ke = (exp(Kboost * e) + exp(-Kboost * e)) / 2.0;
+		Bound(Ke, 0.5, Kboost_max);
+	}
+
 	// Computes output
-	output = Kp * e + Ki * i + Kd * d;
+	output = Ke * (Kp * e + Ki * i + Kd * d);
 }
 
 float PIDe::getOutput()

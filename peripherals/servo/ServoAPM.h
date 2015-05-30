@@ -1,6 +1,23 @@
 /*
  * ServoAPM.h
+ * Pin mapping :
  *
+Arduino Pin	 Register
+2	OCR3B
+3	OCR3C
+4	OCR4C
+5	OCR3A
+6	OCR4A
+7	OCR4B
+8	OCR4C
+9	OCR2B
+10	OCR2A
+11	OCR1A
+12	OCR1B
+13	OCR0A
+44	OCR5C
+45	OCR5B
+46	OCR5A
  *  Created on: 29 oct. 2014
  *      Author: Adrien Hadj-Salah
  */
@@ -19,7 +36,7 @@
 
 // Servo on timer1, timer3 and timer5
 void setupServoAPM() {
-	// Pins on timer 1
+//	// Pins on timer 1
 	pinMode(11, OUTPUT); // OC1A
 	pinMode(12, OUTPUT); // OC1B
 	pinMode(13, OUTPUT); // OC1C
@@ -29,10 +46,16 @@ void setupServoAPM() {
 	pinMode(2, OUTPUT); // OC3B
 	pinMode(3, OUTPUT); // OC3C
 
+
+	// Pins on timer 4
+	pinMode(6, OUTPUT); // OC4A
+	pinMode(7, OUTPUT); // OC4B
+	pinMode(8, OUTPUT); // OC4C
+
 	// Pins on timer 5
-	pinMode(46, OUTPUT); // OC5A
-	pinMode(45, OUTPUT); // OC5B
-	pinMode(44, OUTPUT); // OC5C
+//	pinMode(46, OUTPUT); // OC5A
+//	pinMode(45, OUTPUT); // OC5B
+//	pinMode(44, OUTPUT); // OC5C
 
 	// PPM on timer 5 reader (ICP5 PL1 pin 48)
 	// pinMode(48, INPUT);
@@ -53,13 +76,21 @@ void setupServoAPM() {
 	OCR3C = 0xFFFF;
 	ICR3 = 40000; // 0.5us tick => 50hz freq
 
+	// Timer 4
+	TCCR4A =((1<<WGM41));
+	TCCR4B = (1<<WGM43)|(1<<WGM42)|(1<<CS41);
+	OCR4A = 0xFFFF; // Init OCR registers to nil output signal
+	OCR4B = 0xFFFF;
+	OCR4C = 0xFFFF;
+	ICR4 = 40000; // 0.5us tick => 50hz freq
+
 	// Timer 5
-	TCCR5A =((1<<WGM51));
-	TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
-	OCR5A = 0xFFFF; // Init OCR registers to nil output signal
-	OCR5B = 0xFFFF;
-	OCR5C = 0xFFFF;
-	ICR5 = 40000; // 0.5us tick => 50hz freq
+//	TCCR5A =((1<<WGM51));
+//	TCCR5B = (1<<WGM53)|(1<<WGM52)|(1<<CS51); // |(1<<ICES5);
+//	OCR5A = 0xFFFF; // Init OCR registers to nil output signal
+//	OCR5B = 0xFFFF;
+//	OCR5C = 0xFFFF;
+//	ICR5 = 40000; // 0.5us tick => 50hz freq
 
 	// Enable channel
 	TCCR1A |= (1<<COM1A1);
@@ -68,9 +99,12 @@ void setupServoAPM() {
 	TCCR3A |= (1<<COM3A1);
 	TCCR3A |= (1<<COM3B1);
 	TCCR3A |= (1<<COM3C1);
-	TCCR5A |= (1<<COM5A1);
-	TCCR5A |= (1<<COM5B1);
-	TCCR5A |= (1<<COM5C1);
+	TCCR4A |= (1<<COM4A1);
+	TCCR4A |= (1<<COM4B1);
+	TCCR4A |= (1<<COM4C1);
+//	TCCR5A |= (1<<COM5A1);
+//	TCCR5A |= (1<<COM5B1);
+//	TCCR5A |= (1<<COM5C1);
 
 	// Capture mask
 	//TIMSK5 |= (1<<ICIE5);
@@ -154,15 +188,15 @@ void servoAPM_write(int pin, int period_us) {
 
 
 		// Timer 5
-	case 46:
-		OCR5A = pwm;
-		break;
-	case 45:
-		OCR5B = pwm;
-		break;
-	case 44:
-		OCR5C = pwm;
-		break;
+//	case 46:
+//		OCR5A = pwm;
+//		break;
+//	case 45:
+//		OCR5B = pwm;
+//		break;
+//	case 44:
+//		OCR5C = pwm;
+//		break;
 	}
 }
 

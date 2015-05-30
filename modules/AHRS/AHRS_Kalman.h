@@ -18,6 +18,8 @@
 // Kalman filters for roll and pitch axis
 //-------------------------------------------
 Kalman kalX, kalY;
+double roll_cpfilter = 0.0;
+double pitch_cpfilter = 0.0;
 
 
 void initAHRS(float initRoll, float initPitch) {
@@ -35,6 +37,13 @@ void updateAHRS(float pAccRoll, float pGyroXrateRad, float pAccPitch, float pGyr
 	//-----------------------------------------------
 	kalX.update(pAccRoll, pGyroXrateRad * RAD2DEG, dt);
 	kalY.update(pAccPitch, pGyroYrateRad * RAD2DEG, dt);
+
+	// Complementary filter
+	roll_cpfilter = roll_cpfilter + toDeg(pGyroXrateRad) * dt;
+	roll_cpfilter = 0.9 * roll_cpfilter +  pAccRoll * 0.1;
+
+	pitch_cpfilter = pitch_cpfilter + toDeg(pGyroYrateRad) * dt;
+	pitch_cpfilter = 0.9 * pitch_cpfilter +  pAccPitch * 0.1;
 }
 
 

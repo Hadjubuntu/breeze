@@ -15,11 +15,11 @@ public:
 
 		// Qi represents the model noise
 		// Q = Q_meas * dt 0.001, 0.003, 0.03 (Relative trust from accelerometer relative to the gyro)
-		Q_sensor1 = 0.005; // 0.001; // 0.1; // 0.001  0.15;
-		Q_sensor2 = 0.005; //0.003; // 0.15; // 0.003    0.15;
+		Q_sensor1 = 0.0005; // 0.005
+		Q_sensor2 = 0.0005; // 0.005
 
 		// R represents the measurement noise (accelerometer jitter in deg)
-		R_measure = 0.5; // 5.0; // 0.3    10.0; // Variance
+		R_measure = 0.05; // 0.5 variance
 
 		output = 0; // Reset the angle
 		bias = 0; // Reset bias

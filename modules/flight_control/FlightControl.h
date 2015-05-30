@@ -34,8 +34,8 @@ double previousVmsError = 0.0;
 // PIDs for roll/pitch and yaw
 PIDe PID_roll, PID_pitch, PID_yaw;
 double MAX_I = 10.0;
-double P_YAW = 4.0f;
-double D_YAW = 0.02f;
+double P_YAW = 5.0f;
+double D_YAW = 0.01f;
 double I_YAW = 0.045f;
 double MAX_I_YAW = 5;
 int YAW_HELPER = 0; // Turns to 1 to have some yaw compensation
@@ -59,6 +59,16 @@ void initFlightControl() {
 	PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I);
 	PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I);
 	PID_yaw.init(P_YAW, D_YAW, I_YAW, MAX_I_YAW);
+
+	if (Firmware == QUADCOPTER)
+	{
+		YAW_HELPER = 1;
+	}
+	else {
+		P_YAW = 1.0;
+		D_YAW = 0.01;
+		YAW_HELPER = 0;
+	}
 }
 
 
