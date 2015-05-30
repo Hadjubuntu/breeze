@@ -26,6 +26,8 @@ protected:
 	float prevError;
 	float output;
 
+	float Ke;
+
 	// See papers : http://downloads.deusm.com/designnews/1477-Elsevier06.pdf
 	bool useEnhancePID;
 	float Kboost;
@@ -33,9 +35,11 @@ protected:
 public:
 	PIDe();
 	void init(float pKp, float pKi, float pKd, float pMaxI);
+	void setGainParameters(float pKp, float pKi, float pKd);
 	void update(float error, float dtSeconds);
 	float getOutput();
 	void reset();
+	void printGains();
 };
 
 PIDe::PIDe()
@@ -43,7 +47,7 @@ PIDe::PIDe()
 	init(1.0, 0.1, 0.01, 10);
 }
 
-void PIDe::init(float pKp, float pKi, float pKd, float pMaxI) {
+void PIDe::init(float pKp, float pKd, float pKi, float pMaxI) {
 	Kp = pKp;
 	Ki = pKi;
 	Kd = pKd;
@@ -54,9 +58,18 @@ void PIDe::init(float pKp, float pKi, float pKd, float pMaxI) {
 	prevError = 0.0;
 	output = 0.0;
 	useEnhancePID = true;
-	Kboost = 0.125;
+	Kboost = 0.0125;
 	Kboost_max = 2.0;
+	Ke = 1.0;
 }
+
+void PIDe::setGainParameters(float pKp, float pKd, float pKi)
+{
+	Kp = pKp;
+	Ki = pKi;
+	Kd = pKd;
+}
+
 
 void PIDe::reset()
 {
@@ -81,11 +94,10 @@ void PIDe::update(float e, float dtSeconds)
 	d = (1.0 - alpha_d) * d + alpha_d * dError;
 
 
-	float Ke = 1.0;
 	if (useEnhancePID)
 	{
 		Ke = (exp(Kboost * e) + exp(-Kboost * e)) / 2.0;
-		Bound(Ke, 0.5, Kboost_max);
+		Bound(Ke, 1.0, Kboost_max);
 	}
 
 	// Computes output
@@ -95,6 +107,22 @@ void PIDe::update(float e, float dtSeconds)
 float PIDe::getOutput()
 {
 	return output;
+}
+
+void PIDe::printGains()
+{
+	Logger.print("Kp = ");
+	Logger.println(Kp);
+	delay(10);
+	Logger.print("Kd = ");
+	Logger.println(Kd);
+	delay(10);
+	Logger.print("Ki = ");
+	Logger.println(Ki);
+	delay(10);
+	Logger.print("Ke(t) = ");
+	Logger.println(Ke);
+	delay(10);
 }
 
 

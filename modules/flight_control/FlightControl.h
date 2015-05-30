@@ -34,11 +34,11 @@ double previousVmsError = 0.0;
 // PIDs for roll/pitch and yaw
 PIDe PID_roll, PID_pitch, PID_yaw;
 double MAX_I = 10.0;
-double P_YAW = 5.0f;
-double D_YAW = 0.01f;
-double I_YAW = 0.045f;
+double P_YAW = 3.0f;
+double D_YAW = 0.03f;
+double I_YAW = 0.06f;
 double MAX_I_YAW = 5;
-int YAW_HELPER = 0; // Turns to 1 to have some yaw compensation
+int YAW_HELPER = 0; // Turns to 1 for quadcopter automatically, helps to maintain yaw while navigating
 #define ATTITUDE_CONTROL_DEG 57.29578f
 #define MAX_ROLL_RATE_DEG 180.0f
 #define MAX_PITCH_RATE_DEG 180.0f

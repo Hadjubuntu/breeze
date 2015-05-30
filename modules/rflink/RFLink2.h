@@ -244,7 +244,7 @@ void updateRFLink50Hz() {
  *****************************************************************************/
 void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airspeedCentiMs,
 		long latPow6, long lonPow6, int angleDiffToTarget, bool autopilot,
-		int deciAccNoise) {
+		int deciThrustPercent) {
 	char buf[250];
 	int autopilotInt = 0;
 	if (autopilot == true) {
@@ -255,7 +255,7 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 			rollCenti, pitchCenti, cap,
 			altCm, airspeedCentiMs,
 			latPow6, lonPow6,
-			angleDiffToTarget, autopilotInt, deciAccNoise);
+			angleDiffToTarget, autopilotInt, deciThrustPercent);
 
 	RFSerial.write(buf);
 }

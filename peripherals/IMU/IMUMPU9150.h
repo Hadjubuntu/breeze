@@ -40,7 +40,7 @@ void IMU_MPU9150::setupGyro() {
 	//-------------------------------------------------------
 	delay(5);
 	Wire.begin();
-
+	delay(5);
 
 	Logger.println("start configuration IMU");
 	// Wake up and reset sensor

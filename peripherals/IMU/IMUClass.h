@@ -110,11 +110,6 @@ void IMU_Class::calibrate()
 	float Accel_cal_z_sample = 0;
 
 
-	int iterAverage = 1;
-	float gyroAvgX[iterAverage];
-	float gyroAvgY[iterAverage];
-	float gyroAvgZ[iterAverage];
-
 	int i;
 
 	int nbSampleCalib = 100; // 100 original
@@ -164,10 +159,15 @@ void IMU_Class::calibrate()
 	Logger.print("; ");
 	Logger.println(Accel_cal_z);
 	Logger.println("------------------------------");
+	delay(100);
 
 	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
 	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
 
+	Logger.print("init roll = ");
+	Logger.println(init_roll);
+	Logger.print("init pitch = ");
+	Logger.println(init_pitch);
 }
 
 

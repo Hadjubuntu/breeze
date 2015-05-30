@@ -123,6 +123,9 @@ void updateRFRadioFutaba() {
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
+				
+				BoundAbs(UAVCore->attitudeCommanded->roll, 15);
+				BoundAbs(UAVCore->attitudeCommanded->pitch, 15);
 			}
 		}
 	}
@@ -164,18 +167,18 @@ void updateRFRadoFutabaLowFreq() {
 		//------------------------------------------
 		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
-		param[ID_G_D_ROLL] = factor * 0.01 * 0.1;
+		param[ID_G_D_ROLL] = factor * 0.01;
 
 		param[ID_G_P_PITCH] = factor;
-		param[ID_G_D_PITCH] = factor * 0.01 * 0.1;
+		param[ID_G_D_PITCH] = factor * 0.01;
 
 		if (sBus.channels[7] > 1300) {
-			param[ID_G_I_ROLL] = 0.1;
-			param[ID_G_I_PITCH] = 0.1;
+			param[ID_G_I_ROLL] = 0.2;
+			param[ID_G_I_PITCH] = 0.2;
 		}
 		else if (sBus.channels[7] > 400) {
-			param[ID_G_I_ROLL] = 0.05;
-			param[ID_G_I_PITCH] = 0.05;
+			param[ID_G_I_ROLL] = 0.1;
+			param[ID_G_I_PITCH] = 0.1;
 		}
 		else {
 			param[ID_G_I_ROLL] = 0.0;
@@ -190,8 +193,8 @@ void updateRFRadoFutabaLowFreq() {
 		}
 		
 		// Update PID parameters
-		PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I);
-		PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I);
+		PID_roll.setGainParameters(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL]);
+		PID_pitch.setGainParameters(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH]);
 
 		if (Firmware == FIXED_WING) {
 			// Flaps TODO find a channel for flaps
@@ -292,7 +295,7 @@ void process50HzTask() {
 			float cos_tilt = cos_roll * cos_pitch;
 
 			boost = 1.0f / cos_tilt;
-			Bound(boost, 1.0, 1.3);
+			Bound(boost, 1.0, 1.5);
 		}
 	}
 	motorUpdateCommandDeciPercent(boost, UAVCore->deciThrustPercent);
@@ -411,8 +414,8 @@ void process5HzTask() {
 //	Logger.print("roll_cp = ");
 //	Logger.println(roll_cpfilter);
 	
-	Logger.print("pitch = ");
-	Logger.println(UAVCore->currentAttitude->pitch);
+//	Logger.print("pitch = ");
+//	Logger.println(UAVCore->currentAttitude->pitch);
 	
 	
 	//if (imu.measureVibration()) {
@@ -528,15 +531,16 @@ void process2HzTask() {
  ******************************************************************/
 void process1HzTask() {
 
+	PID_roll.printGains();
 	//---------------------------------------------------------
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
 
 	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
 			(int)(UAVCore->currentAttitude->yaw),
-			(int)(altitudeBarometer->getAverage()), toCenti(airspeed_ms_mean->getAverage()),
+			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
 			currentPosition.lat, currentPosition.lon,
-			(int)angleDiff, UAVCore->autopilot, toCenti(accNoise));
+			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
 
 	//---------------------------------------------------------
 	// Print some data to the user
