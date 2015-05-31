@@ -2,6 +2,7 @@
 #include "modules/nav/NavigCommon.h"
 #include "Common.h"
 #include "math/FilterAverage.h"
+#include "peripherals/altimeter/Sensor_Altimeter.h"
 
 #ifndef NAVIG_H_
 #define NAVIG_H_
@@ -78,7 +79,7 @@ double gpsPitchDesired2 = 0.0;
 // Functions skeleton
 //-----------------------------------------
 void resetWPdata();
-void updateHeading(FilterAverage *);
+void updateHeading();
 void updateDistance();
 double geoDistance(GeoPosition, GeoPosition);
 
@@ -273,7 +274,7 @@ void resetWPdata() {
 }
 
 
-void goNextWaypoint(FilterAverage *altitudeBarometer) {
+void goNextWaypoint() {
 	if (currentWP < NB_WAYPOINTS) {
 		currentWP ++;
 	}
@@ -282,7 +283,7 @@ void goNextWaypoint(FilterAverage *altitudeBarometer) {
 		returnHome();
 	}
 	resetWPdata();
-	updateHeading(altitudeBarometer);
+	updateHeading();
 }
 
 void updateDistance() {
@@ -314,7 +315,7 @@ double diffAngleUsingCapDegrees(double currentCapHeadingDeg, double targetedCapD
 
 // This function computes all navigation parameter
 // Takes 5ms on Atmega 2560
-void updateHeading(FilterAverage *altitudeBarometer) {
+void updateHeading() {
 	long cTime = timeUs();
 	if (currentPosition.time > cTime) {
 		cTime = currentPosition.time;
@@ -334,7 +335,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 	if (modeGoHome == false && MissionDone == false) {
 		// In mission, go to next WP if the mission is not done and distance radius near WP
 		if (distance < DIST_TO_WAYPOINT_FOR_VALIDATION) {
-			goNextWaypoint(altitudeBarometer);
+			goNextWaypoint();
 			return;
 		}
 		// If the waypoint is impossible to reach, go home
@@ -394,7 +395,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 		// Allow large distance 10 times the normal distance for validation
 		if (distance > previousDistance && abs(angleDiff) > 90.0 && distance < 3 * DIST_TO_WAYPOINT_FOR_VALIDATION) {
 			WP_on_target = false;
-			goNextWaypoint(altitudeBarometer);
+			goNextWaypoint();
 			return;
 		}
 	}
@@ -454,9 +455,7 @@ void updateHeading(FilterAverage *altitudeBarometer) {
 	// Define pitch which depends on diff altitude and distance
 	double currentAltitude = currentPosition.alt;
 
-	if (altitudeBarometer->areDataRelevant(cTime)) {
-		currentAltitude = (int)(altitudeBarometer->getAverage() / 100.0f); // Convert into meter and smooth the output
-	}
+	currentAltitude = (int) altCF;
 
 	double dzMeters = wps[currentWP].alt - currentAltitude;
 

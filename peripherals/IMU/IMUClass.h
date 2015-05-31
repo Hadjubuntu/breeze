@@ -48,8 +48,6 @@ int Gyro_output[3], Accel_output[3], Mag_output[3];
 
 float dt_IMU = 0.01;
 
-bool acc_z_initialized = false;
-float initial_acc_z_bias = 0.0;
 float acc_z_on_efz = 0.0;
 float climb_rate = 0.0;
 
@@ -112,8 +110,8 @@ void IMU_Class::calibrate()
 
 	int i;
 
-	int nbSampleCalib = 100; // 100 original
-	int sampleDurationMs = 5; // 50 original
+	int nbSampleCalib = 50; // 100 original
+	int sampleDurationMs = 10; // 50 original
 
 
 	for (i = 0; i < nbSampleCalib; i ++)

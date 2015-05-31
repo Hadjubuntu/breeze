@@ -37,6 +37,21 @@
 //------------------------------------------------
 // Structures
 
+typedef struct T_ATTITUDE {
+	double roll, pitch, yaw ;
+	long time ;
+} Attitude ;
+
+
+
+int sign(double v) {
+	if (v < 0.0) {
+		return -1;
+	}
+	else {
+		return 1;
+	}
+}
 
 /**
  * Arduino int is 8bits, double precision has no more than 6-7 digits,
@@ -291,9 +306,11 @@ typedef struct T_VECTOR3 {
 	float z;
 } Vector3f;
 
-float approx(float v) {
-	float k = 100.0;
-	return roundf(v * k) / k;
+
+float approx(float v)
+{
+	int tmp = (int) (v * 10);
+	return tmp/10.0;
 }
 
 Vector3f vect3fInstance(float x, float y, float z) {

@@ -18,7 +18,7 @@ bool rtlFromSky = false;
 void rtlNav() {
 	if (time_TakeOffStart == 0) {
 		time_TakeOffStart = currentTime;
-		if (altitudeBarometer->getAverage() > 400) {
+		if (altCF > 400) {
 			rtlFromSky = true;
 		}
 	}
@@ -35,35 +35,36 @@ void rtlNav() {
 		flapsCmd = 90;
 	}
 	else {
-		updateHeading(altitudeBarometer);
+		updateHeading();
 
 		if (rtlFromSky == true) {
-			if (altitudeBarometer->getAverage() > 180) {
-				UAVCore->v_ms_goal = 12; // m/s
-
-				UAVCore->attitudeCommanded->roll = gpsRollDesired;
-				UAVCore->attitudeCommanded->pitch = gpsPitchDesired;
-				UAVCore->attitudeCommanded->yaw = 0;
-				flapsCmd = 0;
-			}
-			else {
-				UAVCore->v_ms_goal = 9; // m/s
-				UAVCore->attitudeCommanded->roll = 0;
-				UAVCore->attitudeCommanded->pitch = 6;
-				UAVCore->attitudeCommanded->yaw = 0;
-				flapsCmd = 60;
-			}
+			//			if (altitudeBarometer->getAverage() > 180) {
+			//				UAVCore->v_ms_goal = 12; // m/s
+			//
+			//				UAVCore->attitudeCommanded->roll = gpsRollDesired;
+			//				UAVCore->attitudeCommanded->pitch = gpsPitchDesired;
+			//				UAVCore->attitudeCommanded->yaw = 0;
+			//				flapsCmd = 0;
+			//			}
+			//			else {
+			//				UAVCore->v_ms_goal = 9; // m/s
+			//				UAVCore->attitudeCommanded->roll = 0;
+			//				UAVCore->attitudeCommanded->pitch = 6;
+			//				UAVCore->attitudeCommanded->yaw = 0;
+			//				flapsCmd = 60;
+			//			}
+			//		}
+			//		else {
+			//			UAVCore->attitudeCommanded->roll = 0;
+			//			UAVCore->attitudeCommanded->pitch = 0;
+			//			UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * angleDiff;
+			//
+			//			UAVCore->v_ms_goal = 3; // m/s
+			//			flapsCmd = 90;
+			//		}
 		}
-		else {
-			UAVCore->attitudeCommanded->roll = 0;
-			UAVCore->attitudeCommanded->pitch = 0;
-			UAVCore->attitudeCommanded->yaw = param[ID_KP_GROUNDNAV] * angleDiff;
 
-			UAVCore->v_ms_goal = 3; // m/s
-			flapsCmd = 90;
-		}
 	}
-
 }
 
 #endif

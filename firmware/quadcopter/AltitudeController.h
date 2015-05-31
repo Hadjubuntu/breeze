@@ -2,46 +2,96 @@
 #define ALTITUDE_CONTROLLER_H_
 
 #include "arch/AVR/MCU/MCU.h"
+#include "math/Math.h"
+#include "math/PID.h"
 
-int i = 0;
-float altSetPointCm = 25.0; // TO BE -1 and defined at start
-float output_alt_controller = 0.0;
+class AltitudeHoldController
+{
+private:
+	float altSetPointCm;
+	float output_alt_controller;
+	float maxAbsClimbRateMs;
+	int deciThrottleHover;
+	int maxDeciThrottle;
+	long prevTimeUs;
+	int K_climbRateToDeciThrottle;
+	PIDe pidAltCtrl;
 
-// 1 m/s means 50 deci throttle
-int climbrateToDeciThrottle(float climbrate_ms) {
-	return climbrate_ms*50;
-}
+public:
+	AltitudeHoldController()
+	{
+		altSetPointCm = 25.0;
+		output_alt_controller = 0.0;
+		maxAbsClimbRateMs = 0.6;
+		deciThrottleHover = 600;
+		maxDeciThrottle = 700;
+		prevTimeUs = 0;
+		K_climbRateToDeciThrottle = 50;
 
-/**
- * Altitude Hold Controller aims to keep UAV to level
- */
-void altitudeHoldController(float climb_rate_ms, int currentAltCm, int deciThrustCmd) {
+		pidAltCtrl.init(1.0, 0.1, 0.1, 200);
+	}
 
-	// Output
-	int _throttle_hover = 500;
-	int p = 0;
-	int d = 0;
+	float errorAltitudeToClimbRate(float errorAltitudeMeters)
+	{
+		// Input/output
+		float errorClimbRate = 0.0;
+		float k = 1.0;
 
-	// Input
-	float K_climbrate = 1.0;
-	float Ki = 0.02;
-	int I_max = 200;
+		// Compute error climb rate
+		errorClimbRate = k * errorAltitudeMeters;
+		BoundAbs(errorClimbRate, maxAbsClimbRateMs);
 
-	int errorDecimeter = (int) ((altSetPointCm - currentAltCm)/10.0);
-	float error_meters = errorDecimeter / 10.0;
-	float climb_rate_desired_ms = error_meters * K_climbrate;
-	BoundAbs(climb_rate_desired_ms, 2.0);
+		return errorAltitudeMeters;
+	}
 
-	int errorThrottle = climbrateToDeciThrottle(climb_rate_desired_ms - climb_rate_ms);
+	/**
+	 * Altitude Hold Controller aims to keep UAV to level
+	 */
+	void update(float climb_rate_ms, int currentAltCm, int deciThrustCmd)
+	{
+		// Time
+		long cTime = timeUs();
+		float dt = (cTime - prevTimeUs) / 1000000.0;
 
-	p = errorThrottle;
-	i = i + Ki * errorThrottle;
-	BoundAbs(i, I_max);
+		// Errors
+		float errorAltitudeMeters = approx((altSetPointCm - currentAltCm)/100.0);
+		float errorClimbRateMs = errorAltitudeToClimbRate(errorAltitudeMeters);
 
-	output_alt_controller = _throttle_hover + p + i + d;
-	Bound(output_alt_controller, 0, 750);
+		// PID update
+		pidAltCtrl.update(errorClimbRateMs, dt);
 
-}
+		output_alt_controller =  deciThrottleHover + K_climbRateToDeciThrottle * pidAltCtrl.getOutput();
+		Bound(output_alt_controller, 0, maxDeciThrottle);
 
+		// Time
+		prevTimeUs = cTime;
+	}
+
+	void reset()
+	{
+		output_alt_controller = 0;
+	}
+
+	void setAltSetPoint(float newAltCm)
+	{
+		altSetPointCm = newAltCm;
+	}
+
+	float getOutput()
+	{
+		return output_alt_controller;
+	}
+
+	/**
+	 * TODO by looking on average value of climb/rate current deci throttle
+	 * update throttle hover and PID gains during flight
+	 */
+	void learnFlyingParameters()
+	{
+
+	}
+};
+
+AltitudeHoldController altHoldCtrl;
 
 #endif

@@ -123,7 +123,7 @@ void updateRFRadioFutaba() {
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
-				
+
 				BoundAbs(UAVCore->attitudeCommanded->roll, 15);
 				BoundAbs(UAVCore->attitudeCommanded->pitch, 15);
 			}
@@ -158,8 +158,8 @@ void updateRFRadoFutabaLowFreq() {
 			}
 
 			if (AUTOSPEED_CONTROLLER != old_state) {
-				output_alt_controller = 0.0;
-				altSetPointCm = altCF + 80.0; // current altitude + 100 cm over
+				altHoldCtrl.reset();
+				altHoldCtrl.setAltSetPoint(altCF + 80.0); // current altitude + x cm above
 			}
 		}
 
@@ -191,7 +191,7 @@ void updateRFRadoFutabaLowFreq() {
 		else {
 			YAW_HELPER = 0;
 		}
-		
+
 		// Update PID parameters
 		PID_roll.setGainParameters(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL]);
 		PID_pitch.setGainParameters(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH]);
@@ -323,16 +323,11 @@ void updateClimbRate() {
 	// Update acceleration on z-axis in earth-frame
 	Vector3f vect_acc_ef = rot_bf_ef(accelFiltered, UAVCore->currentAttitude);
 
-	if (acc_z_initialized == false) {
-		initial_acc_z_bias = (vect_acc_ef.z-1.0);
-		acc_z_initialized = true;
-	}
+	acc_z_on_efz = approx(vect_acc_ef.z);
 
-	acc_z_on_efz = vect_acc_ef.z - initial_acc_z_bias;
-
-	// Force climb rate to be around 0.0 with 0.9 gain
+	// Force climb rate to be around 0.0 with [0.9; 0.99] gain
 	// climb rate = K ( previous + new_acc * dt) with dt = 0.02
-	climb_rate = 0.9*(climb_rate + G_MASS *(acc_z_on_efz-1.0) * 0.02);
+	climb_rate = 0.99*climb_rate + G_MASS *(acc_z_on_efz-1.0) * 0.02;
 
 	if (imu.measureVibration()) {
 		// Measure vibration
@@ -364,8 +359,8 @@ void process20HzTask() {
 			// climb_rate = acc_filter->getFullstackIntegral(0.05);
 
 			// Altitude controller
-			altitudeHoldController(climb_rate, altCF, UAVCore->deciThrustCmd);
-			UAVCore->deciThrustPercent = output_alt_controller; 
+			altHoldCtrl.update(climb_rate, altCF, UAVCore->deciThrustCmd);
+			UAVCore->deciThrustPercent = altHoldCtrl.getOutput(); 
 			break;
 		case ROCKET:
 			break;
@@ -374,7 +369,7 @@ void process20HzTask() {
 
 	//-------------------------------------------
 	// Update altimeter
-	updateAltimeter(acc_z_on_efz);
+	updateAltimeter(climb_rate, acc_z_on_efz);
 }
 
 
@@ -410,14 +405,14 @@ void process5HzTask() {
 	// Update low frequency futaba RF
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
-	
-//	Logger.print("roll_cp = ");
-//	Logger.println(roll_cpfilter);
-	
-//	Logger.print("pitch = ");
-//	Logger.println(UAVCore->currentAttitude->pitch);
-	
-	
+
+	//	Logger.print("roll_cp = ");
+	//	Logger.println(roll_cpfilter);
+
+	//	Logger.print("pitch = ");
+	//	Logger.println(UAVCore->currentAttitude->pitch);
+
+
 	//if (imu.measureVibration()) {
 	//	Logger.print("Acc_noise= ");
 	//	Logger.print(accNoise);
@@ -438,6 +433,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
+	Logger.println(altCF);
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -531,7 +527,6 @@ void process2HzTask() {
  ******************************************************************/
 void process1HzTask() {
 
-	PID_roll.printGains();
 	//---------------------------------------------------------
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
@@ -541,6 +536,7 @@ void process1HzTask() {
 			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
 			currentPosition.lat, currentPosition.lon,
 			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
+
 
 	//---------------------------------------------------------
 	// Print some data to the user
@@ -590,9 +586,6 @@ Logger.print("rubber cmd =");
 Logger.println(rubberCmd);
 Logger.println("*****************************");
 
-
-	Logger.print("alt (cm) = ");
-	Logger.println(altitudeBarometer->getAverage());
 	 */
 }
 

@@ -19,7 +19,6 @@
 
 // Altimeter (Differential pressure sensor DPS)
 BMP085 dps = BMP085();
-FilterAverage *altitudeBarometer;
 long Temperature = 0, Pressure = 0, Altitude = 0, AltitudeOffset = 0;
 
 
@@ -62,36 +61,42 @@ void setupAltimeter() {
 
 	AltitudeOffset = (long)(K_ALTITUDE_OFFSET * offset);
 
-	altitudeBarometer = new FilterAverage(4, 0, 20000, true);
-
 	Logger.print("Altimeter offset = ");
 	Logger.println(AltitudeOffset);
 
 	delay(200);
 }
 
-float previousAlt = 0, altCF = 0;
+float altCF = 0;
+float altAvg = 0;
+long lastUpdateAlt = 0;
+long prevAltitude = 0;
+float dtUpdateAlt = 1.0;
 
-void updateAltimeter(float acc_z_bf) {
+
+void updateAltimeter(float climb_rate, float acc_z_bf) {
+
+	dtUpdateAlt = (timeUs()-lastUpdateAlt) / S_TO_US;
 
 	callUpdateAlt();
 	Altitude = dps.getAltitude();
 
-//	if (abs(Altitude - previousAlt) < 500) {
-//		altitudeBarometer->addValue(Altitude, timeUs());
-//		previousAlt = Altitude;
-//	}
 	// Complementary filter
-	if (abs(Altitude) < 2000) {
-		float alpha = max(abs(1.0-acc_z_bf), 0.8);
+	if (abs(Altitude) < 2000)
+	{
+		float altDiff = Altitude - prevAltitude;
 
-		altCF = altCF*(0.8-alpha) + (0.2+alpha)*Altitude;
+		altAvg = 0.7 * Altitude + 0.3 * altAvg;
 
-		previousAlt = Altitude;
+		// Converts climb rate to cm/s to cm using dt
+		altCF = 0.9 * altAvg + 0.1 * (altCF + climb_rate * 100 * dtUpdateAlt);
+
+		lastUpdateAlt = timeUs();
+		prevAltitude= Altitude;
 	}
-	Bound(altCF, 0, 10000);
 
 
+//	Bound(altCF, 0, 10000);
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

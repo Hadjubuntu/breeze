@@ -40,7 +40,7 @@ void groundNavDemo() {
 	}
 	else {
 		double yawDesired = 0.0;
-		updateHeading(altitudeBarometer);
+		updateHeading();
 
 
 		// After 2 seconds, start guidance, before just maintain steering

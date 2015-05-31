@@ -75,9 +75,7 @@ void navToWP(MissionWP el) {
 
 	// Update pitch navigation
 	double currentAltitude = currentPosition.alt;
-	if (altitudeBarometer->areDataRelevant(cTime)) {
-		currentAltitude = (int)(altitudeBarometer->getAverage() / 100.0f); // Convert into meter and smooth the output
-	}
+		currentAltitude = (int) altCF;
 	double dzMeters = (el.wp.alt - currentAltitude);
 	double tmpPitchDesired = toDeg(atan(dzMeters / dist2WPMeters));
 	gpsPitchDesired = constrain(tmpPitchDesired, FLIGHT_BY_GPS_MIN_PITCH, FLIGHT_BY_GPS_MAX_PITCH);

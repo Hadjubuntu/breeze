@@ -78,7 +78,7 @@ void IMU_MPU9150::setupGyro() {
 	Logger.print("IMU gyro_scale = ");
 	Logger.println(buffer[0]);
 
-	delay(200);
+	delay(500);
 
 	// If user want to do live calibration, call IMU sub-routine
 	if (enable_imu_calibration) {

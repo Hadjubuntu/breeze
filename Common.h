@@ -120,22 +120,6 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 
 bool radio_linked_checked;
 
-// Common structures
-typedef struct T_ATTITUDE {
-	double roll, pitch, yaw ;
-	long time ;
-} Attitude ;
-
-
-
-int sign(double v) {
-	if (v < 0.0) {
-		return -1;
-	}
-	else {
-		return 1;
-	}
-}
 
 
 #define NB_PARAMETERS 13
