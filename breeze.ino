@@ -17,6 +17,7 @@
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
 #include "modules/AHRS/AHRS_Kalman.h"
 #include "peripherals/IMU/Sensor_IMU.h"
+#include "math/IntegralSmooth.h"
 
 
 // Skeleton functions
@@ -321,45 +322,24 @@ void process50HzTask() {
 	updateClimbRate();
 }
 
-bool crPositive = true;
-int nbIterSameSign = 0;
+
+IntegralSmooth climbRateSmooth(0.98, 50);
 
 void updateClimbRate() {
 	//----------------------------------------------
 	// Update acceleration on z-axis in earth-frame
 	Vector3f vect_acc_ef = rot_bf_ef(accelFiltered, UAVCore->currentAttitude);
-
-	acc_z_on_efz = approx(vect_acc_ef.z);
-
-	// Force climb rate to be around 0.0 with [0.9; 0.99] gain
-	// climb rate = K ( previous + new_acc * dt) with dt = 0.02
-	climb_rate = 0.98*climb_rate + (nbIterSameSign / 50.0) * G_MASS *(acc_z_on_efz-1.0) * 0.02;
-
-
-
-	if (climb_rate >= 0.0) 
-	{
-		if (crPositive) {
-			nbIterSameSign ++;
-		}
-		else {
-			nbIterSameSign = 1;
-		}
-		crPositive = true;
-	}
-	else {
-		if (crPositive == false) {
-			nbIterSameSign ++;
-		}
-		else {
-			nbIterSameSign = 1;
-		}
-
-		crPositive = false;
-	}
-
-	Bound(nbIterSameSign, 0, 50);
+//
+//	float acc_x_on_efx = approx(vect_acc_ef.x);
+//	Logger.println(acc_x_on_efx);
 	
+	acc_z_on_efz = approx(vect_acc_ef.z);
+	
+	// Smooth integral on acceleration to get a lean climb rate
+	climbRateSmooth.update(G_MASS * (acc_z_on_efz-1.0), 0.02);
+	Logger.println(climbRateSmooth.getOutput());
+	
+		
 	if (imu.measureVibration()) {
 		// Measure vibration
 		accNoise = sqrt(pow2(vect_acc_ef.x) + pow2(vect_acc_ef.y) + pow2(vect_acc_ef.z));
@@ -466,7 +446,7 @@ void process5HzTask() {
  ******************************************************************/
 void process2HzTask() {
 //	Logger.println(altCF);
-	Logger.println(UAVCore->deciThrustPercent);
+//	Logger.println(UAVCore->deciThrustPercent);
 	
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());

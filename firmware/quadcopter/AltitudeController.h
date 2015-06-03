@@ -32,8 +32,8 @@ public:
 {
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
-		maxAbsClimbRateMs = 0.6;
-		maxAbsAccelTarget = 0.3;
+		maxAbsClimbRateMs = 0.5;
+		maxAbsAccelTarget = 0.1;
 		deciThrottleHover = 500;
 		maxDeciThrottle = 650;
 		prevTimeClimbRate = 0;
