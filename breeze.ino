@@ -93,7 +93,6 @@ void updateRFRadioFutaba() {
 				sBus.failsafe_status != SBUS_SIGNAL_OK) {
 			// failsafe
 			UAVCore->deciThrustPercent = 0;
-			UAVCore->deciThrustCmd = 0;
 			UAVCore->autopilot = false;
 			AUTOSPEED_CONTROLLER = 0;
 		}
@@ -106,8 +105,6 @@ void updateRFRadioFutaba() {
 			if (AUTOSPEED_CONTROLLER == 0) {
 				UAVCore->deciThrustPercent = sbus_throttle;
 			}
-
-			UAVCore->deciThrustCmd = sbus_throttle;
 
 			// Decrease command angle in quadcopter mode
 			if (Firmware == QUADCOPTER) {
@@ -248,6 +245,13 @@ void process100HzTask() {
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
+	
+	// Update altitude hold controller for quadcopter
+	if (Firmware == QUADCOPTER) {
+		if (AUTOSPEED_CONTROLLER == 1) {
+			altHoldCtrl.update100Hz(acc_z_on_efz);
+		}
+	}
 
 	hundredHZpreviousTime = currentTime;
 }
@@ -317,6 +321,8 @@ void process50HzTask() {
 	updateClimbRate();
 }
 
+bool crPositive = true;
+int nbIterSameSign = 0;
 
 void updateClimbRate() {
 	//----------------------------------------------
@@ -327,8 +333,33 @@ void updateClimbRate() {
 
 	// Force climb rate to be around 0.0 with [0.9; 0.99] gain
 	// climb rate = K ( previous + new_acc * dt) with dt = 0.02
-	climb_rate = 0.99*climb_rate + G_MASS *(acc_z_on_efz-1.0) * 0.02;
+	climb_rate = 0.98*climb_rate + (nbIterSameSign / 50.0) * G_MASS *(acc_z_on_efz-1.0) * 0.02;
 
+
+
+	if (climb_rate >= 0.0) 
+	{
+		if (crPositive) {
+			nbIterSameSign ++;
+		}
+		else {
+			nbIterSameSign = 1;
+		}
+		crPositive = true;
+	}
+	else {
+		if (crPositive == false) {
+			nbIterSameSign ++;
+		}
+		else {
+			nbIterSameSign = 1;
+		}
+
+		crPositive = false;
+	}
+
+	Bound(nbIterSameSign, 0, 50);
+	
 	if (imu.measureVibration()) {
 		// Measure vibration
 		accNoise = sqrt(pow2(vect_acc_ef.x) + pow2(vect_acc_ef.y) + pow2(vect_acc_ef.z));
@@ -355,11 +386,8 @@ void process20HzTask() {
 			}
 			break;
 		case QUADCOPTER:
-			// Update climb rate
-			// climb_rate = acc_filter->getFullstackIntegral(0.05);
-
 			// Altitude controller
-			altHoldCtrl.update(climb_rate, altCF, UAVCore->deciThrustCmd);
+			altHoldCtrl.update(climb_rate, altCF);
 			UAVCore->deciThrustPercent = altHoldCtrl.getOutput(); 
 			break;
 		case ROCKET:
@@ -370,6 +398,10 @@ void process20HzTask() {
 	//-------------------------------------------
 	// Update altimeter
 	updateAltimeter(climb_rate, acc_z_on_efz);
+
+	//------------------------------------------
+	// Altitude controller learning parameters
+	altHoldCtrl.learnFlyingParameters(climb_rate, UAVCore->deciThrustPercent);
 }
 
 
@@ -433,7 +465,9 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-	Logger.println(altCF);
+//	Logger.println(altCF);
+	Logger.println(UAVCore->deciThrustPercent);
+	
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -527,15 +561,18 @@ void process2HzTask() {
  ******************************************************************/
 void process1HzTask() {
 
+	// Send learning data to GCS
+//	updateLearningData(altHoldCtrl.learningToPacket());
+
 	//---------------------------------------------------------
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
 
-	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
-			(int)(UAVCore->currentAttitude->yaw),
-			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
-			currentPosition.lat, currentPosition.lon,
-			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
+	//	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
+	//			(int)(UAVCore->currentAttitude->yaw),
+	//			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
+	//			currentPosition.lat, currentPosition.lon,
+	//			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
 
 
 	//---------------------------------------------------------
@@ -657,10 +694,10 @@ void setup() {
 	setupAltimeter();
 	Logger.println("Altimeter armed");
 
-#if Firmware == FIXED_WING
+if (Firmware == FIXED_WING) {
 	setupServos() ;
 	Logger.println("Servos armed");
-#endif
+}
 
 
 	if (USE_GPS_NAVIGUATION) {

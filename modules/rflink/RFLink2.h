@@ -261,6 +261,10 @@ void updateRFLink1hz(int rollCenti, int pitchCenti, int cap, int altCm, int airs
 }
 
 
+void updateLearningData(char *buf)
+{
+	RFSerial.write(buf);
+}
 
 /****************************************************************************
  * Serial event manager

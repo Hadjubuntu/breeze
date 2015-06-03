@@ -33,7 +33,8 @@ FIXED_WING_TYPE FixedWingType = DOUBLE_MOTOR;
 
 FIRMWARE Firmware = QUADCOPTER;
 
-#if Firmware == QUADCOPTER
+
+// TODO only for quadcopter firmware
 #include "firmware/quadcopter/AltitudeController.h"
 
 enum QUAD_TYPE {
@@ -42,7 +43,7 @@ enum QUAD_TYPE {
 	Y,
 };
 QUAD_TYPE QuadType = Y;
-#endif
+
 
 enum FlightMode {
 	FULL_MANUAL,

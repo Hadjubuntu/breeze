@@ -44,8 +44,8 @@ bool navCloseEnoughToWP(MissionWP el) {
 	}
 }
 
-void navToWP(MissionWP el) {
-	long cTime = timeUs();
+void navToWP(MissionWP el)
+{
 	double dist2WPMeters = 0.0;
 
 	dist2WPMeters = geoDistance(currentPosition, el.wp);

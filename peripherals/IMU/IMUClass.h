@@ -139,9 +139,6 @@ void IMU_Class::calibrate()
 	Accel_cal_z = accLsbPerG - (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
 
 
-	Logger.println("------------------------------");
-	Logger.println("IMU Calibration Output");
-	Logger.println("------------------------------");
 	Logger.print("Gyro cal x; y; z : ");
 	Logger.print(Gyro_cal_x);
 	Logger.print("; ");
@@ -149,23 +146,25 @@ void IMU_Class::calibrate()
 	Logger.print("; ");
 	Logger.print(Gyro_cal_z);
 	Logger.println(" ");
-	delay(100);
+	delay(500);
 	Logger.print("Acc cal x; y; z : ");
 	Logger.print(Accel_cal_x);
 	Logger.print("; ");
 	Logger.print(Accel_cal_y);
+	delay(500);
 	Logger.print("; ");
 	Logger.println(Accel_cal_z);
-	Logger.println("------------------------------");
-	delay(100);
+	delay(500);
 
-	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
-	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, Accel_cal_z / accLsbPerG)));
+	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
+	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
 
 	Logger.print("init roll = ");
 	Logger.println(init_roll);
+	delay(100);
 	Logger.print("init pitch = ");
 	Logger.println(init_pitch);
+	delay(100);
 }
 
 

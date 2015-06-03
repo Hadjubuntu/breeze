@@ -80,7 +80,6 @@ typedef struct T_UAV {
 
 	// Thrust in deci-% (from 0 to 1000)
 	int deciThrustPercent;
-	int deciThrustCmd;
 
 	// Celerity in m/s
 	double v_ms ;

@@ -125,98 +125,99 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	double errorPitch = att_cmd->pitch - att->pitch + pitch_trim;
 	double yawDesired = att_cmd->yaw - YAW_HELPER * att->yaw + yaw_trim;
 
-#if Firmware == QUADCOPTER
+	if (Firmware == QUADCOPTER)
+	{
 
-	// Converts error into desired rate
-	Vector3f desired_rate_ef;
-	desired_rate_ef.x = errorRoll * 5.0;
-	desired_rate_ef.y = errorPitch * 5.0;
-	desired_rate_ef.z = yawDesired * 5.0;
+		// Converts error into desired rate
+		Vector3f desired_rate_ef;
+		desired_rate_ef.x = errorRoll * 5.0;
+		desired_rate_ef.y = errorPitch * 5.0;
+		desired_rate_ef.z = yawDesired * 5.0;
 
-	// Contrain vector of desired rate in earth-frame
-	Vector3f desired_rate_ef_bounded = vectAbsBounded(desired_rate_ef, MAX_ROLL_RATE_DEG, MAX_PITCH_RATE_DEG, MAX_YAW_RATE_DEG);
+		// Contrain vector of desired rate in earth-frame
+		Vector3f desired_rate_ef_bounded = vectAbsBounded(desired_rate_ef, MAX_ROLL_RATE_DEG, MAX_PITCH_RATE_DEG, MAX_YAW_RATE_DEG);
 
-	// Converts earth frame desired angle rate into body-frame rate
-	Vector3f desired_rate_bf = rot_ef_bf(desired_rate_ef_bounded, att);
+		// Converts earth frame desired angle rate into body-frame rate
+		Vector3f desired_rate_bf = rot_ef_bf(desired_rate_ef_bounded, att);
 
-	// Compute angle rate errors
-	double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
-	double ratePitchError = (desired_rate_bf.y - gyroYrate * ATTITUDE_CONTROL_DEG);
-	double rateYawError = (desired_rate_bf.z - gyroZrate * ATTITUDE_CONTROL_DEG);
+		// Compute angle rate errors
+		double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
+		double ratePitchError = (desired_rate_bf.y - gyroYrate * ATTITUDE_CONTROL_DEG);
+		double rateYawError = (desired_rate_bf.z - gyroZrate * ATTITUDE_CONTROL_DEG);
 
 
-	PID_roll.update(rateRollError, G_Dt);
-	PID_pitch.update(ratePitchError, G_Dt);
-	PID_yaw.update(rateYawError, G_Dt);
+		PID_roll.update(rateRollError, G_Dt);
+		PID_pitch.update(ratePitchError, G_Dt);
+		PID_yaw.update(rateYawError, G_Dt);
 
-	// At low thrust, reinit yaw heading only
-	if (deciThrustPercent < 100) {
-		PID_yaw.reset();
+		// At low thrust, reinit yaw heading only
+		if (deciThrustPercent < 100) {
+			PID_yaw.reset();
+		}
+
+		// Constrain output
+		(*aileronCmd) = (int) constrain(PID_roll.getOutput() * 100.0, -9000, 9000);
+		(*gouvernCmd) = (int) constrain(PID_pitch.getOutput() * 100.0, -9000, 9000);
+		(*rubberCmd) = (int) constrain(PID_yaw.getOutput() * 100.0, -9000, 9000);
+
 	}
+	else if (Firmware == FIXED_WING)
+	{
+		double v_ms ;
+		if (USE_AIRSPEED_SENSOR) {
+			v_ms = airspeed_ms_mean->getAverage();
+		}
+		else {
+			v_ms = SCALING_SPEED * (deciThrustPercent / 1000); // 1000 : 100 percent and deci 10
+		}
+		if (v_ms < 0.5) {
+			v_ms = 0.5;
+		}
 
-	// Constrain output
-	(*aileronCmd) = (int) constrain(PID_roll.getOutput() * 100.0, -9000, 9000);
-	(*gouvernCmd) = (int) constrain(PID_pitch.getOutput() * 100.0, -9000, 9000);
-	(*rubberCmd) = (int) constrain(PID_yaw.getOutput() * 100.0, -9000, 9000);
+
+		// Get the scaler to minimize surface command in high speed ..
+		double scaler = getSpeedScaler(deciThrustPercent);
+
+		double desiredRollRate = errorRoll / param[ID_G_TAU];
+		double desiredPitchRate = errorPitch / param[ID_G_TAU];
+
+		if (desiredRollRate > DROLL_MAX) {
+			desiredRollRate = DROLL_MAX;
+		}
+		else if (desiredRollRate < -DROLL_MAX) {
+			desiredRollRate = -DROLL_MAX;
+		}
+		if (desiredPitchRate > DPITCH_MAX) {
+			desiredPitchRate = DPITCH_MAX;
+		}
+		else if (desiredPitchRate < -DPITCH_MAX) {
+			desiredPitchRate = -DPITCH_MAX;
+		}
+
+		double rateRollError = (desiredRollRate - gyroXrate * ATTITUDE_CONTROL_DEG) * scaler;
+		double ratePitchError = (desiredPitchRate - gyroYrate * ATTITUDE_CONTROL_DEG) * scaler;
+
+		double kp_ff_roll = max(param[ID_G_P_ROLL] * param[ID_G_TAU]  - param[ID_G_D_ROLL], 0) / v_ms;
+		double kp_ff_pitch = max(param[ID_G_P_PITCH] * param[ID_G_TAU]  - param[ID_G_D_PITCH], 0) / v_ms;
+		if (kp_ff_roll < 0) {
+			kp_ff_roll = 0.0;
+		}
+		if (kp_ff_pitch < 0) {
+			kp_ff_pitch = 0.0;
+		}
+
+		double FixedWingGain  = 0.5;
+		double outputRollCmd = FixedWingGain * ((rateRollError * param[ID_G_D_ROLL]) + (desiredRollRate * kp_ff_roll)) * scaler;
+		double outputPitchCmd = FixedWingGain * ((ratePitchError * param[ID_G_D_PITCH]) + (desiredPitchRate * kp_ff_pitch)) * scaler;
+
+		double yawCmd = yawDesired;
 
 
-
-#elif Firmware == FIXED_WING
-
-	double v_ms ;
-	if (USE_AIRSPEED_SENSOR) {
-		v_ms = airspeed_ms_mean->getAverage();
+		// Update surfaces command
+		(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
+		(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
+		(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
 	}
-	else {
-		v_ms = SCALING_SPEED * (deciThrustPercent / 1000); // 1000 : 100 percent and deci 10
-	}
-	if (v_ms < 0.5) {
-		v_ms = 0.5;
-	}
-
-
-	// Get the scaler to minimize surface command in high speed ..
-	double scaler = getSpeedScaler(deciThrustPercent);
-
-	double desiredRollRate = errorRoll / param[ID_G_TAU];
-	double desiredPitchRate = errorPitch / param[ID_G_TAU];
-
-	if (desiredRollRate > DROLL_MAX) {
-		desiredRollRate = DROLL_MAX;
-	}
-	else if (desiredRollRate < -DROLL_MAX) {
-		desiredRollRate = -DROLL_MAX;
-	}
-	if (desiredPitchRate > DPITCH_MAX) {
-		desiredPitchRate = DPITCH_MAX;
-	}
-	else if (desiredPitchRate < -DPITCH_MAX) {
-		desiredPitchRate = -DPITCH_MAX;
-	}
-
-	double rateRollError = (desiredRollRate - gyroXrate) * scaler;
-	double ratePitchError = (desiredPitchRate - gyroYrate) * scaler;
-
-	double kp_ff_roll = max(param[ID_G_P_ROLL] * param[ID_G_TAU]  - param[ID_G_D_ROLL], 0) / v_ms;
-	double kp_ff_pitch = max(param[ID_G_P_PITCH] * param[ID_G_TAU]  - param[ID_G_D_PITCH], 0) / v_ms;
-	if (kp_ff_roll < 0) {
-		kp_ff_roll = 0.0;
-	}
-	if (kp_ff_pitch < 0) {
-		kp_ff_pitch = 0.0;
-	}
-
-	double outputRollCmd = ((rateRollError * param[ID_G_D_ROLL]) + (desiredRollRate * kp_ff_roll)) * scaler;
-	double outputPitchCmd = ((ratePitchError * param[ID_G_D_PITCH]) + (desiredPitchRate * kp_ff_pitch)) * scaler;
-
-	double yawCmd = yawDesired;
-
-
-	// Update surfaces command
-	(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
-	(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
-	(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
-#endif
 }
 
 
