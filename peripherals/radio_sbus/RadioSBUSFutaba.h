@@ -23,7 +23,7 @@
 #define SBUS_SIGNAL_FAILSAFE    0x03
 #define SBUS_AUTO_CHANNEL 		4
 #define BAUDRATE 100000
-#define SBUS_SIGNAL_LOST_DELAY_US 200000L
+#define SBUS_SIGNAL_LOST_DELAY_US 800000L
 #define port Serial3
 //#define ALL_CHANNELS
 
@@ -50,6 +50,16 @@ public:
 	void UpdateServos(void);
 	void UpdateChannels(void);
 	void FeedLine(void);
+
+	void incrLostCom() {
+		iterLostCom ++;
+	}
+	bool isComLost() {
+		return (iterLostCom > 5);
+	}
+	void resetLostCom() {
+		iterLostCom = 0;
+	}
 private:
 	uint8_t byte_in_sbus;
 	uint8_t bit_in_sbus;
@@ -60,6 +70,7 @@ private:
 	int bufferIndex;
 	uint8_t inData;
 	int feedState;
+	int iterLostCom;
 
 };
 

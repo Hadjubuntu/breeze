@@ -30,6 +30,7 @@ int currentDeciThrustPercent;
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
 float quadY_yaw_us = 1000;
+float quadY_optservo_us = 1900;
 double motorMatrix[4][3];
 float boost_motors = 1.0;
 
@@ -243,6 +244,7 @@ void motorUpdateCommandQuad()
 
 	if (QuadType == Y) {
 		servoAPM_write(6, quadY_yaw_us);
+		servoAPM_write(7, quadY_optservo_us);
 	}
 	// For quadType = X or +
 	else {

@@ -32,17 +32,17 @@ public:
 {
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
-		maxAbsClimbRateMs = 0.5;
-		maxAbsAccelTarget = 0.1;
-		deciThrottleHover = 500;
-		maxDeciThrottle = 650;
+		maxAbsClimbRateMs = 0.8;
+		maxAbsAccelTarget = 0.22;
+		deciThrottleHover = 560;
+		maxDeciThrottle = 660;
 		prevTimeClimbRate = 0;
 		prevTimeAccel = 0;
 		K_AccelToThrottle = 1.0;
 		errorClimbRateMs = 0.0;
 
 		pidClimbRateMs.init(6.0, 0.0002, 0.05, 2.0);
-		pidAccelZ.init(8.0, 0.01, 1.5, 50);
+		pidAccelZ.init(10.0, 0.01, 1.5, 60);
 
 		initLearning();
 }
@@ -84,7 +84,7 @@ public:
 		prevTimeClimbRate = cTime;
 	}
 
-	void update100Hz(float acc_z_on_efz)
+	void update100Hz(float pAccZ_earthframe)
 	{
 		// Time
 		long cTime = timeUs();
@@ -97,7 +97,7 @@ public:
 		float accelTargetMs2 = pidClimbRateMs.getOutput();
 		BoundAbs(accelTargetMs2, maxAbsAccelTarget * G_MASS);
 
-		float accelError = accelTargetMs2 - (acc_z_on_efz-1.0) * G_MASS;
+		float accelError = accelTargetMs2 - (pAccZ_earthframe-1.0) * G_MASS;
 
 		// PID accel update
 		pidAccelZ.update(accelError, dt);
@@ -112,6 +112,8 @@ public:
 	void reset()
 	{
 		output_alt_controller = 0;
+		pidClimbRateMs.reset();
+		pidAccelZ.reset();
 	}
 
 	void setAltSetPoint(float newAltCm)

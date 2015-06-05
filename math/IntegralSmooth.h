@@ -20,7 +20,18 @@ private:
 	float alphaSmooth;
 	bool lastValPositive;
 public:
+	IntegralSmooth() {
+		// Initialize with default value
+		// Alpha = 0.98, Update freq Hz = 50 Hz
+		init(0.98, 50);
+	}
+
 	IntegralSmooth(float pAlphaSmooth, int pUpdateFreqHz) {
+		init(pAlphaSmooth, pUpdateFreqHz);
+	}
+
+	void init(float pAlphaSmooth, int pUpdateFreqHz)
+	{
 		alphaSmooth = pAlphaSmooth;
 		updateFreqHz = pUpdateFreqHz;
 		maxIter = (float) pUpdateFreqHz;

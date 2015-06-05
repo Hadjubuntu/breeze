@@ -48,9 +48,6 @@ int Gyro_output[3], Accel_output[3], Mag_output[3];
 
 float dt_IMU = 0.01;
 
-float acc_z_on_efz = 0.0;
-float climb_rate = 0.0;
-
 float Gyro_cal_x,Gyro_cal_y,Gyro_cal_z,Accel_cal_x,Accel_cal_y,Accel_cal_z;
 
 // Acceleration CF filtered

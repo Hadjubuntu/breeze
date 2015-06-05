@@ -102,6 +102,7 @@ typedef struct T_UAV {
 
 Uav *UAVCore = new Uav() ;
 
+
 void initializeUAVStructure(Uav *uav) {
 
 	// UAVCore->altitudeSonar = new  FilterAverage(15, 0, 300, true);

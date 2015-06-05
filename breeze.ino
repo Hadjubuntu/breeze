@@ -18,7 +18,12 @@
 #include "modules/AHRS/AHRS_Kalman.h"
 #include "peripherals/IMU/Sensor_IMU.h"
 #include "math/IntegralSmooth.h"
+#include "modules/AHRS/InertialNav.h"
 
+
+
+// Inertial naviguation
+InertialNav insNav;
 
 // Skeleton functions
 void measureCriticalSensors();
@@ -91,13 +96,22 @@ void updateRFRadioFutaba() {
 	if (USE_RADIO_FUTABA == 1) {
 		// Connexion lost with 
 		if (timeUs() - sBus.lastUpdateUs > SBUS_SIGNAL_LOST_DELAY_US ||
-				sBus.failsafe_status != SBUS_SIGNAL_OK) {
-			// failsafe
-			UAVCore->deciThrustPercent = 0;
-			UAVCore->autopilot = false;
-			AUTOSPEED_CONTROLLER = 0;
+				sBus.failsafe_status != SBUS_SIGNAL_OK) 
+		{
+			sBus.incrLostCom();
+			
+			if (sBus.isComLost()) 
+			{
+				// failsafe
+				UAVCore->deciThrustPercent = 0;
+				UAVCore->autopilot = false;
+				AUTOSPEED_CONTROLLER = 0;
+			}
 		}
 		else {
+			// Reset communication losted
+			sBus.resetLostCom();
+			
 			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
 			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
 			double yawRate = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
@@ -129,6 +143,7 @@ void updateRFRadioFutaba() {
 	}
 }
 
+float altitudeSetPointCm = 0.0;
 
 // Update values with optionnal channels
 //------------------------------------------------
@@ -157,7 +172,7 @@ void updateRFRadoFutabaLowFreq() {
 
 			if (AUTOSPEED_CONTROLLER != old_state) {
 				altHoldCtrl.reset();
-				altHoldCtrl.setAltSetPoint(altCF + 80.0); // current altitude + x cm above
+				altHoldCtrl.setAltSetPoint(altitudeSetPointCm); // current altitude + x cm above
 			}
 		}
 
@@ -170,24 +185,37 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_P_PITCH] = factor;
 		param[ID_G_D_PITCH] = factor * 0.01;
 
+		param[ID_G_I_PITCH] = 0.1; // Constante integral value
+		param[ID_G_I_ROLL] = 0.1;
+
 		if (sBus.channels[7] > 1300) {
-			param[ID_G_I_ROLL] = 0.2;
-			param[ID_G_I_PITCH] = 0.2;
+			altitudeSetPointCm = 2000;
+			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else if (sBus.channels[7] > 400) {
-			param[ID_G_I_ROLL] = 0.1;
-			param[ID_G_I_PITCH] = 0.1;
+			altitudeSetPointCm = 800;
+			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else {
-			param[ID_G_I_ROLL] = 0.0;
-			param[ID_G_I_PITCH] = 0.0;
+			altitudeSetPointCm = 150.0;
+			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 
+		// Get yaw helper by default
+		YAW_HELPER = 1;
+
+		//		if (sBus.channels[6] > 1000) {
+		//			YAW_HELPER = 1;
+		//		}
+		//		else {
+		//			YAW_HELPER = 0;
+		//		}
+
 		if (sBus.channels[6] > 1000) {
-			YAW_HELPER = 1;
+			quadY_optservo_us = 1900;
 		}
 		else {
-			YAW_HELPER = 0;
+			quadY_optservo_us = 900;
 		}
 
 		// Update PID parameters
@@ -234,8 +262,8 @@ void process100HzTask() {
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
 	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) {
-		stabilize2(
-				G_Dt, UAVCore->currentAttitude, 
+
+		stabilize2(G_Dt, UAVCore->currentAttitude, 
 				UAVCore->attitudeCommanded,
 				&aileronCmd, &gouvernCmd, &rubberCmd,
 				UAVCore->gyroXrate, UAVCore->gyroYrate,
@@ -246,11 +274,11 @@ void process100HzTask() {
 	//-----------------------------------------------
 	// Process and order all commands
 	processCommand() ; 
-	
+
 	// Update altitude hold controller for quadcopter
 	if (Firmware == QUADCOPTER) {
 		if (AUTOSPEED_CONTROLLER == 1) {
-			altHoldCtrl.update100Hz(acc_z_on_efz);
+			altHoldCtrl.update100Hz(insNav.getAccZ_ef());
 		}
 	}
 
@@ -319,32 +347,18 @@ void process50HzTask() {
 	}
 
 
-	updateClimbRate();
-}
+	// Update inertial naviguation
+	//----------------------------------
+	insNav.update(currentTime);
 
-
-IntegralSmooth climbRateSmooth(0.98, 50);
-
-void updateClimbRate() {
-	//----------------------------------------------
-	// Update acceleration on z-axis in earth-frame
-	Vector3f vect_acc_ef = rot_bf_ef(accelFiltered, UAVCore->currentAttitude);
-//
-//	float acc_x_on_efx = approx(vect_acc_ef.x);
-//	Logger.println(acc_x_on_efx);
-	
-	acc_z_on_efz = approx(vect_acc_ef.z);
-	
-	// Smooth integral on acceleration to get a lean climb rate
-	climbRateSmooth.update(G_MASS * (acc_z_on_efz-1.0), 0.02);
-	Logger.println(climbRateSmooth.getOutput());
-	
-		
+	// Update acceleration noise measurement
+	//----------------------------------
 	if (imu.measureVibration()) {
 		// Measure vibration
-		accNoise = sqrt(pow2(vect_acc_ef.x) + pow2(vect_acc_ef.y) + pow2(vect_acc_ef.z));
+		accNoise = sqrt(pow2(insNav.getAccX_ef()) + pow2(insNav.getAccY_ef()) + pow2(insNav.getAccZ_ef()));
 	}
 }
+
 
 /*******************************************************************
  * 20Hz task (50ms)
@@ -367,7 +381,7 @@ void process20HzTask() {
 			break;
 		case QUADCOPTER:
 			// Altitude controller
-			altHoldCtrl.update(climb_rate, altCF);
+			altHoldCtrl.update(insNav.getClimbRateMs(), altCF);
 			UAVCore->deciThrustPercent = altHoldCtrl.getOutput(); 
 			break;
 		case ROCKET:
@@ -377,11 +391,11 @@ void process20HzTask() {
 
 	//-------------------------------------------
 	// Update altimeter
-	updateAltimeter(climb_rate, acc_z_on_efz);
+	updateAltimeter(insNav.getClimbRateMs(), insNav.getAccZ_ef());
 
 	//------------------------------------------
 	// Altitude controller learning parameters
-	altHoldCtrl.learnFlyingParameters(climb_rate, UAVCore->deciThrustPercent);
+	altHoldCtrl.learnFlyingParameters(insNav.getClimbRateMs(), UAVCore->deciThrustPercent);
 }
 
 
@@ -445,9 +459,8 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-//	Logger.println(altCF);
-//	Logger.println(UAVCore->deciThrustPercent);
-	
+	//		Logger.println(altCF);
+
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -542,17 +555,17 @@ void process2HzTask() {
 void process1HzTask() {
 
 	// Send learning data to GCS
-//	updateLearningData(altHoldCtrl.learningToPacket());
+	//	updateLearningData(altHoldCtrl.learningToPacket());
 
 	//---------------------------------------------------------
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
 
-	//	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
-	//			(int)(UAVCore->currentAttitude->yaw),
-	//			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
-	//			currentPosition.lat, currentPosition.lon,
-	//			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
+	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
+			(int)(UAVCore->currentAttitude->yaw),
+			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
+			currentPosition.lat, currentPosition.lon,
+			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
 
 
 	//---------------------------------------------------------
@@ -674,10 +687,10 @@ void setup() {
 	setupAltimeter();
 	Logger.println("Altimeter armed");
 
-if (Firmware == FIXED_WING) {
-	setupServos() ;
-	Logger.println("Servos armed");
-}
+	if (Firmware == FIXED_WING) {
+		setupServos() ;
+		Logger.println("Servos armed");
+	}
 
 
 	if (USE_GPS_NAVIGUATION) {
