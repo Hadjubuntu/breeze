@@ -15,6 +15,7 @@
 #include "arch/AVR/wire/Wire.h"
 #include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
+#include "peripherals/range_detector/Sensor_AnalogSonar.h"
 #include "modules/AHRS/AHRS_Kalman.h"
 #include "peripherals/IMU/Sensor_IMU.h"
 #include "math/IntegralSmooth.h"
@@ -391,7 +392,7 @@ void process20HzTask() {
 
 	//-------------------------------------------
 	// Update altimeter
-	updateAltimeter(insNav.getClimbRateMs(), insNav.getAccZ_ef());
+	updateAltimeter(sonarHealthy, sonarAltCm, insNav.getClimbRateMs(), insNav.getAccZ_ef());
 
 	//------------------------------------------
 	// Altitude controller learning parameters
@@ -416,6 +417,12 @@ void process10HzTask() {
 	//		double heading = getCompassHeading(UAVCore->currentAttitude);
 	//		Logger.print("heading (deg) = ");
 	//		Logger.println(heading);
+	
+	// Update sonar if used
+	//------------------------------------------------------------
+	if (USE_SONAR_ALT) {
+		updateSonar(currentTime);
+	}
 }
 
 /*******************************************************************
@@ -704,6 +711,11 @@ void setup() {
 	if (USE_AIRSPEED_SENSOR) {
 		setupAirspeed();
 		Logger.println("Airspeed sensor armed");
+	}
+	
+	if (USE_SONAR_ALT) {
+		setupSonar();
+		Logger.println("Ultrasonic sonar armed");
 	}
 
 	if (USE_RADIO_FUTABA) {

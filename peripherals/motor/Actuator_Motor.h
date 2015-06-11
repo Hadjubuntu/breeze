@@ -306,12 +306,12 @@ void updateMotorRepartition() {
 		yawOut = rubberCmd / 100.0;
 
 		// We are using a coef boost on the third motor to compensate lift on rear of the tricopter
-		// Previous coeff value 1.18 | 1.22
+		// Previous coeff value * 1.175
 		int deciThrustBoosted = (int)(boost_motors * (min_hover_decithrust + currentDeciThrustPercent));
 
 		thrustX1 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut)) ;
 		thrustX2 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut)) ;
-		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.175 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
+		thrustX3 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
 
 		if (QuadType == Y) {
 			quadY_yaw_us = 1000 + yawOut * 3.0;

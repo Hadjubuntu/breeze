@@ -74,29 +74,34 @@ long prevAltitude = 0;
 float dtUpdateAlt = 1.0;
 
 
-void updateAltimeter(float climb_rate, float acc_z_bf) {
+void updateAltimeter(bool sonarHealthy, float sonarAltCm, float climb_rate, float acc_z_bf) {
 
 	dtUpdateAlt = (timeUs()-lastUpdateAlt) / S_TO_US;
 
 	callUpdateAlt();
 	Altitude = dps.getAltitude();
 
-	// Complementary filter
-	if (abs(Altitude) < 2000)
-	{
-		float altDiff = Altitude - prevAltitude;
+	if (sonarHealthy) {
+		altCF = sonarAltCm;
+	}
+	else {
 
-		altAvg = 0.7 * Altitude + 0.3 * altAvg;
+		// Complementary filter
+		if (abs(Altitude) < 2000)
+		{
+			float altDiff = Altitude - prevAltitude;
 
-		// Converts climb rate to cm/s to cm using dt
-		altCF = 0.9 * altAvg + 0.1 * (altCF + climb_rate * 100 * dtUpdateAlt);
+			altAvg = 0.7 * Altitude + 0.3 * altAvg;
 
-		lastUpdateAlt = timeUs();
-		prevAltitude= Altitude;
+			// Converts climb rate to cm/s to cm using dt
+			altCF = 0.9 * altAvg + 0.1 * (altCF + climb_rate * 100 * dtUpdateAlt);
+
+			lastUpdateAlt = timeUs();
+			prevAltitude = Altitude;
+		}
 	}
 
-
-//	Bound(altCF, 0, 10000);
+	//	Bound(altCF, 0, 10000);
 }
 
 #endif /* SENSOR_ALTIMETER_H_ */

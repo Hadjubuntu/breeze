@@ -29,7 +29,6 @@
 //#include "peripherals/IMU/Sensor_Gyro_MPU9150.h"
 //#endif
 
-#include "peripherals/range_detector/Sensor_RangeDetector.h"
 #include "peripherals/motor/Actuator_Motor.h"
 #include "peripherals/airspeed/Sensor_Airspeed.h"
 #include "peripherals/GPS/Sensor_GPS.h"
