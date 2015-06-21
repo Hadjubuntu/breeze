@@ -74,9 +74,10 @@ void IMU_ITG3200::setupGyro()
 
 	delay(200);
 
-	if (enable_imu_calibration)
+	// TODO copy code as MPU9150 for accel/gyro calibration scale and offset
+	if (enable_gyro_calibration)
 	{
-		calibrate();
+		calibrateGyro();
 	}
 	else
 	{

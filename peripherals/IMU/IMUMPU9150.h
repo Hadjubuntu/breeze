@@ -81,31 +81,30 @@ void IMU_MPU9150::setupGyro() {
 	delay(500);
 
 	// If user want to do live calibration, call IMU sub-routine
-	if (enable_imu_calibration) {
-		calibrate();
+	if (enable_gyro_calibration) {
+		calibrateGyro();
 	}
 	// Otherwise, set calibration from previous computation
 	else
 	{
-		Logger.println("------------------------------");
-		Logger.println("IMU Calibration Retrieve Saved Data");
-		Logger.println("------------------------------");
-		/*
-	------------------------------
-	IMU Calibration Output
-	------------------------------
-	Gyro cal x; y; z : -28.00; 58.00
-	Acc cal x; y; z : 195.00; 240.00; -201.00
-	m2 :
-	Gyro cal x; y; z : -20.00; 49.00; 33.00
-	Acc cal x; y; z : 34.00; 9.00; -243.00
-		 */
-		Gyro_cal_x = -20.00;
-		Gyro_cal_y = 49.00;
-		Gyro_cal_z = 33.0;
-		Accel_cal_x = 34.00;
-		Accel_cal_y = 9.00;
-		Accel_cal_z = -243.00;
+		// Gyro cal x; y; z : -10.10; 7.60; -2.20
+		Gyro_cal_x = -10.00;
+		Gyro_cal_y = 7.60;
+		Gyro_cal_z = -2.2;
+	}
+
+	if (enable_accel_calibration) {
+		calibrateAccel();
+	}
+	else {
+		// Acc cal x; y; z : -29.68; -131.92; -486.96
+		Accel_cal_x = 159.28;
+		Accel_cal_y = -13.28;
+		Accel_cal_z = -386.24;
+
+		accelScale[0] = 1.3; // 1.2268;
+		accelScale[1] = 1.08;// 1.14893;
+		accelScale[2] = 1.14; // 1.20337;
 	}
 }
 
@@ -143,6 +142,12 @@ void IMU_MPU9150::updateGyroData() {
 	// IMU date retrieving
 	//-----------------------------------------------
 	getIMUReadings(Gyro_output, Accel_output);
+
+	// Scale accelerometer data
+	for (int k = 0; k < 3; k ++)
+	{
+		Accel_output[k] = Accel_output[k] * accelScale[k];
+	}
 
 
 	// Accelerometer data and filters

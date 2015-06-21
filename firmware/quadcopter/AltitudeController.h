@@ -33,7 +33,7 @@ public:
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
 		maxAbsClimbRateMs = 0.8;
-		maxAbsAccelTarget = 0.22;
+		maxAbsAccelTarget = 0.2;
 		deciThrottleHover = 560;
 		maxDeciThrottle = 660;
 		prevTimeClimbRate = 0;
@@ -42,7 +42,7 @@ public:
 		errorClimbRateMs = 0.0;
 
 		pidClimbRateMs.init(6.0, 0.0002, 0.05, 2.0);
-		pidAccelZ.init(10.0, 0.01, 1.5, 60);
+		pidAccelZ.init(24.0, 0.01, 1.0, 90); // old : 22, 0.01, 1.5, 60
 
 		initLearning();
 }
@@ -140,11 +140,10 @@ public:
 	 * TODO by looking on average value of climb/rate current deci throttle
 	 * update throttle hover and PID gains during flight
 	 */
-	void learnFlyingParameters(float climbRateMs, int deciThrustCmd)
+	void learnFlyingParameters(bool sonarHealthy, float sonarAltCm, float climbRateMs, int deciThrustCmd)
 	{
-		// If we suppose UAV has enough power to fly, map climb rate m/s with deci thrust to have a kind of plot
-		// climb_rate / thrust average
-		if (deciThrustCmd > deciThrottleHover * 0.9)
+		// If we  use sonar, and data are healthy
+		if (sonarHealthy)
 		{
 			float dtSample = 0.2;
 			float climbRateStart = -LEARNING_NB_SAMPLES * dtSample / 2.0;
@@ -157,7 +156,7 @@ public:
 				if (climbRateMs > currentClimbRateStart && climbRateMs < currentClimbRateEnd)
 				{
 					float currentDeciThrustAverage = deciThrustSamples[j];
-					deciThrustSamples[j] = (int) (0.9 * currentDeciThrustAverage + 0.1 * deciThrustCmd);
+					deciThrustSamples[j] = (int) (0.8 * currentDeciThrustAverage + 0.2 * deciThrustCmd);
 				}
 			}
 		}

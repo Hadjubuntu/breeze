@@ -143,7 +143,9 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 		// Compute angle rate errors
 		double rateRollError = (desired_rate_bf.x - gyroXrate * ATTITUDE_CONTROL_DEG);
 		double ratePitchError = (desired_rate_bf.y - gyroYrate * ATTITUDE_CONTROL_DEG);
-		double rateYawError = (desired_rate_bf.z - gyroZrate * ATTITUDE_CONTROL_DEG);
+
+		// For yaw, to prevent compensation of roll and pitch, we works with earth-frame gyro rate
+		double rateYawError = (desired_rate_ef_bounded.z - gyroZrate * ATTITUDE_CONTROL_DEG);
 
 
 		PID_roll.update(rateRollError, G_Dt);

@@ -12,6 +12,7 @@
 
 #define ANALOG_PIN_SONAR 0
 #define SONAR_MAX_ALT_CM 600.0f
+#define SONAR_MIN_ALT_CM 15.0f
 
 bool sonarHealthy = false;
 float sonarDerivativeCms = 0.0;
@@ -37,6 +38,11 @@ void updateSonar(long cTime) {
 	// Arduino analog pin goes from 0 to 1024, so the value has to be divided by 2 to get the actual inches
 	float lastSonarReadCm = ((float) analogRead(ANALOG_PIN_SONAR)) / 2.0 * 2.54;
 
+	// Ensure sonar read value is superior to a minimum
+	if (lastSonarReadCm < SONAR_MIN_ALT_CM) {
+		lastSonarReadCm = SONAR_MIN_ALT_CM;
+	}
+
 	// Update derivative sonar in cm/s
 	float newDerivative = (lastSonarReadCm - sonarAltCm) / dt;
 	sonarDerivativeCms = 0.5 * sonarDerivativeCms + 0.5 * newDerivative;
@@ -45,13 +51,14 @@ void updateSonar(long cTime) {
 	sonarAltCm = 0.5 * sonarAltCm + 0.5 * lastSonarReadCm;
 
 	// Update healthy flag
-	if (sonarAltCm >= 0.0 && sonarAltCm < SONAR_MAX_ALT_CM) {
+	if (sonarAltCm < SONAR_MAX_ALT_CM) {
 		sonarHealthy = true;
 	}
 	else {
 		sonarHealthy = false;
 	}
 
+	// Update time
 	lastSonarUpdate = cTime;
 }
 

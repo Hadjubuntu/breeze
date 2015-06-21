@@ -35,9 +35,6 @@ double accNoise = 0.0; // Noise accelerometer measure in G (means output steady 
 // Variables
 long lastUpdateAHRS_Us = 0;
 
-// Initial values from accelerometer
-float init_roll = 0.0, init_pitch = 0.0;
-
 double raw_gyro_xrate = 0.0, raw_gyro_yrate = 0.0, raw_gyro_zrate = 0.0;
 double gyroXrate = 0.0, gyroYrate = 0.0, gyroZrate = 0.0;
 double gyroZangle = 0.0, rel_accZ = 0.0;
@@ -60,10 +57,16 @@ protected:
 	byte chip_address;
 	byte who_i_am_register;
 	bool measure_vibration;
-	bool enable_imu_calibration;
+	bool enable_gyro_calibration;
+	bool enable_accel_calibration;
 
 	double accLsbPerG;
 	double gyroLsbPerDegS;
+	double initRoll;
+	double initPitch;
+
+	float accelScale[3];
+
 public:
 	IMU_Class();
 
@@ -77,38 +80,50 @@ public:
 
 	virtual void updateGyroData() = 0;
 
-	void calibrate();
+	void calibrateGyro();
+	void calibrateAccel();
+
+	double getInitRoll() {
+		return initRoll;
+	}
+
+	double getInitPitch() {
+		return initPitch;
+	}
 
 };
 
 
 IMU_Class::IMU_Class()
 {
+
 }
 
 void IMU_Class::initParameters() {
 	measure_vibration = false;
-	enable_imu_calibration = true;
+	enable_gyro_calibration = false;
+	enable_accel_calibration = false;
 	accLsbPerG = 1.0;
 	gyroLsbPerDegS = 1.0;
+	initRoll = 0.0;
+	initPitch = 0.0;
+
+	for (int i = 0; i < 3; i ++) {
+		accelScale[i] = 1.0;
+	}
 }
 
 
-void IMU_Class::calibrate()
+void IMU_Class::calibrateGyro()
 {
 	float Gyro_cal_x_sample = 0;
 	float Gyro_cal_y_sample = 0;
 	float Gyro_cal_z_sample = 0;
 
-	float Accel_cal_x_sample = 0;
-	float Accel_cal_y_sample = 0;
-	float Accel_cal_z_sample = 0;
-
-
 	int i;
 
 	int nbSampleCalib = 50; // 100 original
-	int sampleDurationMs = 10; // 50 original
+	int sampleDurationMs = 20; // 50 original
 
 
 	for (i = 0; i < nbSampleCalib; i ++)
@@ -120,21 +135,12 @@ void IMU_Class::calibrate()
 		Gyro_cal_y_sample += Gyro_output[1];
 		Gyro_cal_z_sample += Gyro_output[2];
 
-		Accel_cal_x_sample += Accel_output[0];
-		Accel_cal_y_sample += Accel_output[1];
-		Accel_cal_z_sample += Accel_output[2];
-
 		delay(sampleDurationMs);
 	}
 
 	Gyro_cal_x = Gyro_cal_x_sample / nbSampleCalib;
 	Gyro_cal_y = Gyro_cal_y_sample / nbSampleCalib;
 	Gyro_cal_z = Gyro_cal_z_sample / nbSampleCalib;
-
-	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
-	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
-	Accel_cal_z = accLsbPerG - (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
-
 
 	Logger.print("Gyro cal x; y; z : ");
 	Logger.print(Gyro_cal_x);
@@ -144,6 +150,37 @@ void IMU_Class::calibrate()
 	Logger.print(Gyro_cal_z);
 	Logger.println(" ");
 	delay(500);
+}
+
+void IMU_Class::calibrateAccel()
+{
+	float Accel_cal_x_sample = 0;
+	float Accel_cal_y_sample = 0;
+	float Accel_cal_z_sample = 0;
+
+	int i;
+
+	int nbSampleCalib = 50; // 100 original
+	int sampleDurationMs = 20; // 50 original
+
+	Logger.println("Wait during accelerometer calibration");
+
+	for (i = 0; i < nbSampleCalib; i ++)
+	{
+		getIMUReadings(Gyro_output, Accel_output);
+
+		Accel_cal_x_sample += Accel_output[0];
+		Accel_cal_y_sample += Accel_output[1];
+		Accel_cal_z_sample += Accel_output[2];
+
+		delay(sampleDurationMs);
+	}
+
+	Accel_cal_x = Accel_cal_x_sample / nbSampleCalib;
+	Accel_cal_y = Accel_cal_y_sample / nbSampleCalib;
+	Accel_cal_z = accLsbPerG - (Accel_cal_z_sample / nbSampleCalib) ; //sortie a accLsbPerG LSB/g (gravite terrestre) => offset a accLsbPerG pour mise a 0
+
+
 	Logger.print("Acc cal x; y; z : ");
 	Logger.print(Accel_cal_x);
 	Logger.print("; ");
@@ -153,15 +190,59 @@ void IMU_Class::calibrate()
 	Logger.println(Accel_cal_z);
 	delay(500);
 
-	init_roll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
-	init_pitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
+	initRoll = (RAD2DEG * vectAccelToRoll(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
+	initPitch = (RAD2DEG * vectAccelToPitch(vect3fInstance(Accel_cal_x / accLsbPerG, Accel_cal_y / accLsbPerG, (accLsbPerG + Accel_cal_z) / accLsbPerG)));
 
 	Logger.print("init roll = ");
-	Logger.println(init_roll);
+	Logger.println(initRoll);
 	delay(100);
 	Logger.print("init pitch = ");
-	Logger.println(init_pitch);
+	Logger.println(initPitch);
 	delay(100);
+
+	Logger.println("Wait while finding max value");
+	float  accelMax[3];
+	for (int k = 0; k < 3; k++) {
+		accelMax[k] = 0.0;
+	}
+
+	for (i = 0; i < 150; i ++)
+	{
+		getIMUReadings(Gyro_output, Accel_output);
+
+		for (int j = 0; j < 3; j ++) {
+			if (abs(Accel_output[j]) > abs(accelMax[j]))
+			{
+				accelMax[j] = abs(Accel_output[j]);
+			}
+		}
+		Logger.println(i);
+		delay(100);
+	}
+
+
+	for (int l = 0; l < 3; l ++)
+	{
+		accelScale[l] = accelMax[l] / accLsbPerG;
+
+		Logger.print("accelScale[");
+		Logger.print(l);
+		Logger.print("] = ");
+		Logger.println(accelScale[l]);
+		delay(100);
+	}
+
+	/**
+	 *
+Gyro cal x; y; z : -10.10; 7.60; -2.20
+Acc cal x; y; z : -29.68; -131.92; -486.96
+init roll = -0.48
+init pitch = -0.11
+
+max_acc_0 = 20100.00
+max_acc_1 = -18824.00
+max_acc_2 = 19716.00
+	 */
 }
 
 

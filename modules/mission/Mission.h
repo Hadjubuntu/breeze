@@ -7,11 +7,10 @@
  */
 // #include <stdint.h>
 
-
-#include "arch/AVR/MCU/MCU.h"
 #include "math/Math.h"
 #include "modules/mission/MissionCommon.h"
 #include "modules/nav/Navig2.h"
+#include "arch/AVR/MCU/MCU.h"
 
 #ifndef MISSION_H_
 #define MISSION_H_

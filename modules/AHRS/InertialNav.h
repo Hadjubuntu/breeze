@@ -23,7 +23,7 @@ private:
 
 public:
 	InertialNav() {
-		climbRateSmooth.init(0.98, 50);
+		climbRateSmooth.init(0.98, 50); // Smooth climb rate integral with alpha = 0.98 and update Hz = 50
 		velXsmooth.init(0.98, 50);
 		velYsmooth.init(0.98, 50);
 		vect_acc_ef_approx.x = 0.0;

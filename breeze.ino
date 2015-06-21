@@ -22,7 +22,6 @@
 #include "modules/AHRS/InertialNav.h"
 
 
-
 // Inertial naviguation
 InertialNav insNav;
 
@@ -132,7 +131,7 @@ void updateRFRadioFutaba() {
 				if (abs(yawRate) < 1.0) {
 					yawRate = 0.0;
 				}
-				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.02;
+				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.06;
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
@@ -190,15 +189,15 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_I_ROLL] = 0.1;
 
 		if (sBus.channels[7] > 1300) {
-			altitudeSetPointCm = 2000;
+			altitudeSetPointCm = 500.0;
 			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else if (sBus.channels[7] > 400) {
-			altitudeSetPointCm = 800;
+			altitudeSetPointCm = 250.0;
 			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else {
-			altitudeSetPointCm = 150.0;
+			altitudeSetPointCm = 100.0;
 			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 
@@ -396,7 +395,7 @@ void process20HzTask() {
 
 	//------------------------------------------
 	// Altitude controller learning parameters
-	altHoldCtrl.learnFlyingParameters(insNav.getClimbRateMs(), UAVCore->deciThrustPercent);
+	altHoldCtrl.learnFlyingParameters(sonarHealthy, sonarAltCm, insNav.getClimbRateMs(), UAVCore->deciThrustPercent);
 }
 
 
@@ -439,12 +438,6 @@ void process5HzTask() {
 	//------------------------------------------------------------
 	updateRFRadoFutabaLowFreq();
 
-	//	Logger.print("roll_cp = ");
-	//	Logger.println(roll_cpfilter);
-
-	//	Logger.print("pitch = ");
-	//	Logger.println(UAVCore->currentAttitude->pitch);
-
 
 	//if (imu.measureVibration()) {
 	//	Logger.print("Acc_noise= ");
@@ -466,7 +459,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-	//		Logger.println(altCF);
+	Logger.println(PID_yaw.getOutput());
 
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
@@ -662,7 +655,6 @@ Task uavTasks[] = {
 // Setup the UAV
 //---------------------------------------------------------------
 void setup() {
-
 	Logger.begin(115200) ;
 	Logger.println("startup") ;
 	switch (Firmware) {
@@ -688,7 +680,7 @@ void setup() {
 
 	// Initialize components
 	setupGyro() ;
-	initAHRS(init_roll, init_pitch);
+	initAHRS(imu.getInitRoll(), imu.getInitPitch());
 	Logger.println("Gyro armed");
 
 	setupAltimeter();
@@ -754,15 +746,23 @@ void setup() {
 /*******************************************************************
  * Main loop funtions
  ******************************************************************/
-void loop () {
+void loop () 
+{
+	// Force shutdown autopilot if radio doesn't work for safety
 	if (radio_linked_checked == false) {
 		AUTOSPEED_CONTROLLER = 0;
 		UAVCore->autopilot = false;
 	}
+	
+	// Get current time in microseconds 
 	currentTime = timeUs();
+	
+	// Delta time since warmup
 	deltaTime = currentTime - previousTime;
 
+	// Compute critical functions
 	measureCriticalSensors();
+	
+	// Run scheduler
 	schedulerRun();
-
 }
