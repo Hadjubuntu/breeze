@@ -102,9 +102,10 @@ void IMU_MPU9150::setupGyro() {
 		Accel_cal_y = -13.28;
 		Accel_cal_z = -386.24;
 
-		accelScale[0] = 1.3; // 1.2268;
-		accelScale[1] = 1.08;// 1.14893;
-		accelScale[2] = 1.14; // 1.20337;
+//		FIXME scale are not working very well for global z accel => climb rate => alt hold ctrl
+		accelScale[0] = 1.0;
+		accelScale[1] = 1.0;
+		accelScale[2] = 1.0;
 	}
 }
 
@@ -144,10 +145,10 @@ void IMU_MPU9150::updateGyroData() {
 	getIMUReadings(Gyro_output, Accel_output);
 
 	// Scale accelerometer data
-	for (int k = 0; k < 3; k ++)
-	{
-		Accel_output[k] = Accel_output[k] * accelScale[k];
-	}
+//	for (int k = 0; k < 3; k ++)
+//	{
+//		Accel_output[k] = Accel_output[k] * accelScale[k];
+//	}
 
 
 	// Accelerometer data and filters

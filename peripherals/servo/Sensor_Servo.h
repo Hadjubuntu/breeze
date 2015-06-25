@@ -82,7 +82,7 @@ int flapsCmd = 0;
 // into a delay in microseconds
 //----------------------------------------------------
 double factorCmd2Us(int pos, int vmin, int vmax) {
-	return max(vmax-pos, pos-vmin) / 4500.0;
+	return max(vmax-pos, pos-vmin) / 90.0;
 }
 
 // Initialize servo at startup position

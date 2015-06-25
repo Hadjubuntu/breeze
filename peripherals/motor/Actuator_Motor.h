@@ -301,9 +301,9 @@ void updateMotorRepartition() {
 		thrustX4 = ESC_MIN;
 	}
 	else {
-		aileronOut = aileronCmd / 100.0;
-		gouvernOut = gouvernCmd / 100.0;
-		yawOut = rubberCmd / 100.0;
+		aileronOut = aileronCmd;
+		gouvernOut = gouvernCmd;
+		yawOut = rubberCmd;
 
 		// We are using a coef boost on the third motor to compensate lift on rear of the tricopter
 		// Previous coeff value * 1.175

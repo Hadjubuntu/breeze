@@ -99,7 +99,7 @@ void updateRFRadioFutaba() {
 				sBus.failsafe_status != SBUS_SIGNAL_OK) 
 		{
 			sBus.incrLostCom();
-			
+
 			if (sBus.isComLost()) 
 			{
 				// failsafe
@@ -111,7 +111,7 @@ void updateRFRadioFutaba() {
 		else {
 			// Reset communication losted
 			sBus.resetLostCom();
-			
+
 			UAVCore->attitudeCommanded->roll = (sBus.channels[0]-sBus.channelsCalib[0])*0.0682;
 			UAVCore->attitudeCommanded->pitch = (sBus.channels[1]-sBus.channelsCalib[1])*0.0682;
 			double yawRate = (sBus.channels[3]-sBus.channelsCalib[3])*0.0682;
@@ -131,7 +131,7 @@ void updateRFRadioFutaba() {
 				if (abs(yawRate) < 1.0) {
 					yawRate = 0.0;
 				}
-				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.06;
+				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.05;
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
@@ -178,27 +178,25 @@ void updateRFRadoFutabaLowFreq() {
 
 		// PID tuning with potentiometer on the radio
 		//------------------------------------------
-		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 4.0; // New PID max 4.0
+		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
 		param[ID_G_D_ROLL] = factor * 0.01;
 
 		param[ID_G_P_PITCH] = factor;
 		param[ID_G_D_PITCH] = factor * 0.01;
 
-		param[ID_G_I_PITCH] = 0.1; // Constante integral value
-		param[ID_G_I_ROLL] = 0.1;
 
 		if (sBus.channels[7] > 1300) {
-			altitudeSetPointCm = 500.0;
-			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
+			param[ID_G_I_PITCH] = 0.25; // Constante integral value
+			param[ID_G_I_ROLL] = 0.25;
 		}
 		else if (sBus.channels[7] > 400) {
-			altitudeSetPointCm = 250.0;
-			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
+			param[ID_G_I_PITCH] = 0.1; // Constante integral value
+			param[ID_G_I_ROLL] = 0.1;
 		}
 		else {
-			altitudeSetPointCm = 100.0;
-			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
+			param[ID_G_I_PITCH] = 0.0; // Constante integral value
+			param[ID_G_I_ROLL] = 0.0;
 		}
 
 		// Get yaw helper by default
@@ -212,10 +210,12 @@ void updateRFRadoFutabaLowFreq() {
 		//		}
 
 		if (sBus.channels[6] > 1000) {
-			quadY_optservo_us = 1900;
+			altitudeSetPointCm = 300.0;
+			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else {
-			quadY_optservo_us = 900;
+			altitudeSetPointCm = 200.0;
+			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 
 		// Update PID parameters
@@ -349,7 +349,7 @@ void process50HzTask() {
 
 	// Update inertial naviguation
 	//----------------------------------
-	insNav.update(currentTime);
+	insNav.update(currentTime, sonarHealthy, sonarAltCm);
 
 	// Update acceleration noise measurement
 	//----------------------------------
@@ -416,7 +416,7 @@ void process10HzTask() {
 	//		double heading = getCompassHeading(UAVCore->currentAttitude);
 	//		Logger.print("heading (deg) = ");
 	//		Logger.println(heading);
-	
+
 	// Update sonar if used
 	//------------------------------------------------------------
 	if (USE_SONAR_ALT) {
@@ -459,8 +459,6 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-	Logger.println(PID_yaw.getOutput());
-
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -704,7 +702,7 @@ void setup() {
 		setupAirspeed();
 		Logger.println("Airspeed sensor armed");
 	}
-	
+
 	if (USE_SONAR_ALT) {
 		setupSonar();
 		Logger.println("Ultrasonic sonar armed");
@@ -753,16 +751,16 @@ void loop ()
 		AUTOSPEED_CONTROLLER = 0;
 		UAVCore->autopilot = false;
 	}
-	
+
 	// Get current time in microseconds 
 	currentTime = timeUs();
-	
+
 	// Delta time since warmup
 	deltaTime = currentTime - previousTime;
 
 	// Compute critical functions
 	measureCriticalSensors();
-	
+
 	// Run scheduler
 	schedulerRun();
 }

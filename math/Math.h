@@ -309,8 +309,8 @@ typedef struct T_VECTOR3 {
 
 float approx(float v)
 {
-	int tmp = (int) (v * 10);
-	return tmp/10.0;
+	int tmp = (int) (v * 100);
+	return tmp/100.0;
 }
 
 Vector3f vect3fInstance(float x, float y, float z) {

@@ -23,6 +23,7 @@ protected:
 	float i;
 	float d;
 	float alpha_d;
+	float error;
 	float prevError;
 	float output;
 
@@ -40,6 +41,8 @@ public:
 	float getOutput();
 	void reset();
 	void printGains();
+	float getI();
+	float getError();
 };
 
 PIDe::PIDe()
@@ -80,15 +83,17 @@ void PIDe::reset()
 
 void PIDe::update(float e, float dtSeconds)
 {
+	error = e;
+
 	// Evaluate differential
 	float dError = 0.0;
 	if (dtSeconds > 0.0) {
-		dError = (e - prevError) / dtSeconds;
+		dError = (error - prevError) / dtSeconds;
 	}
-	prevError = e;
+	prevError = error;
 
 	// Evaluate integral
-	i = i + e * dtSeconds;
+	i = i + error * dtSeconds;
 	BoundAbs(i, maxI);
 
 	d = (1.0 - alpha_d) * d + alpha_d * dError;
@@ -96,17 +101,25 @@ void PIDe::update(float e, float dtSeconds)
 
 	if (useEnhancePID)
 	{
-		Ke = (exp(Kboost * e) + exp(-Kboost * e)) / 2.0;
+		Ke = (exp(Kboost * error) + exp(-Kboost * error)) / 2.0;
 		Bound(Ke, 1.0, Kboost_max);
 	}
 
 	// Computes output
-	output = Ke * (Kp * e + Ki * i + Kd * d);
+	output = Ke * (Kp * error + Ki * i + Kd * d);
 }
 
 float PIDe::getOutput()
 {
 	return output;
+}
+
+float PIDe::getI() {
+	return i;
+}
+
+float PIDe::getError() {
+	return error;
 }
 
 void PIDe::printGains()

@@ -20,6 +20,9 @@ private:
 	Vector3f vect_acc_ef_approx;
 	Vector3f vect_acc_ef;
 	long lastUpdate;
+	bool sonarHealthy;
+	float sonarClimbRateMs;
+	float prevSonarAltCm;
 
 public:
 	InertialNav() {
@@ -33,9 +36,11 @@ public:
 		delta_pos.y = 0.0;
 		delta_pos.z = 0.0;
 		lastUpdate = 0;
+		prevSonarAltCm = 0.0;
+		sonarHealthy = false;
 	}
 
-	void update(long ctime)
+	void update(long ctime, bool pSonarHealthy, float sonarAltCm)
 	{
 		float dt = 0.0001;
 
@@ -50,6 +55,13 @@ public:
 		vect_acc_ef_approx.x = approx(vect_acc_ef.x);
 		vect_acc_ef_approx.y = approx(vect_acc_ef.y);
 		vect_acc_ef_approx.z = approx(vect_acc_ef.z);
+
+		sonarHealthy = pSonarHealthy;
+
+		if (sonarHealthy) {
+			sonarClimbRateMs = (sonarAltCm - prevSonarAltCm) / 100.0 / dt;
+			prevSonarAltCm = 0.7 * prevSonarAltCm + 0.3 * sonarAltCm;
+		}
 
 		// Smooth integral on acceleration to get lean velocity on x, y and z-axis
 		// z-axis velocity defines the climb rate
@@ -68,7 +80,12 @@ public:
 
 	float getClimbRateMs()
 	{
-		return climbRateSmooth.getOutput();
+		if (sonarHealthy) {
+			return sonarClimbRateMs;
+		}
+		else {
+			return climbRateSmooth.getOutput();
+		}
 	}
 
 	float getVelX()

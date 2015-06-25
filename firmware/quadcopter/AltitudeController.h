@@ -33,8 +33,8 @@ public:
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
 		maxAbsClimbRateMs = 0.8;
-		maxAbsAccelTarget = 0.2;
-		deciThrottleHover = 560;
+		maxAbsAccelTarget = 0.25;
+		deciThrottleHover = 550;
 		maxDeciThrottle = 660;
 		prevTimeClimbRate = 0;
 		prevTimeAccel = 0;
@@ -61,7 +61,7 @@ public:
 	}
 
 	/**
-	 * Altitude Hold Controller aims to keep UAV to level
+	 * Update external loop with climb rate and current altitude
 	 */
 	void update(float climb_rate_ms,  int currentAltCm)
 	{
@@ -84,6 +84,9 @@ public:
 		prevTimeClimbRate = cTime;
 	}
 
+	/**
+	 * Update internal loop with acceleration in z-earth-frame-axis
+	 */
 	void update100Hz(float pAccZ_earthframe)
 	{
 		// Time

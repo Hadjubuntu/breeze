@@ -127,11 +127,10 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 
 	if (Firmware == QUADCOPTER)
 	{
-
 		// Converts error into desired rate
 		Vector3f desired_rate_ef;
-		desired_rate_ef.x = errorRoll * 5.0;
-		desired_rate_ef.y = errorPitch * 5.0;
+		desired_rate_ef.x = errorRoll * 6.0;
+		desired_rate_ef.y = errorPitch * 6.0;
 		desired_rate_ef.z = yawDesired * 5.0;
 
 		// Contrain vector of desired rate in earth-frame
@@ -158,9 +157,10 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 		}
 
 		// Constrain output
-		(*aileronCmd) = (int) constrain(PID_roll.getOutput() * 100.0, -9000, 9000);
-		(*gouvernCmd) = (int) constrain(PID_pitch.getOutput() * 100.0, -9000, 9000);
-		(*rubberCmd) = (int) constrain(PID_yaw.getOutput() * 100.0, -9000, 9000);
+		int maxValueCmd = 300;
+		(*aileronCmd) = (int) constrain(PID_roll.getOutput(), -maxValueCmd, maxValueCmd);
+		(*gouvernCmd) = (int) constrain(PID_pitch.getOutput(), -maxValueCmd, maxValueCmd);
+		(*rubberCmd) = (int) constrain(PID_yaw.getOutput(), -maxValueCmd, maxValueCmd);
 
 	}
 	else if (Firmware == FIXED_WING)
@@ -216,9 +216,9 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 
 
 		// Update surfaces command
-		(*aileronCmd) = (int) constrain(outputRollCmd * 100.0, -9000, 9000);
-		(*gouvernCmd) = (int) constrain(outputPitchCmd * 100.0, -9000, 9000);
-		(*rubberCmd) = (int) constrain(yawCmd * 100.0, -9000, 9000);
+		(*aileronCmd) = (int) constrain(outputRollCmd, -9000, 9000);
+		(*gouvernCmd) = (int) constrain(outputPitchCmd, -9000, 9000);
+		(*rubberCmd) = (int) constrain(yawCmd, -9000, 9000);
 	}
 }
 
