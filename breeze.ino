@@ -131,7 +131,7 @@ void updateRFRadioFutaba() {
 				if (abs(yawRate) < 1.0) {
 					yawRate = 0.0;
 				}
-				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.05;
+				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.06;
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
@@ -459,6 +459,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
+//	Logger.println(altHoldCtrl.getOutput());
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");

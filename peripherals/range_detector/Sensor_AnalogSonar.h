@@ -12,7 +12,7 @@
 
 #define ANALOG_PIN_SONAR 0
 #define SONAR_MAX_ALT_CM 600.0f
-#define SONAR_MIN_ALT_CM 15.0f
+#define SONAR_MIN_ALT_CM 35.0f
 
 bool sonarHealthy = false;
 float sonarDerivativeCms = 0.0;

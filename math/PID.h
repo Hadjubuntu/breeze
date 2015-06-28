@@ -61,7 +61,7 @@ void PIDe::init(float pKp, float pKd, float pKi, float pMaxI) {
 	prevError = 0.0;
 	output = 0.0;
 	useEnhancePID = true;
-	Kboost = 0.0125;
+	Kboost = 0.012;
 	Kboost_max = 2.0;
 	Ke = 1.0;
 }

@@ -22,7 +22,9 @@ private:
 	long lastUpdate;
 	bool sonarHealthy;
 	float sonarClimbRateMs;
-	float prevSonarAltCm;
+	float sonarAltCmTrack[10];
+	float sonarAltCmDt[10];
+	int sonarAltIdx;
 
 public:
 	InertialNav() {
@@ -36,7 +38,8 @@ public:
 		delta_pos.y = 0.0;
 		delta_pos.z = 0.0;
 		lastUpdate = 0;
-		prevSonarAltCm = 0.0;
+		sonarClimbRateMs = 0.0;
+		sonarAltIdx = 0;
 		sonarHealthy = false;
 	}
 
@@ -59,8 +62,22 @@ public:
 		sonarHealthy = pSonarHealthy;
 
 		if (sonarHealthy) {
-			sonarClimbRateMs = (sonarAltCm - prevSonarAltCm) / 100.0 / dt;
-			prevSonarAltCm = 0.7 * prevSonarAltCm + 0.3 * sonarAltCm;
+
+			sonarAltCmTrack[sonarAltIdx] = sonarAltCm;
+			sonarAltCmDt[sonarAltIdx] = dt;
+			sonarAltIdx ++;
+
+			if (sonarAltIdx >= 10) {
+				// Update climb rate
+				sonarClimbRateMs = 0.0;
+				for (int i = 0; i < 9; i ++) {
+					sonarClimbRateMs += (sonarAltCmTrack[i+1] - sonarAltCmTrack[i]) / sonarAltCmDt[i+1];
+				}
+				sonarClimbRateMs = sonarClimbRateMs / 100.0 / 10.0; // cm to meters, and 10 samples
+
+				// Udpate index
+				sonarAltIdx = 0;
+			}
 		}
 
 		// Smooth integral on acceleration to get lean velocity on x, y and z-axis

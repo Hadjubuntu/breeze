@@ -19,6 +19,11 @@ long timeUs() {
 	return micros();
 }
 
+
+long timeMs() {
+	return millis();
+}
+
 class LoggerFacade {
 public:
 

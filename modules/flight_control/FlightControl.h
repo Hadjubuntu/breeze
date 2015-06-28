@@ -157,7 +157,7 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 		}
 
 		// Constrain output
-		int maxValueCmd = 300;
+		int maxValueCmd = 350;
 		(*aileronCmd) = (int) constrain(PID_roll.getOutput(), -maxValueCmd, maxValueCmd);
 		(*gouvernCmd) = (int) constrain(PID_pitch.getOutput(), -maxValueCmd, maxValueCmd);
 		(*rubberCmd) = (int) constrain(PID_yaw.getOutput(), -maxValueCmd, maxValueCmd);
