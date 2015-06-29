@@ -35,7 +35,7 @@ FIRMWARE Firmware = QUADCOPTER;
 
 
 // TODO only for quadcopter firmware
-#include "firmware/quadcopter/AltitudeController.h"
+#include "firmware/multicopter/AltitudeController.h"
 
 enum QUAD_TYPE {
 	PLUS,
