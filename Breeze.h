@@ -75,7 +75,6 @@ void initializeAttitude(Attitude *att) {
 //----------------------------------------------------
 typedef struct T_UAV {
 	bool autopilot;
-	FlightState flightState;
 
 	// Thrust in deci-% (from 0 to 1000)
 	int deciThrustPercent;
@@ -117,9 +116,6 @@ void initializeUAVStructure(Uav *uav) {
 	UAVCore->attitudeCommanded->pitch = 0.0 ;
 	UAVCore->attitudeCommanded->yaw = 0 ;
 
-
-	// Ready to take-off
-	UAVCore->flightState = SETUP ;
 
 	// Set speed to zero
 	UAVCore->v_ms_goal = 0.0;

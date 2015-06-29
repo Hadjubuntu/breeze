@@ -11,7 +11,6 @@
 
 #include "Breeze.h"
 #include "modules/scheduler/Scheduler.h"
-#include "modules/scenario/Scenario.h"
 #include "arch/AVR/wire/Wire.h"
 #include "arch/AVR/MCU/MCU.h"
 #include "peripherals/altimeter/Sensor_AltimeterBMP085.h"
@@ -261,8 +260,8 @@ void process100HzTask() {
 	// If UAV in auto mode
 	// Define new command (roll, pitch, yaw, thrust) by using PID 
 	// To reach roll pitch and yaw desired
-	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) {
-
+	if (UAVCore->autopilot || (UAVCore->autopilot == false && rf_manual_StabilizedFlight == 1)) 
+	{
 		stabilize2(G_Dt, UAVCore->currentAttitude, 
 				UAVCore->attitudeCommanded,
 				&aileronCmd, &gouvernCmd, &rubberCmd,
@@ -463,10 +462,6 @@ void process2HzTask() {
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
-
-	Logger.print("Dt 100 Hz = ");
-	Logger.print(dt100HzSum/iter100Hz);
-	Logger.println(" us");
 	 */
 
 	//	schedulerStats(); 
@@ -480,70 +475,6 @@ void process2HzTask() {
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
 
-	/**
-	Logger.print("sbus[4] = ");
-	Logger.println(sBus.channels[4]); 
-
-	Logger.print("sbus[5] = ");
-		Logger.println(sBus.channels[5]); */
-	//	Logger.print("Gyro pitch rate (deg) = ");
-	//	Logger.println(- gyroYrate * ATTITUDE_CONTROL_DEG);
-	//	Logger.print("setpoint pitch rate (deg) = ");
-	//	Logger.println((UAVCore->attitudeCommanded->pitch - UAVCore->currentAttitude->pitch) * 1.5);
-	//		Logger.print("Out roll (cmd) = ");
-	//		Logger.println((UAVCore->attitudeCommanded->roll - UAVCore->currentAttitude->roll) * 4.5 - gyroXrate * ATTITUDE_CONTROL_DEG);
-
-	//		Logger.print("sum error roll = ");
-	//	Logger.println(sumErrorRoll);	
-	//	Logger.print("sum error pitch = ");
-	//	Logger.println(sumErrorPitch);
-
-	//	Logger.println(Ki);
-	//
-	//			Logger.print("x_rate = ");
-	//			Logger.println(gyroXrate * ATTITUDE_CONTROL_DEG);
-	//				Logger.print("roll = ");
-	//				Logger.println(UAVCore->currentAttitude->roll);
-	//	
-
-	//			Logger.print("y_rate = ");
-	//	//			Logger.println(gyroYrate * ATTITUDE_CONTROL_DEG);
-	//					Logger.print("pitch = ");
-	//					Logger.println(UAVCore->currentAttitude->pitch);
-
-
-	//	Logger.print("acc_z hard = ");
-	//	Logger.println(rel_accZ * (1.0 + abs(sin_pitch) * abs(sin_pitch)
-	//			+ abs(sin_roll) * abs(sin_roll))); 
-
-	//
-
-
-	//	Logger.print("roll cmd  = ");
-	//	Logger.println(UAVCore->attitudeCommanded->roll);
-	//
-	//	Logger.print("pitch cmd  = ");
-	//	Logger.println(UAVCore->attitudeCommanded->pitch);
-
-	//			Logger.print("Gyro_z_rate = ");
-	//			Logger.println(gyroZrate * ATTITUDE_CONTROL_DEG);
-	//		Logger.print("Yaw desired = ");
-	//		Logger.println(UAVCore->attitudeCommanded->yaw);
-
-	//	Vector3f t;
-	//	t.x = 1;
-	//	t.y = 0;
-	//	t.z = 1;
-	//	Vector3f t_bf = rot_ef_bf(t, UAVCore->currentAttitude);
-	//	Logger.println(t_bf.x);
-	//			Logger.print("Climb_rate (cm/s) = ");
-	//			Logger.println(climb_rate*100.0);
-	//	
-	//	Logger.print("inertial yaw = ");
-	//	Logger.println(UAVCore->currentAttitude->yaw);
-	//	
-	//	Logger.print("Gyro X error (filter vs mean) = ");
-	//	Logger.println(gyroFiltered.x - gyroXrate);
 }
 
 
@@ -731,10 +662,6 @@ void setup() {
 	// Initialize Scheduler
 	int nbTasks = sizeof(uavTasks) / sizeof(uavTasks[0]);
 	schedulerInit(uavTasks, nbTasks);
-
-	// Initial state of flight : take-off after setup finished
-	UAVCore->flightState = TAKEOFF;
-
 
 	// Wait 2 seconds before starting
 	delay(2000) ;

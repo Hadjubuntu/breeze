@@ -59,13 +59,6 @@ FlightMode flightMode = FULL_MANUAL;
 // Flight mode in autopilot mode
 FlightMode flightModeAutopilot = RTL;
 
-enum FlightState {
-	SETUP,
-	TAKEOFF,
-	CLIMB,
-	CRUISE,
-	LANDING,
-};
 
 //---------------------------------------
 // Configuration

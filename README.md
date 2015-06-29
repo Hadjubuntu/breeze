@@ -19,10 +19,10 @@ Compile the code :
 1- Install arduino
 2- Change Makefile to link to your arduino folder.
 3- (TODO) Edit your arduino core library files to remove any link to Serial (Serial0)
-4- Using makefile, run make -f BreezeMakefile.mk
+4- Using makefile, run make
 
 
 =======================================
 Upload to the board :
-Using makefile, run make -f BreezeMakefile.mk upload
+Using makefile, run make upload
 

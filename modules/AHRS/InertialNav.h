@@ -79,10 +79,12 @@ public:
 				sonarAltIdx = 0;
 			}
 		}
+		else {
 
-		// Smooth integral on acceleration to get lean velocity on x, y and z-axis
-		// z-axis velocity defines the climb rate
-		climbRateSmooth.update(G_MASS * (vect_acc_ef_approx.z - 1.0), dt);
+			// Smooth integral on acceleration to get lean velocity on x, y and z-axis
+			// z-axis velocity defines the climb rate
+			climbRateSmooth.update(G_MASS * (vect_acc_ef_approx.z - 1.0), dt);
+		}
 
 		// Inertial nav doesn't work well due to accelerometer imprecision
 		velXsmooth.update(G_MASS * vect_acc_ef_approx.x, dt);

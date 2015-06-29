@@ -19,7 +19,7 @@
 // Already defined in Arduino.h  #define PI     3.14159265f
 
 // Earth gravity (m/s^2)
-#define G_MASS 9.81
+#define G_MASS 9.81f
 
 // Earth radius in meters near 45° nord
 #define R 6378100.0f
