@@ -26,7 +26,6 @@ InertialNav insNav;
 
 // Skeleton functions
 void measureCriticalSensors();
-void updateClimbRate();
 
 /*******************************************************************
  * Update attitude (angle and angle rate)
@@ -130,7 +129,7 @@ void updateRFRadioFutaba() {
 				if (abs(yawRate) < 1.0) {
 					yawRate = 0.0;
 				}
-				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.08;
+				UAVCore->attitudeCommanded->yaw = 0.99 * UAVCore->attitudeCommanded->yaw + yawRate * 0.07;
 				double yawCmdRad = toRad(UAVCore->attitudeCommanded->yaw);
 				NormRadAngle(yawCmdRad);
 				UAVCore->attitudeCommanded->yaw = toDeg(yawCmdRad);
@@ -185,17 +184,22 @@ void updateRFRadoFutabaLowFreq() {
 		param[ID_G_D_PITCH] = factor * 0.01;
 
 
+		param[ID_G_I_PITCH] = 0.1; // Constante integral value
+		param[ID_G_I_ROLL] = 0.1;
+
+		PIDe *pidClimbRateMs = altHoldCtrl.getClimbRatePID();
+
 		if (sBus.channels[7] > 1300) {
-			param[ID_G_I_PITCH] = 0.25; // Constante integral value
-			param[ID_G_I_ROLL] = 0.25;
+			pidClimbRateMs->setGainParameters(50.0, 0.002, 12.0);
+			pidClimbRateMs->setMaxI(10.0);
 		}
 		else if (sBus.channels[7] > 400) {
-			param[ID_G_I_PITCH] = 0.1; // Constante integral value
-			param[ID_G_I_ROLL] = 0.1;
+			pidClimbRateMs->setGainParameters(25.0, 0.0002, 10.0);
+			pidClimbRateMs->setMaxI(12.5);
 		}
 		else {
-			param[ID_G_I_PITCH] = 0.0; // Constante integral value
-			param[ID_G_I_ROLL] = 0.0;
+			pidClimbRateMs->setGainParameters(10.0, 0.0002, 6.0);
+			pidClimbRateMs->setMaxI(20.0);
 		}
 
 		// Get yaw helper by default
@@ -209,11 +213,11 @@ void updateRFRadoFutabaLowFreq() {
 		//		}
 
 		if (sBus.channels[6] > 1000) {
-			altitudeSetPointCm = 300.0;
+			altitudeSetPointCm = 250.0;
 			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 		else {
-			altitudeSetPointCm = 200.0;
+			altitudeSetPointCm = 150.0;
 			altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		}
 
@@ -348,7 +352,7 @@ void process50HzTask() {
 
 	// Update inertial naviguation
 	//----------------------------------
-	insNav.update(currentTime, sonarHealthy, sonarAltCm);
+	insNav.update50Hz(currentTime, sonarHealthy, sonarAltCm);
 
 	// Update acceleration noise measurement
 	//----------------------------------
@@ -450,6 +454,18 @@ void process5HzTask() {
 	//	Logger.print(" | ");
 	//	Logger.println(kalX.getP11());
 	//}
+
+//	char buf[60];
+//	// Packet header
+//	sprintf(buf, "%s", "accnoise");
+//
+//	// Packet payload	
+//	sprintf(buf, "%s|%d",
+//			buf,
+//			toCenti(accNoise));
+//	// Packet footer
+//	sprintf(buf, "%s|\n", buf);
+//	updateLearningData(buf);
 }
 
 
@@ -458,7 +474,7 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-//	Logger.println(altHoldCtrl.getOutput());
+//	Logger.println(insNav.getClimbRateMs());
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");
@@ -474,7 +490,6 @@ void process2HzTask() {
 	//				Logger.println(thrustX3);
 	//	Logger.print("X4 = ");
 	//	Logger.println(thrustX4); 
-
 }
 
 
@@ -491,11 +506,11 @@ void process1HzTask() {
 	// Send data to the ground station
 	// Current position if GPS used : currentPosition
 
-	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
-			(int)(UAVCore->currentAttitude->yaw),
-			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
-			currentPosition.lat, currentPosition.lon,
-			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
+	//	updateRFLink1hz(toCenti(UAVCore->currentAttitude->roll), toCenti(UAVCore->currentAttitude->pitch), 
+	//			(int)(UAVCore->currentAttitude->yaw),
+	//			(int)(altCF), toCenti(airspeed_ms_mean->getAverage()),
+	//			currentPosition.lat, currentPosition.lon,
+	//			(int)angleDiff, UAVCore->autopilot, UAVCore->deciThrustPercent);
 
 
 	//---------------------------------------------------------

@@ -32,7 +32,7 @@ IMU_MPU9150::IMU_MPU9150()
 void IMU_MPU9150::setupGyro() {
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 20);
+	accel_filter.set_cutoff_frequency(800, 10);
 	gyro_filter.set_cutoff_frequency(800, 127);
 
 

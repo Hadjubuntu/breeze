@@ -22,8 +22,8 @@ private:
 	long lastUpdate;
 	bool sonarHealthy;
 	float sonarClimbRateMs;
-	float sonarAltCmTrack[10];
-	float sonarAltCmDt[10];
+	float sonarAltCmTrack[50];
+	bool climbRateHealthyData;
 	int sonarAltIdx;
 
 public:
@@ -40,10 +40,17 @@ public:
 		lastUpdate = 0;
 		sonarClimbRateMs = 0.0;
 		sonarAltIdx = 0;
+		climbRateHealthyData = false;
 		sonarHealthy = false;
 	}
 
-	void update(long ctime, bool pSonarHealthy, float sonarAltCm)
+	/**
+	 * Update inertial navigation using a 50Hz loop
+	 * @param ctime current time in microseconds
+	 * @param pSonarHealthy tells whether if the data from sonar are good
+	 * @param sonarAltCm Altitude measured from sonar in centimeters
+	 */
+	void update50Hz(long ctime, bool pSonarHealthy, float sonarAltCm)
 	{
 		float dt = 0.0001;
 
@@ -62,22 +69,27 @@ public:
 		sonarHealthy = pSonarHealthy;
 
 		if (sonarHealthy) {
-
+			/**
+			 * To measure climb rate, the data from sonar are measure around 1 second before and at the instant t
+			 * as soon as
+			 */
 			sonarAltCmTrack[sonarAltIdx] = sonarAltCm;
-			sonarAltCmDt[sonarAltIdx] = dt;
+
+			if (climbRateHealthyData)
+			{
+				int indexPast1Second = (sonarAltIdx + 1) % 50;
+				sonarClimbRateMs = (sonarAltCmTrack[sonarAltIdx] - sonarAltCmTrack[indexPast1Second]) / 100.0;
+			}
+
 			sonarAltIdx ++;
 
-			if (sonarAltIdx >= 10) {
-				// Update climb rate
-				sonarClimbRateMs = 0.0;
-				for (int i = 0; i < 9; i ++) {
-					sonarClimbRateMs += (sonarAltCmTrack[i+1] - sonarAltCmTrack[i]) / sonarAltCmDt[i+1];
-				}
-				sonarClimbRateMs = sonarClimbRateMs / 100.0 / 10.0; // cm to meters, and 10 samples
-
-				// Udpate index
+			if (sonarAltIdx >= 50)
+			{
+				// Reset index
 				sonarAltIdx = 0;
+				climbRateHealthyData = true;
 			}
+
 		}
 		else {
 
@@ -96,6 +108,7 @@ public:
 
 		lastUpdate = ctime;
 	}
+
 
 	float getClimbRateMs()
 	{

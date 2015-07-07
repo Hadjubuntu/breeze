@@ -30,7 +30,7 @@ int currentDeciThrustPercent;
  */
 int thrustX1 = 0, thrustX2 = 0, thrustX3 = 0, thrustX4 = 0;
 float quadY_yaw_us = 1250;
-float quadY_optservo_us = 1900;
+float quadY_optservo_us = 1500;
 double motorMatrix[4][3];
 float boost_motors = 1.0;
 
@@ -311,7 +311,7 @@ void updateMotorRepartition() {
 
 		thrustX1 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut)) ;
 		thrustX2 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut)) ;
-		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.07 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
+		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.06 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
 
 		if (QuadType == Y) {
 			quadY_yaw_us = 1250 + yawOut * 3.0;

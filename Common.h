@@ -88,9 +88,9 @@ int AUTOSPEED_CONTROLLER = 0;  // If used, then define a speed vms as a goal, th
 #define MAX_DISTANCE_BETWEEN_ESTIM_AND_POS 30 // 25 meters acceptance between estimation and real position
 
 // Define min max authorized pitch command while flying with a gps
-#define FLIGHT_BY_GPS_MIN_PITCH -30
-#define FLIGHT_BY_GPS_MAX_PITCH 40
-#define FLIGHT_BY_GPS_MAX_ROLL 50
+#define FLIGHT_BY_GPS_MIN_PITCH -15
+#define FLIGHT_BY_GPS_MAX_PITCH 20
+#define FLIGHT_BY_GPS_MAX_ROLL 40
 
 
 // For a smooth flight use droll max and dpitch max

@@ -129,8 +129,8 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	{
 		// Converts error into desired rate
 		Vector3f desired_rate_ef;
-		desired_rate_ef.x = errorRoll * 6.0;
-		desired_rate_ef.y = errorPitch * 6.0;
+		desired_rate_ef.x = errorRoll * 5.0;
+		desired_rate_ef.y = errorPitch * 5.0;
 		desired_rate_ef.z = yawDesired * 5.0;
 
 		// Contrain vector of desired rate in earth-frame
@@ -225,55 +225,6 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 
 //---------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------
-/**
- * Adapt attitude commanded depending on the current attitude :
- * pitch more if roll, yaw compensation in roll mvt
- */
-void controlAttitudeCommand(Attitude *currentAttitude, Attitude *previousCmd,
-		double dt, long ctime, double desiredRoll, double desiredPitch, double desiredYaw)
-{
-
-	// If error with dt, then set roll pitch and yaw as desired
-	if (dt <= 0) {
-		previousCmd->roll = desiredRoll;
-		previousCmd->pitch = desiredPitch;
-		previousCmd->yaw = 0;
-	}
-	else {
-
-		// Evaluate pitch offset to compensate the roll action
-		// Compensate only if desired roll superior to a minimum (5.0 degrees)
-		double pitch_offset = 0.0;
-		if (PITCH_ROLL_COMPENSATION == 1 && fabs(desiredRoll) > 5.0) {
-			double bankAngle = fabs(currentAttitude->roll);
-			Bound(bankAngle, 0, 90);
-
-			// Compensate only with acceptable roll angle from 0 to 70 deg
-			if (bankAngle < 70) {
-				pitch_offset = PITCH2SRV_ROLL * bankAngle * (PITCH_MAX_COMPENSATION / 45.0);
-				Bound(pitch_offset, 0, PITCH_MAX_COMPENSATION);
-			}
-		}
-
-
-		previousCmd->roll = desiredRoll;
-		previousCmd->pitch = desiredPitch + pitch_offset;
-	}
-
-	// To compensate roll, turn rubber a bit
-	double yaw_offset = 0.0;
-	if (YAW_ROLL_COMPENSATION == 1) {
-		yaw_offset = - YAW2SRV_ROLL * currentAttitude->roll * (YAW_MAX_COMPENSATION / 45.0) ;
-		Bound(yaw_offset, -YAW_MAX_COMPENSATION, YAW_MAX_COMPENSATION);
-	}
-
-	previousCmd->yaw = desiredYaw + yaw_offset;
-	previousCmd->time = ctime / MS_TO_US;
-}
-
-
-//---------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------
 // Auto speed using airspeed and PID on throttle
 // Function called at 20 Hz (each 50 ms)
 
@@ -302,97 +253,6 @@ int controlSpeedWithThrustV2(long cTimeUs, int currentDeciThrust, double v_ms_go
 
 	// Store previous variables
 	previous_err_airspeed = err_airspeed;
-
-	return deciThrustOutput;
-}
-
-//---------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------
-// Calls this function at 10Hz (100 ms)
-int controlSpeedWithThrust(long cTimeUs, int currentDeciThrust, double v_ms_goal, Attitude *currentAttitude) {
-	// Thrust in percent to adopt to control speed
-	int deciThrustOutput = currentDeciThrust;
-	int deciThrustMin = 0;
-	int deciThrustMax = 900;
-	int deciThrustBurst = 1000;
-
-	// Map v_ms_goal with thrust max
-	if (v_ms_goal < 2) {
-		deciThrustMax = 40;
-		deciThrustBurst = 45;
-	}
-	else if (v_ms_goal < 5) {
-		deciThrustMax = 500;
-		deciThrustBurst = 550;
-	}
-	else if (v_ms_goal < 10) {
-		deciThrustMax = 700;
-		deciThrustBurst = 800;
-	}
-
-	// Only adapt thrust when in cruise flight-state
-	int tolerancePercent = 0.02; // Accept v_ms with +/- 2% tolerance
-
-	double airspeed_ms_average = airspeed_ms_mean->getAverage() ;
-	double error = v_ms_goal - airspeed_ms_average;
-
-	if (airspeed_ms_average >= v_ms_goal - tolerancePercent*v_ms_goal
-			&& airspeed_ms_average <= v_ms_goal + tolerancePercent*v_ms_goal) {
-
-		// Don't change the thurst
-		deciThrustOutput = currentDeciThrust;
-		previousVmsError = error;
-	}
-	else {
-
-		double deltaThrust = param[ID_K_THRUST] * (param[ID_G_P_THRUST] * error + param[ID_G_D_THRUST]*(error-previousVmsError));
-		Bound(deltaThrust, -AUTOTHROTTLE_THRUST_SLEW_RATE, AUTOTHROTTLE_THRUST_SLEW_RATE);
-		int deltaDeciThrustInteger = (int) (deltaThrust*10);
-
-		// Force to change of thrust if needed
-		if (deltaDeciThrustInteger == 0) {
-			if (deltaThrust > 0.1) {
-				deltaDeciThrustInteger = 1;
-			}
-			else if (deltaThrust < -0.1) {
-				deltaDeciThrustInteger = -1;
-			}
-		}
-
-		deciThrustOutput = deciThrustOutput + deltaDeciThrustInteger;
-
-		// Protection for two low thrust and too high
-		// using a max thrust value and a burst value acceptable during x seconds
-
-
-		if (thrustBurstMode == false) {
-			if ((cTimeUs - thrustBurstTimeEndUs) > (DELAY_BETWEEN_BURST_S * S_TO_US)) {
-				deciThrustMax = deciThrustBurst;
-			}
-
-			if (deciThrustOutput > deciThrustMax) {
-				thrustBurstMode = true;
-				thrustBurstTimeStartUs = cTimeUs;
-			}
-		}
-
-		// If burst timeout, then return to deciThrustMax
-		if (thrustBurstMode == true) {
-			if ((cTimeUs - thrustBurstTimeStartUs) > (MAX_DURATION_BURST_S * S_TO_US)) {
-				thrustBurstTimeEndUs = cTimeUs;
-				thrustBurstMode = false;
-			}
-			else {
-				deciThrustMax = deciThrustBurst;
-			}
-		}
-
-		Bound(deciThrustOutput, deciThrustMin, deciThrustMax);
-
-		// Store previous error
-		previousVmsError = error;
-	}
-
 
 	return deciThrustOutput;
 }

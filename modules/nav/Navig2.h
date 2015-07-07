@@ -16,10 +16,6 @@
 #ifndef NAVIG2_H_
 #define NAVIG2_H_
 
-/**
- * TODO supprimer controlAttitudeCommand et ses appels
- * puis faire de la correction pitch et yaw automatiquement dans les fonctions de navigations
- */
 
 // Input
 //------------------------------------------
@@ -34,7 +30,9 @@ float _roll_nav = 0.0;
 float _pitch_nav = 0.0;
 
 
-
+/**
+ * Tells whether the UAV is near a waypoint
+ */
 bool navCloseEnoughToWP(MissionWP el) {
 	if (geoDistance(el.wp, currentPosition) < DIST_TO_WAYPOINT_FOR_VALIDATION) {
 		return true;
@@ -44,6 +42,9 @@ bool navCloseEnoughToWP(MissionWP el) {
 	}
 }
 
+/**
+ * Naviguate to waypoint
+ */
 void navToWP(MissionWP el)
 {
 	double dist2WPMeters = 0.0;

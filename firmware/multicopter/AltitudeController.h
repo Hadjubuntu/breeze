@@ -35,18 +35,20 @@ public:
 {
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
-		maxAbsClimbRateMs = 1.2;
+		maxAbsClimbRateMs = 1.0;
 		maxAbsAccelTarget = 0.2;
-		deciThrottleHover = 520;
+		deciThrottleHover = 530;
 		maxThrottleHover = 600;
-		maxDeciThrottle = 700;
+		maxDeciThrottle = 710;
 		prevTimeMainLoopMs = 0;
 		prevTimeAccel = 0;
 		K_AccelToThrottle = 1.0;
 		K_ClimbRateToThrottle = 1.0;
 		errorClimbRateMs = 0.0;
 
-		pidClimbRateMs.init(20.0, 0.0002, 3.0, 35.0); // old : (6.0, 0.0002, 0.05, 2.0);
+		pidClimbRateMs.init(30.0, 0.0002, 6.0, 5.0); // old : (6.0, 0.0002, 0.05, 2.0);
+		pidClimbRateMs.setUseEnhancePID(false);
+
 		pidAccelZ.init(6.0, 0.01, 3.0, 50); // old : 22, 0.01, 1.5, 60
 
 		indexThrustHover = (int) (LEARNING_NB_SAMPLES / 2.0);
@@ -54,11 +56,18 @@ public:
 		initLearning();
 }
 
+	PIDe* getClimbRatePID() {
+		return &pidClimbRateMs;
+	}
+
+	/**
+	 * Converts altitude error in meters into climb rate error in meters
+	 */
 	float errorAltitudeToClimbRate(float errorAltitudeMeters)
 	{
 		// Input/output
 		float errorClimbRate = 0.0;
-		float k = 1.0;
+		float k = 0.5;
 
 		// Compute error climb rate
 		errorClimbRate = k * errorAltitudeMeters;
@@ -69,12 +78,13 @@ public:
 
 	/**
 	 * Update external loop with climb rate and current altitude
+	 * Called at 20Hz
 	 */
 	void update(float climb_rate_ms,  int currentAltCm)
 	{
 		// Time
 		long currentTimeMs = timeMs();
-		float dt = 0.02;
+		float dt = 0.05;
 
 		if (prevTimeMainLoopMs > 0) {
 			dt = (currentTimeMs - prevTimeMainLoopMs) / 1000.0f;
@@ -83,11 +93,10 @@ public:
 		//  Errors
 		float errorAltitudeMeters = approx((altSetPointCm - currentAltCm)/100.0);
 		float targetClimbRateMs = errorAltitudeToClimbRate(errorAltitudeMeters);
-		errorClimbRateMs = 0.5 * errorClimbRateMs + 0.5 * (targetClimbRateMs - climb_rate_ms);
+		errorClimbRateMs = 0.1 * errorClimbRateMs + 0.9 * (targetClimbRateMs - climb_rate_ms);
 
 		// PID update
 		pidClimbRateMs.update(errorClimbRateMs, dt);
-		Logger.println(currentAltCm);
 
 		// Update motor output
 		output_alt_controller = deciThrottleHover + K_ClimbRateToThrottle * pidClimbRateMs.getOutput();

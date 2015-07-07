@@ -37,12 +37,15 @@ public:
 	PIDe();
 	void init(float pKp, float pKi, float pKd, float pMaxI);
 	void setGainParameters(float pKp, float pKi, float pKd);
+	void setMaxI(float pMaxI) { maxI = pMaxI; }
 	void update(float error, float dtSeconds);
 	float getOutput();
 	void reset();
 	void printGains();
 	float getI();
 	float getError();
+	float getKe();
+	void setUseEnhancePID(bool useEnhancePID);
 };
 
 PIDe::PIDe()
@@ -69,8 +72,8 @@ void PIDe::init(float pKp, float pKd, float pKi, float pMaxI) {
 void PIDe::setGainParameters(float pKp, float pKd, float pKi)
 {
 	Kp = pKp;
-	Ki = pKi;
 	Kd = pKd;
+	Ki = pKi;
 }
 
 
@@ -104,9 +107,17 @@ void PIDe::update(float e, float dtSeconds)
 		Ke = (exp(Kboost * error) + exp(-Kboost * error)) / 2.0;
 		Bound(Ke, 1.0, Kboost_max);
 	}
+	else {
+		Ke = 1.0;
+	}
 
 	// Computes output
 	output = Ke * (Kp * error + Ki * i + Kd * d);
+}
+
+void PIDe::setUseEnhancePID(bool pUseEnhancePID)
+{
+	useEnhancePID = pUseEnhancePID;
 }
 
 float PIDe::getOutput()
@@ -120,6 +131,10 @@ float PIDe::getI() {
 
 float PIDe::getError() {
 	return error;
+}
+
+float PIDe::getKe() {
+	return Ke;
 }
 
 void PIDe::printGains()

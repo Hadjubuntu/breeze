@@ -100,7 +100,7 @@ IMU_Class::IMU_Class()
 }
 
 void IMU_Class::initParameters() {
-	measure_vibration = false;
+	measure_vibration = true;
 	enable_gyro_calibration = false;
 	enable_accel_calibration = false;
 	accLsbPerG = 1.0;
