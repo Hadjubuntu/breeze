@@ -157,6 +157,8 @@ public:
 	}
 };
 
+// Inertial naviguation
+InertialNav insNav;
 
 
 #endif /* MODULES_AHRS_INERTIALNAV_H_ */

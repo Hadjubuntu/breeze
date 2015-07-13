@@ -17,6 +17,7 @@ private:
 	float maxAbsAccelTarget;
 	int maxThrottleHover;
 	int deciThrottleHover;
+	int deciThrottleHoverSetpoint;
 	int maxDeciThrottle;
 	long prevTimeMainLoopMs;
 	long prevTimeAccel;
@@ -29,17 +30,19 @@ private:
 	// Learning parameters
 	int indexThrustHover;
 	int deciThrustSamples[LEARNING_NB_SAMPLES];
+	bool takeOffDetected;
 
 public:
 	AltitudeHoldController()
 {
 		altSetPointCm = 25.0;
 		output_alt_controller = 0.0;
-		maxAbsClimbRateMs = 1.0;
+		maxAbsClimbRateMs = 0.6;
 		maxAbsAccelTarget = 0.2;
-		deciThrottleHover = 530;
-		maxThrottleHover = 600;
-		maxDeciThrottle = 710;
+		deciThrottleHover = 540;
+		deciThrottleHoverSetpoint= 540;
+		maxThrottleHover = 580;
+		maxDeciThrottle = 740;
 		prevTimeMainLoopMs = 0;
 		prevTimeAccel = 0;
 		K_AccelToThrottle = 1.0;
@@ -52,6 +55,7 @@ public:
 		pidAccelZ.init(6.0, 0.01, 3.0, 50); // old : 22, 0.01, 1.5, 60
 
 		indexThrustHover = (int) (LEARNING_NB_SAMPLES / 2.0);
+		takeOffDetected = false;
 
 		initLearning();
 }
@@ -67,11 +71,18 @@ public:
 	{
 		// Input/output
 		float errorClimbRate = 0.0;
-		float k = 0.5;
+		float kClimb = 0.35;
+		float kDescent = 0.2;
 
 		// Compute error climb rate
-		errorClimbRate = k * errorAltitudeMeters;
-		BoundAbs(errorClimbRate, maxAbsClimbRateMs);
+		if (errorAltitudeMeters >= 0.0) {
+			errorClimbRate = kClimb * errorAltitudeMeters;
+			BoundAbs(errorClimbRate, maxAbsClimbRateMs);
+		}
+		else {
+			errorClimbRate = kDescent * errorAltitudeMeters;
+			Bound(errorClimbRate, -0.3, 0.0);
+		}
 
 		return errorAltitudeMeters;
 	}
@@ -93,7 +104,7 @@ public:
 		//  Errors
 		float errorAltitudeMeters = approx((altSetPointCm - currentAltCm)/100.0);
 		float targetClimbRateMs = errorAltitudeToClimbRate(errorAltitudeMeters);
-		errorClimbRateMs = 0.1 * errorClimbRateMs + 0.9 * (targetClimbRateMs - climb_rate_ms);
+		errorClimbRateMs = 0.3 * errorClimbRateMs + 0.7 * (targetClimbRateMs - climb_rate_ms);
 
 		// PID update
 		pidClimbRateMs.update(errorClimbRateMs, dt);
@@ -136,6 +147,7 @@ public:
 
 	void reset()
 	{
+		takeOffDetected = false;
 		output_alt_controller = 0;
 		pidClimbRateMs.reset();
 		pidAccelZ.reset();
@@ -170,6 +182,7 @@ public:
 		// If we  use sonar, and data are healthy
 		if (sonarHealthy)
 		{
+			// Store map climbRate / Throttle
 			float dtSample = 0.2;
 			float climbRateStart = -LEARNING_NB_SAMPLES * dtSample / 2.0;
 
@@ -185,6 +198,26 @@ public:
 				}
 			}
 
+			// Detect takeoff and save throttle
+			if (takeOffDetected == false)
+			{
+				if (deciThrustCmd > 450 && sonarAltCm > 40.0)
+				{
+					deciThrottleHoverSetpoint = deciThrustCmd * 0.95;
+					Bound(deciThrottleHoverSetpoint, 500, maxThrottleHover)
+					takeOffDetected = true;
+				}
+			}
+			// Update current deci throttle hover
+			else {
+				if (deciThrottleHover < deciThrottleHoverSetpoint) {
+					deciThrottleHover ++;
+				}
+				else if (deciThrottleHover > deciThrottleHoverSetpoint) {
+					deciThrottleHover --;
+				}
+			}
+
 			// Update current deci thrust hover
 			//			int deciThrustSetpoint = deciThrustSamples[indexThrustHover];
 			//			if (deciThrustSetpoint > deciThrottleHover) {
@@ -196,6 +229,10 @@ public:
 			//
 			//			Bound(deciThrottleHover, 500, maxThrottleHover);
 		}
+	}
+
+	int getDeciThrottleHover() {
+		return deciThrottleHover;
 	}
 
 	char* learningToPacket()

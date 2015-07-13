@@ -33,7 +33,7 @@ double previousVmsError = 0.0;
 
 // PIDs for roll/pitch and yaw
 PIDe PID_roll, PID_pitch, PID_yaw;
-double MAX_I = 10.0;
+double MAX_I_ROLL_PITCH_RATE = 50.0;
 double P_YAW = 3.0f;
 double D_YAW = 0.03f;
 double I_YAW = 0.06f;
@@ -56,8 +56,8 @@ void initFlightControl() {
 
 
 	// Init PIDs controllers
-	PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I);
-	PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I);
+	PID_roll.init(param[ID_G_P_ROLL], param[ID_G_D_ROLL], param[ID_G_I_ROLL], MAX_I_ROLL_PITCH_RATE);
+	PID_pitch.init(param[ID_G_P_PITCH], param[ID_G_D_PITCH], param[ID_G_I_PITCH], MAX_I_ROLL_PITCH_RATE);
 	PID_yaw.init(P_YAW, D_YAW, I_YAW, MAX_I_YAW);
 
 	if (Firmware == QUADCOPTER)
@@ -129,8 +129,8 @@ void stabilize2(double G_Dt, Attitude *att, Attitude *att_cmd,
 	{
 		// Converts error into desired rate
 		Vector3f desired_rate_ef;
-		desired_rate_ef.x = errorRoll * 5.0;
-		desired_rate_ef.y = errorPitch * 5.0;
+		desired_rate_ef.x = errorRoll * 6.0;
+		desired_rate_ef.y = errorPitch * 6.0;
 		desired_rate_ef.z = yawDesired * 5.0;
 
 		// Contrain vector of desired rate in earth-frame

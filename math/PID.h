@@ -104,7 +104,9 @@ void PIDe::update(float e, float dtSeconds)
 
 	if (useEnhancePID)
 	{
-		Ke = (exp(Kboost * error) + exp(-Kboost * error)) / 2.0;
+		// High when error high : Ke = (exp(Kboost * error) + exp(-Kboost * error)) / 2.0;
+		// High when error low
+		Ke = 1.0 + (1/(abs(error/2.0) + 1.0));
 		Bound(Ke, 1.0, Kboost_max);
 	}
 	else {

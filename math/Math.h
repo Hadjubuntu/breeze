@@ -306,6 +306,9 @@ typedef struct T_VECTOR3 {
 	float z;
 } Vector3f;
 
+float vect3fnorm(Vector3f input) {
+	return pythagorous3(input.x, input.y, input.z);
+}
 
 float approx(float v)
 {
@@ -322,6 +325,14 @@ Vector3f vect3fInstance(float x, float y, float z) {
 	return res;
 }
 
+void vect3fnormalize(Vector3f *input)
+{
+	float norm = vect3fnorm(*input);
+	input->x = input->x / norm;
+	input->y = input->y / norm;
+	input->z = input->z / norm;
+}
+
 Vector3f vectAbsBounded(Vector3f inputVector, float max_x, float max_y, float max_z) {
 	Vector3f output;
 
@@ -330,6 +341,30 @@ Vector3f vectAbsBounded(Vector3f inputVector, float max_x, float max_y, float ma
 	output.z = constrain(inputVector.z, -max_z, max_z);
 
 	return output;
+}
+
+Vector3f vect3fMultiply(Vector3f e, float p)
+{
+	Vector3f res = vect3fInstance(e.x * p, e.y * p, e.z * p);
+	return res;
+}
+
+Vector3f vect3fDivide(Vector3f e, float p)
+{
+	Vector3f res = vect3fInstance(e.x / p, e.y / p, e.z / p);
+	return res;
+}
+
+Vector3f vect3fAdd(Vector3f a, Vector3f b)
+{
+	Vector3f res =  vect3fInstance(a.x + b.x, a.y + b.y, a.z + b.z);
+	return res;
+}
+
+Vector3f vect3fSubstract(Vector3f a, Vector3f b)
+{
+	Vector3f res =  vect3fInstance(a.x - b.x, a.y - b.y, a.z - b.z);
+	return res;
 }
 
 // Skeleton rotation frame function (internal sub-routine)

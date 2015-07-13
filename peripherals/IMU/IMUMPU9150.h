@@ -32,8 +32,8 @@ IMU_MPU9150::IMU_MPU9150()
 void IMU_MPU9150::setupGyro() {
 	// Prepare filters
 	//-------------------------------------------------------
-	accel_filter.set_cutoff_frequency(800, 10);
-	gyro_filter.set_cutoff_frequency(800, 127);
+	accel_filter.set_cutoff_frequency(800, 20);
+	gyro_filter.set_cutoff_frequency(800, 20);
 
 
 	// Initialize IMU
@@ -102,7 +102,7 @@ void IMU_MPU9150::setupGyro() {
 		Accel_cal_y = -13.28;
 		Accel_cal_z = -386.24;
 
-//		FIXME scale are not working very well for global z accel => climb rate => alt hold ctrl
+		//		FIXME scale are not working very well for global z accel => climb rate => alt hold ctrl
 		accelScale[0] = 1.0;
 		accelScale[1] = 1.0;
 		accelScale[2] = 1.0;
@@ -145,10 +145,10 @@ void IMU_MPU9150::updateGyroData() {
 	getIMUReadings(Gyro_output, Accel_output);
 
 	// Scale accelerometer data
-//	for (int k = 0; k < 3; k ++)
-//	{
-//		Accel_output[k] = Accel_output[k] * accelScale[k];
-//	}
+	//	for (int k = 0; k < 3; k ++)
+	//	{
+	//		Accel_output[k] = Accel_output[k] * accelScale[k];
+	//	}
 
 
 	// Accelerometer data and filters
@@ -159,7 +159,10 @@ void IMU_MPU9150::updateGyroData() {
 
 
 	// Low pass filter accelerometer
-	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+//	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
+	accelFiltered.x = accelFiltered.x * 0.95 + 0.05 * rel_accX;
+	accelFiltered.y = accelFiltered.y * 0.95 + 0.05 * rel_accY;
+	accelFiltered.z = accelFiltered.z * 0.95 + 0.05 * rel_accZ;
 
 	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
 	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;
@@ -177,7 +180,7 @@ void IMU_MPU9150::updateGyroData() {
 	//	gyroYrate = gyroFiltered.y;
 	//	gyroZrate = gyroFiltered.z;
 
-	double alphaGyroRate = 0.7;
+	double alphaGyroRate = 0.4;
 	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
 	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
 	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
@@ -185,6 +188,9 @@ void IMU_MPU9150::updateGyroData() {
 	// Integrate gyro z rate to have approx yaw based on inertial data
 	gyroZangle = 0.99 * gyroZangle + gyroZrate * dt_IMU;
 	NormRadAngle(gyroZangle);
+
+	// Update gyro filtered vector
+	gyroFiltered = vect3fInstance(gyroXrate, gyroYrate, gyroZrate);
 }
 
 

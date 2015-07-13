@@ -111,6 +111,8 @@ void IMU_Class::initParameters() {
 	for (int i = 0; i < 3; i ++) {
 		accelScale[i] = 1.0;
 	}
+
+	accelFiltered = vect3fInstance(0.0, 0.0, 1.0);
 }
 
 

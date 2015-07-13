@@ -10,6 +10,7 @@
 #ifndef MODULES_AHRS_AHRS_KALMAN_H_
 #define MODULES_AHRS_AHRS_KALMAN_H_
 
+#include "AHRS.h"
 #include "Common.h"
 #include "math/Kalman.h"
 #include "math/Math.h"

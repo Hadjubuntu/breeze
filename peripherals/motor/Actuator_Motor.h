@@ -183,16 +183,16 @@ void setupMotors() {
 
 			setupServoYaw();
 
-			motorMatrix[0][0] = 1; // roll
-			motorMatrix[0][1] = 2/3; // pitch
+			motorMatrix[0][0] = 1.0; // roll // old 1
+			motorMatrix[0][1] = 0.67; // pitch // old 2/3
 			motorMatrix[0][2] = 0; // yaw
 
-			motorMatrix[1][0] = -1;
-			motorMatrix[1][1] = 2/3;
+			motorMatrix[1][0] = -1.0; // old : -1
+			motorMatrix[1][1] = 0.67; // old 2/3
 			motorMatrix[1][2] = 0; // yaw
 
 			motorMatrix[2][0] = 0;
-			motorMatrix[2][1] = -4/3;
+			motorMatrix[2][1] = -1.34;
 			motorMatrix[2][2] = 0; // yaw
 
 			motorMatrix[3][0] = 0;
@@ -306,16 +306,16 @@ void updateMotorRepartition() {
 		yawOut = rubberCmd;
 
 		// We are using a coef boost on the third motor to compensate lift on rear of the tricopter
-		// Previous coeff value * 1.175
+		// Previous coeff value * 1.175 // LAST : * 1.05
 		int deciThrustBoosted = (int)(boost_motors * (min_hover_decithrust + currentDeciThrustPercent));
 
 		thrustX1 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[0][0]*aileronOut + motorMatrix[0][1]*gouvernOut + motorMatrix[0][2]*yawOut)) ;
 		thrustX2 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[1][0]*aileronOut + motorMatrix[1][1]*gouvernOut + motorMatrix[1][2]*yawOut)) ;
-		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.06 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
+		thrustX3 = (int) (ESC_MIN + deciThrustBoosted * 1.05 + (motorMatrix[2][0]*aileronOut + motorMatrix[2][1]*gouvernOut + motorMatrix[2][2]*yawOut));
 
 		if (QuadType == Y) {
 			quadY_yaw_us = 1250 + yawOut * 3.0;
-			Bound(quadY_yaw_us, 1000, 1450);
+			Bound(quadY_yaw_us, 1000, 1500);
 		}
 		else {
 			thrustX4 = (int) (ESC_MIN + deciThrustBoosted + (motorMatrix[3][0]*aileronOut + motorMatrix[3][1]*gouvernOut + motorMatrix[3][2]*yawOut)) ;
