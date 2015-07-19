@@ -199,24 +199,24 @@ public:
 			}
 
 			// Detect takeoff and save throttle
-			if (takeOffDetected == false)
-			{
-				if (deciThrustCmd > 450 && sonarAltCm > 40.0)
-				{
-					deciThrottleHoverSetpoint = deciThrustCmd * 0.95;
-					Bound(deciThrottleHoverSetpoint, 500, maxThrottleHover)
-					takeOffDetected = true;
-				}
-			}
-			// Update current deci throttle hover
-			else {
-				if (deciThrottleHover < deciThrottleHoverSetpoint) {
-					deciThrottleHover ++;
-				}
-				else if (deciThrottleHover > deciThrottleHoverSetpoint) {
-					deciThrottleHover --;
-				}
-			}
+//			if (takeOffDetected == false)
+//			{
+//				if (deciThrustCmd > 450 && sonarAltCm > 40.0)
+//				{
+//					deciThrottleHoverSetpoint = deciThrustCmd * 0.95;
+//					Bound(deciThrottleHoverSetpoint, 500, maxThrottleHover)
+//					takeOffDetected = true;
+//				}
+//			}
+//			// Update current deci throttle hover
+//			else {
+//				if (deciThrottleHover < deciThrottleHoverSetpoint) {
+//					deciThrottleHover ++;
+//				}
+//				else if (deciThrottleHover > deciThrottleHoverSetpoint) {
+//					deciThrottleHover --;
+//				}
+//			}
 
 			// Update current deci thrust hover
 			//			int deciThrustSetpoint = deciThrustSamples[indexThrustHover];

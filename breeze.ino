@@ -25,7 +25,6 @@
 
 // Skeleton functions
 void measureCriticalSensors();
-float alphaKalman = 1.0;
 
 /*******************************************************************
  * Update attitude (angle and angle rate)
@@ -38,8 +37,8 @@ void updateAttitude() {
 	updateAHRS(Accel_roll, gyroXrate, Accel_pitch, gyroYrate, dt_IMU);
 
 	// Set new current attitude filtered by Kalman
-	UAVCore->currentAttitude->roll = alphaKalman * kalX.getOutput() + (1.0 - alphaKalman) * roll_cpfilter;
-	UAVCore->currentAttitude->pitch = alphaKalman * kalY.getOutput() + (1.0 - alphaKalman) * pitch_cpfilter;
+	UAVCore->currentAttitude->roll = kalX.getOutput();
+	UAVCore->currentAttitude->pitch = kalY.getOutput();
 
 	// Update heading with GPS data
 	if (USE_GPS_NAVIGUATION) {
@@ -178,14 +177,14 @@ void updateRFRadoFutabaLowFreq() {
 		//------------------------------------------
 		double factor = (sBus.channels[5]-368.0) / (1984.0-368.0) * 3.0; // New PID max 4.0
 		param[ID_G_P_ROLL] =  factor;
-		param[ID_G_D_ROLL] = factor * 0.01;
+		param[ID_G_D_ROLL] = factor * 0.001;
 
 		param[ID_G_P_PITCH] = factor;
-		param[ID_G_D_PITCH] = factor * 0.01;
+		param[ID_G_D_PITCH] = factor * 0.001;
 
 // NO INTEGRAL, REDO TODO
-		param[ID_G_I_PITCH] = 0.0; // Constante integral value
-		param[ID_G_I_ROLL] = 0.0;
+		param[ID_G_I_PITCH] = 0.02; // Constante integral value
+		param[ID_G_I_ROLL] = 0.02;
 
 		PIDe *pidClimbRateMs = altHoldCtrl.getClimbRatePID();
 
@@ -215,12 +214,13 @@ void updateRFRadoFutabaLowFreq() {
 		altitudeSetPointCm = 250.0;
 		altHoldCtrl.setAltSetPoint(altitudeSetPointCm);
 		
-		// Test to combine kalman and complementary filter
 		if (sBus.channels[6] > 1000) {
-			alphaKalman = 0.7;
+			kalX.setParameters(0.0005, 0.0005, 0.005);
+			kalY.setParameters(0.0005, 0.0005, 0.005);
 		}
 		else {
-			alphaKalman = 1.0;
+			kalX.setParameters(0.005, 0.005, 0.05);
+			kalY.setParameters(0.005, 0.005, 0.05);
 		}
 		
 		
@@ -398,7 +398,7 @@ void process20HzTask() {
 
 	//-------------------------------------------
 	// Update altimeter
-	updateAltimeter(sonarHealthy, sonarAltCm, insNav.getClimbRateMs(), insNav.getAccZ_ef());
+	updateAltimeter(sonarHealthy, sonarAltCm, USE_SONAR_ALT, SONAR_MAX_ALT_CM, insNav.getClimbRateMs(), insNav.getAccZ_ef());
 
 	//------------------------------------------
 	// Altitude controller learning parameters
@@ -430,7 +430,6 @@ void process10HzTask() {
 	if (USE_SONAR_ALT) {
 		updateSonar(currentTime);
 	}
-
 }
 
 /*******************************************************************
@@ -463,14 +462,15 @@ void process5HzTask() {
 
 //	char buf[60];
 //	// Packet header
-//	sprintf(buf, "%s", "roll");
+//	sprintf(buf, "%s", "comp");
 //
 //	// Packet payload	
-//	sprintf(buf, "%s|%d|%d|%d",
+//	sprintf(buf, "%s|%d|%d|%d|%d",
 //			buf,
-//			toCenti(UAVCore->currentAttitude->roll),
 //			toCenti(UAVCore->currentAttitude->pitch),
-//			toCenti(accNoise));
+//			toCenti(UAVCore->attitudeCommanded->pitch),
+//			toCenti(UAVCore->currentAttitude->roll),
+//			toCenti(UAVCore->attitudeCommanded->roll));
 //	// Packet footer
 //	sprintf(buf, "%s|\n", buf);
 //	updateLearningData(buf);
@@ -488,7 +488,6 @@ void process5HzTask() {
  * 2Hz task (500ms)
  ******************************************************************/
 void process2HzTask() {
-	Logger.println(PID_roll.getKe());
 	/*Logger.print("Airspeed : ");
 	Logger.print(airspeed_ms_mean->getAverage());
 	Logger.println(" m/s");

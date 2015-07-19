@@ -17,7 +17,6 @@ public:
 	IMU_ITG3200();
 	void setupGyro();
 	void getIMUReadings(int Gyro_out[], int Accel_out[]);
-	void updateGyroData();
 
 	void getGyroscopeReadings(int Gyro_out[]);
 	void getAccelerometerReadings(int Accel_out[]);
@@ -41,15 +40,15 @@ IMU_ITG3200::IMU_ITG3200()
 void IMU_ITG3200::setupGyro()
 {
 	// Prepare filters
-	//---------------------------------------------
+	//-------------------------------------------------------
 	accel_filter.set_cutoff_frequency(800, 20);
-	gyro_filter.set_cutoff_frequency(800, 127);
+	gyro_filter.set_cutoff_frequency(800, 20);
 
 	// Initialize IMU
 	//-------------------------------------------------------
 	delay(5);
 	Wire.begin();
-
+	delay(5);
 
 	Logger.println("start configuration IMU");
 
@@ -72,7 +71,7 @@ void IMU_ITG3200::setupGyro()
 	delay(5);
 	writeTo(chip_address,0x15,0x09); //gyro echantillonage a 100Hz
 
-	delay(200);
+	delay(500);
 
 	// TODO copy code as MPU9150 for accel/gyro calibration scale and offset
 	if (enable_gyro_calibration)
@@ -81,25 +80,24 @@ void IMU_ITG3200::setupGyro()
 	}
 	else
 	{
-		Logger.println("------------------------------");
-		Logger.println("IMU Calibration Retrieve Saved Data");
-		Logger.println("------------------------------");
-		/*
-	------------------------------
-	IMU Calibration Output
-	------------------------------
-	Gyro cal x; y; z : -28.00; 58.00
-	Acc cal x; y; z : 195.00; 240.00; -201.00
-	m2 :
-	Gyro cal x; y; z : -20.00; 49.00; 33.00
-	Acc cal x; y; z : 34.00; 9.00; -243.00
-		 */
 		Gyro_cal_x = -20.00;
 		Gyro_cal_y = 49.00;
 		Gyro_cal_z = 33.0;
+	}
+
+	if (enable_accel_calibration) {
+		calibrateAccel();
+	}
+	else {
+
 		Accel_cal_x = 34.00;
 		Accel_cal_y = 9.00;
 		Accel_cal_z = -243.00;
+
+		//		FIXME scale are not working very well for global z accel => climb rate => alt hold ctrl
+		accelScale[0] = 1.0;
+		accelScale[1] = 1.0;
+		accelScale[2] = 1.0;
 	}
 }
 
@@ -136,55 +134,5 @@ void IMU_ITG3200::getIMUReadings(int Gyro_out[], int Accel_out[])
 	getAccelerometerReadings(Accel_out);
 }
 
-void IMU_ITG3200::updateGyroData()
-{
-	long currentTimeUs = micros() ;
-	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
-	if (lastUpdateAHRS_Us == 0) {
-		dt_IMU = 0.01; // Initially, dt equals 10 ms
-	}
-
-	lastUpdateAHRS_Us = currentTimeUs;
-
-	// IMU date retrieving
-	//-----------------------------------------------
-	getIMUReadings(Gyro_output, Accel_output);
-
-
-	// Accelerometer data and filters
-	//-----------------------------------------------
-	rel_accX = (Accel_output[0]) / accLsbPerG;
-	rel_accY = (Accel_output[1]) / accLsbPerG;
-	rel_accZ = (Accel_output[2]) / accLsbPerG;
-
-
-	// Low pass filter accelerometer
-	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
-
-	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
-	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;
-
-	// Gyro data and filters
-	//-----------------------------------------------
-	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ gyroLsbPerDegS) * dt_IMU;
-	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ gyroLsbPerDegS) * dt_IMU; // Tilt positive when going nose goes high
-	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ gyroLsbPerDegS) * dt_IMU;
-
-	// Low pass filter on gyro (DESACTIVATED bad results)
-	//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
-
-	//	gyroXrate = gyroFiltered.x;
-	//	gyroYrate = gyroFiltered.y;
-	//	gyroZrate = gyroFiltered.z;
-
-	double alphaGyroRate = 0.7;
-	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
-	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
-	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
-
-	// Integrate gyro z rate to have approx yaw based on inertial data
-	gyroZangle = 0.99 * gyroZangle + gyroZrate * dt_IMU;
-	NormRadAngle(gyroZangle);
-}
 
 #endif /* PERIPHERALS_IMU_IMUITG3200_H_ */

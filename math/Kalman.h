@@ -99,6 +99,12 @@ public:
 	void setQbias(double newQ_bias) { Q_sensor2 = newQ_bias; };
 	void setRmeasure(double newR_measure) { R_measure = newR_measure; };
 
+	void setParameters(double pQ1, double pQ2, double pR) {
+		Q_sensor1 = pQ1;
+		Q_sensor2 = pQ2;
+		R_measure = pR;
+	}
+
 	double getQangle() { return Q_sensor1; };
 	double getQbias() { return Q_sensor2; };
 	double getRmeasure() { return R_measure; };

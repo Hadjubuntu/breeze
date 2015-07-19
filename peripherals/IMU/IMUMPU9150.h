@@ -15,7 +15,6 @@ public:
 	IMU_MPU9150();
 	void setupGyro();
 	void getIMUReadings(int Gyro_out[], int Accel_out[]);
-	void updateGyroData();
 };
 
 IMU_MPU9150::IMU_MPU9150()
@@ -125,73 +124,6 @@ void IMU_MPU9150::getIMUReadings(int Gyro_out[], int Accel_out[]) {
 	// tempRaw = (i2cData[6] << 8) | i2cData[7];
 }
 
-//-------------------------------------------------------------
-// Update AHRS (Attitude and Heading Reference System)
-// using Kalman filter
-// To transform acceleromter data into roll, pitch :
-// See http://stackoverflow.com/questions/3755059/3d-accelerometer-calculate-the-orientation
-// or http://theccontinuum.com/2012/09/24/arduino-imu-pitch-roll-from-accelerometer/
-void IMU_MPU9150::updateGyroData() {
-	long currentTimeUs = micros() ;
-	dt_IMU = (currentTimeUs - lastUpdateAHRS_Us) / S_TO_US;
-	if (lastUpdateAHRS_Us == 0) {
-		dt_IMU = 0.01; // Initially, dt equals 10 ms
-	}
-
-	lastUpdateAHRS_Us = currentTimeUs;
-
-	// IMU date retrieving
-	//-----------------------------------------------
-	getIMUReadings(Gyro_output, Accel_output);
-
-	// Scale accelerometer data
-	//	for (int k = 0; k < 3; k ++)
-	//	{
-	//		Accel_output[k] = Accel_output[k] * accelScale[k];
-	//	}
-
-
-	// Accelerometer data and filters
-	//-----------------------------------------------
-	rel_accX = (Accel_output[0] - Accel_cal_x) / accLsbPerG;
-	rel_accY = (Accel_output[1] - Accel_cal_y) / accLsbPerG;
-	rel_accZ = (Accel_output[2] - Accel_cal_z) / accLsbPerG;
-
-
-	// Low pass filter accelerometer
-//	accelFiltered = accel_filter.apply(vect3fInstance(rel_accX, rel_accY, rel_accZ));
-	accelFiltered.x = accelFiltered.x * 0.95 + 0.05 * rel_accX;
-	accelFiltered.y = accelFiltered.y * 0.95 + 0.05 * rel_accY;
-	accelFiltered.z = accelFiltered.z * 0.95 + 0.05 * rel_accZ;
-
-	Accel_pitch = vectAccelToPitch(accelFiltered) * RAD2DEG;
-	Accel_roll = vectAccelToRoll(accelFiltered) * RAD2DEG;
-
-	// Gyro data and filters
-	//-----------------------------------------------
-	raw_gyro_xrate = ((Gyro_output[0] - Gyro_cal_x)/ gyroLsbPerDegS) * dt_IMU;
-	raw_gyro_yrate = -((Gyro_output[1] - Gyro_cal_y)/ gyroLsbPerDegS) * dt_IMU; // Tilt positive when going nose goes high
-	raw_gyro_zrate = -((Gyro_output[2] - Gyro_cal_z)/ gyroLsbPerDegS) * dt_IMU;
-
-	// Low pass filter on gyro (DESACTIVATED bad results)
-	//	gyroFiltered = gyro_filter.apply(vect3fInstance(raw_gyro_xrate, raw_gyro_yrate, raw_gyro_zrate));
-
-	//	gyroXrate = gyroFiltered.x;
-	//	gyroYrate = gyroFiltered.y;
-	//	gyroZrate = gyroFiltered.z;
-
-	double alphaGyroRate = 0.4;
-	gyroXrate = (1-alphaGyroRate)*gyroXrate + alphaGyroRate*raw_gyro_xrate;
-	gyroYrate = (1-alphaGyroRate)*gyroYrate + alphaGyroRate*raw_gyro_yrate;
-	gyroZrate = (1-alphaGyroRate)*gyroZrate + alphaGyroRate*raw_gyro_zrate;
-
-	// Integrate gyro z rate to have approx yaw based on inertial data
-	gyroZangle = 0.99 * gyroZangle + gyroZrate * dt_IMU;
-	NormRadAngle(gyroZangle);
-
-	// Update gyro filtered vector
-	gyroFiltered = vect3fInstance(gyroXrate, gyroYrate, gyroZrate);
-}
 
 
 

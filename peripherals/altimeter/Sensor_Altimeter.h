@@ -74,7 +74,8 @@ long prevAltitude = 0;
 float dtUpdateAlt = 1.0;
 
 
-void updateAltimeter(bool sonarHealthy, float sonarAltCm, float climb_rate, float acc_z_bf) {
+void updateAltimeter(bool sonarHealthy, float sonarAltCm, int useSonarAlt, double maxAltSonar,
+		float climb_rate, float acc_z_bf) {
 
 	dtUpdateAlt = (timeUs()-lastUpdateAlt) / S_TO_US;
 
@@ -95,6 +96,10 @@ void updateAltimeter(bool sonarHealthy, float sonarAltCm, float climb_rate, floa
 
 			// Converts climb rate to cm/s to cm using dt
 			altCF = 0.9 * altAvg + 0.1 * (altCF + climb_rate * 100 * dtUpdateAlt);
+
+			if (useSonarAlt) {
+				Bound(altCF, maxAltSonar, 50000);
+			}
 
 			lastUpdateAlt = timeUs();
 			prevAltitude = Altitude;

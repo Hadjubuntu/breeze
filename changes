@@ -1,0 +1,27 @@
+23 juin 2015
+- P rate error : 6.0 instead of 5.0
+- Boost rear motor = removed
+- New limit P : aileronCmd, gouvernCmd was blocked at 90, now its 300
+28 juin 2015 
+- Direct altitude hold controller on climb rate instead of acceleration
+30 juin 2015
+- Camera + camera pitch control on radio
+8 juillet 2015
+- Detect take off, update throttle hover in altitude controller
+11 juillet 2015
+- Test kalman high param with low cutoff freq for vibration on IMU output
+13 juillet 2015
+- New kalman param
+- New motors repartition for tricopter
+- Combine complementary filter and kalman
+
+TODO :
+Altitude hold controller more stable
+
+TODO :
+Faire le calcul du climb rate sur une seconde
+Arrondi des valeurs autour de t-1 secondes
+Arrondi des valeurs autour de t
+Comparaison => climb rate
+
+
